@@ -2,6 +2,94 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Zap, Sparkles, BookOpen, Home, Gamepad2, Coffee, MessageCircle, ArrowLeft, ShoppingCart, Star, Camera, X, Moon, Heart, HelpCircle, Info, AlertTriangle, Skull, ChevronLeft, ChevronRight, Lock, Trophy, CheckCircle } from 'lucide-react';
 
 // ==========================================
+// 0. 音效系統 (Web Audio API)
+// ==========================================
+let _audioCtx = null;
+const getAudioCtx = () => {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return _audioCtx;
+};
+
+const playSound = (type) => {
+  try {
+    const ctx = getAudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+
+    const tone = (freq, startT, dur, oscType = 'sine', vol = 0.25) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = oscType;
+      o.frequency.setValueAtTime(freq, startT);
+      g.gain.setValueAtTime(vol, startT);
+      g.gain.exponentialRampToValueAtTime(0.001, startT + dur);
+      o.start(startT); o.stop(startT + dur);
+    };
+
+    const slide = (freqFrom, freqTo, startT, dur, oscType = 'square', vol = 0.25) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = oscType;
+      o.frequency.setValueAtTime(freqFrom, startT);
+      o.frequency.exponentialRampToValueAtTime(freqTo, startT + dur);
+      g.gain.setValueAtTime(vol, startT);
+      g.gain.exponentialRampToValueAtTime(0.001, startT + dur);
+      o.start(startT); o.stop(startT + dur);
+    };
+
+    switch (type) {
+      case 'hit':
+        slide(200, 60, now, 0.12, 'square', 0.3);
+        break;
+      case 'heavy_hit':
+        slide(150, 40, now, 0.18, 'sawtooth', 0.35);
+        tone(80, now, 0.2, 'sine', 0.2);
+        break;
+      case 'heal':
+        tone(523, now, 0.15, 'sine', 0.18);
+        tone(659, now + 0.1, 0.15, 'sine', 0.18);
+        tone(784, now + 0.2, 0.2, 'sine', 0.18);
+        break;
+      case 'shield':
+        slide(600, 900, now, 0.1, 'triangle', 0.2);
+        tone(750, now + 0.05, 0.2, 'triangle', 0.15);
+        break;
+      case 'buff':
+        tone(523, now, 0.1, 'sine', 0.15);
+        tone(659, now + 0.08, 0.1, 'sine', 0.15);
+        tone(784, now + 0.16, 0.15, 'sine', 0.15);
+        break;
+      case 'debuff':
+        slide(400, 180, now, 0.2, 'sawtooth', 0.2);
+        break;
+      case 'skill':
+        slide(400, 800, now, 0.08, 'sine', 0.2);
+        slide(800, 1200, now + 0.08, 0.1, 'sine', 0.2);
+        break;
+      case 'rps_win':
+        tone(660, now, 0.1, 'sine', 0.2);
+        tone(880, now + 0.08, 0.15, 'sine', 0.2);
+        break;
+      case 'rps_draw':
+        tone(440, now, 0.12, 'triangle', 0.15);
+        break;
+      case 'rps_lose':
+        slide(330, 220, now, 0.15, 'triangle', 0.18);
+        break;
+      case 'victory':
+        [523, 659, 784, 1047].forEach((f, i) => tone(f, now + i * 0.13, 0.25, 'sine', 0.25));
+        break;
+      case 'defeat':
+        [400, 300, 220, 150].forEach((f, i) => tone(f, now + i * 0.18, 0.25, 'sawtooth', 0.18));
+        break;
+      default: break;
+    }
+  } catch (_) {}
+};
+
+// ==========================================
 // 1. 基礎工具函數 (絕對安全全域區)
 // ==========================================
 const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
@@ -453,6 +541,7 @@ export default function App() {
     if ((ent.talents || []).includes('t12') && isDebuffStatus(type)) {
         if(logBuffer) logBuffer.push({ text: `[神佑] ${ent.char.name} 免疫了狀態！`, type: 'info' }); return;
     }
+    if (!isDeferred) playSound(isBuffStatus(type) ? 'buff' : 'debuff');
     const idx = ent.status.findIndex(s => s && s.type === type);
     if (idx >= 0) ent.status[idx] = { type, duration, value, hand, isDeferred };
     else ent.status.push({ type, duration, value, hand, isDeferred });
@@ -485,6 +574,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
   dmg = Math.max(0, dmg);
   let actualHpDamage = 0;
+
+  if (dmg > 0) playSound(dmg >= 100 ? 'heavy_hit' : 'hit');
 
   if (!ignoreShield && def.shield > 0) {
     if (def.shield >= dmg) {
@@ -730,6 +821,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const handlePlayerSkill = (num) => {
+    playSound('skill');
     let p = { ...player, status: [...player.status], buffs: {...player.buffs}, permaBuffs: {...player.permaBuffs} };
     let e = { ...enemy, status: [...enemy.status], buffs: {...enemy.buffs}, permaBuffs: {...enemy.permaBuffs} };
     let buf = [];
@@ -776,12 +868,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     buf.push({ text: `你出 【${RPS_CHOICES[choice].icon}】，對手出 【${RPS_CHOICES[aiChoice].icon}】`, type: 'info' });
 
     if (choice === aiChoice) {
+        playSound('rps_draw');
         const ce = (ent) => { if ((ent.status||[]).some(s => s && s.type === 'FATIGUE')) return 0; let b = (ent.talents||[]).includes('t5') ? 40 : 20; if ((ent.status||[]).some(s => s && s.type === 'EXCITE')) b = Math.floor(b * 1.5); return b; };
         p.energy = Math.min(100, p.energy + ce(p)); e.energy = Math.min(100, e.energy + ce(e));
         if ((p.talents||[]).includes('t5')) p.hp = Math.min(p.maxHp, p.hp + 15);
         buf.push({ text: '平手！雙方各退一步。', type: 'info' });
     } else {
-        const isPW = RPS_CHOICES[choice].beats === aiChoice; let atk = isPW ? p : e; let def = isPW ? e : p;
+        const isPW = RPS_CHOICES[choice].beats === aiChoice;
+        playSound(isPW ? 'rps_win' : 'rps_lose'); let atk = isPW ? p : e; let def = isPW ? e : p;
         if (def.buffs && def.buffs.energyOnLoss) { def.energy = Math.min(100, def.energy + 50); def.buffs.energyOnLoss = false; }
         let mult = getElementMultiplier(atk.char.element.id, def.char.element.id);
         
@@ -925,8 +1019,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const isAdvanced = gameMode === 'advanced_campaign';
     const maxStage = isAdvanced ? 4 : 2;
 
-    if (target === 'player') { saveProgress(np); setGameState('game_over'); setWinner('enemy'); } 
-    else {
+    if (target === 'player') { playSound('defeat'); saveProgress(np); setGameState('game_over'); setWinner('enemy'); }
+    else { playSound('victory');
         if (!enemy.char.isUncapturable && unlocks.includes('tamer_kert') && !captured.includes(enemy.char.id) && !enemy.char.baseId && !isT0Char(enemy.char)) { 
             np.captured = [...captured, enemy.char.id]; setNewlyCaptured(enemy.char); 
         }
