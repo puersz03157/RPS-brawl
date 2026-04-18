@@ -84,6 +84,9 @@ const playSound = (type) => {
       case 'defeat':
         [400, 300, 220, 150].forEach((f, i) => tone(f, now + i * 0.18, 0.25, 'sawtooth', 0.18));
         break;
+      case 'click':
+        tone(1200, now, 0.04, 'sine', 0.08);
+        break;
       case 'gacha_pull':
         slide(300, 800, now, 0.15, 'sine', 0.2);
         slide(800, 1200, now + 0.15, 0.2, 'sine', 0.2);
@@ -476,6 +479,12 @@ export default function App() {
 
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
   const [enemy, setEnemy] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
+
+  useEffect(() => {
+    const onBtnClick = (e) => { if (e.target.closest('button')) playSound('click'); };
+    document.addEventListener('click', onBtnClick);
+    return () => document.removeEventListener('click', onBtnClick);
+  }, []);
 
   useEffect(() => {
     try {
