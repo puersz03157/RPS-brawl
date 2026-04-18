@@ -84,6 +84,19 @@ const playSound = (type) => {
       case 'defeat':
         [400, 300, 220, 150].forEach((f, i) => tone(f, now + i * 0.18, 0.25, 'sawtooth', 0.18));
         break;
+      case 'gacha_pull':
+        slide(300, 800, now, 0.15, 'sine', 0.2);
+        slide(800, 1200, now + 0.15, 0.2, 'sine', 0.2);
+        tone(1000, now + 0.35, 0.15, 'triangle', 0.15);
+        break;
+      case 'gacha_normal':
+        tone(440, now, 0.1, 'sine', 0.2);
+        tone(550, now + 0.08, 0.15, 'sine', 0.2);
+        break;
+      case 'gacha_ssr':
+        [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, now + i * 0.1, 0.25, 'sine', 0.28));
+        slide(1319, 2000, now + 0.5, 0.3, 'triangle', 0.2);
+        break;
       default: break;
     }
   } catch (_) {}
@@ -2244,6 +2257,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           }
           saveProgress(np);
           setGachaResult(results);
+          playSound('gacha_pull');
+          const hasSSR = results.some(r => r.rarity === 'SSR');
+          setTimeout(() => playSound(hasSSR ? 'gacha_ssr' : 'gacha_normal'), 400);
       };
 
       return (
