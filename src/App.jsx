@@ -1,13 +1,10 @@
-﻿```react
 import React, { useState, useEffect, useRef } from 'react';
 import { Zap, Sparkles, BookOpen, Home, Gamepad2, Coffee, MessageCircle, ArrowLeft, ShoppingCart, Star, Camera, X, Moon, Heart, HelpCircle, Info, AlertTriangle, Skull, ChevronLeft, ChevronRight, Lock, Trophy, CheckCircle } from 'lucide-react';
-
 
 // ==========================================
 // 1. 基礎工具函數 (絕對安全全域區)
 // ==========================================
 const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
-
 
 const getRandomTalents = (budget, availableTalents) => {
   let talents = [];
@@ -20,12 +17,10 @@ const getRandomTalents = (budget, availableTalents) => {
   return talents;
 };
 
-
 const getRandomHand = () => {
   const keys = ['ROCK', 'PAPER', 'SCISSORS'];
   return keys[Math.floor(Math.random() * keys.length)];
 };
-
 
 const getElementMultiplier = (atkElem, defElem) => {
   if (atkElem === 'wood' && defElem === 'water') return 1.5;
@@ -39,16 +34,13 @@ const getElementMultiplier = (atkElem, defElem) => {
   return 1.0;
 };
 
-
 const isBuffStatus = (type) => type && ['ATK_UP', 'DEF_UP', 'REGEN', 'EVADE', 'EXCITE'].includes(type);
 const isDebuffStatus = (type) => type && ['BURN', 'PARASITE', 'FREEZE', 'DAZZLE', 'SILENCE', 'ATK_DOWN', 'DEF_DOWN', 'VULNERABLE', 'FATIGUE', 'VIP'].includes(type);
-
 
 const getStatusValueSum = (ent, type) => {
     if (!ent || !ent.status) return 0;
     return ent.status.filter(s => s && s.type === type).reduce((acc, curr) => acc + (curr.value || 0), 0);
 };
-
 
 // ==========================================
 // 2. 遊戲資料庫
@@ -61,13 +53,11 @@ const ELEMENTS = {
   DARK: { id: 'dark', name: '暗', color: 'text-purple-500', bg: 'bg-purple-100', border: 'border-purple-500' }
 };
 
-
 const RPS_CHOICES = {
   ROCK: { id: 'ROCK', icon: '✊', name: '石頭', beats: 'SCISSORS' },
   PAPER: { id: 'PAPER', icon: '🖐️', name: '布', beats: 'ROCK' },
   SCISSORS: { id: 'SCISSORS', icon: '✌️', name: '剪刀', beats: 'PAPER' }
 };
-
 
 const CHARACTERS = [
   { id: 'bear', name: '熊吉', icon: '🐻', title: '森林守護者', element: ELEMENTS.WOOD, image: 'avatar_bear.png', prefAction: 'snack', stats: { hp: 650, maxHp: 650, atk: 40, def: 30 }, desc: '依賴增益強化自身的爆發型戰士。', lore: '原本是守護森林神木的巨熊獸人。大星晶碎裂導致森林枯萎，為了解決異變而踏上旅程。超級喜歡蜂蜜，肚子餓的時候會變得暴躁。', skill1: { name: '熊吼之怒', cost: 20, desc: '自身隨機獲得一種增益：攻擊提升、防禦提升或再生 (3回合)。' }, skill2: { name: '魚竿甩擊', cost: 80, desc: '消耗身上所有增益，基礎 50 傷害 (每層增益+40)，並施加 🌿[寄生] 3回合。' } },
@@ -79,11 +69,9 @@ const CHARACTERS = [
   { id: 'aldous', name: '奧爾德斯', icon: '🦉', title: '大長老', element: ELEMENTS.DARK, image: 'avatar_aldous.png', prefAction: 'chat', stats: { hp: 680, maxHp: 680, atk: 80, def: 30 }, desc: '擁有看破機制的極限單體爆發力。', lore: '黑羽公會大長老，實力深不可測的貓頭鷹獸人。雖然年事已高，但揮舞天羽斬的速度依舊無人能及。戰鬥時周身環繞睿智之風。', skill1: { name: '長老的威壓', cost: 40, desc: '施加 ❄️[封印] 1回、🤐[沉默] 2回與 📉[降防] 3回。' }, skill2: { name: '秘劍・天羽斬', cost: 60, desc: '無視護盾 80 傷。若對手處於沉默或封印，傷害變為 4 倍(320)並吸血 50%。' } }
 ];
 
-
 const HIDDEN_CHARACTER = { 
   id: 'xiangxiang', name: '庠庠', icon: '🐯', title: '慵懶的白虎', element: ELEMENTS.LIGHT, isEmoji: false, image: 'avatar_xiangxiang.png', stats: { hp: 700, maxHp: 700, atk: 60, def: 35 }, prefAction: 'snack', desc: '全圖鑑收集獎勵。擁有強大的防禦與拘束力。', lore: '傳說中負責維持大陸夜間秩序的白虎神獸。因為大星晶碎裂導致魔物橫行，被迫瘋狂加班巡夜，導致他現在極度嗜睡。被柯特的訓獸之力與特製宵夜喚醒而加入。', skill1: { name: '軟萌肚肚', cost: 40, desc: '展現充滿彈性的肚子，獲得 50 護盾，並使對手 💫[強制] 下回出拳。' }, skill2: { name: '致命擁抱', cost: 90, desc: '無視護盾造成 100 傷害。若施放時有護盾，額外加 50 傷並 ❄️[封印]。' } 
 };
-
 
 const VARIANTS = [
   { id: 'newyear_bear', baseId: 'bear', name: '新年熊吉', icon: '🧧', title: '人人有魚', element: ELEMENTS.WOOD, isEmoji: false, image: 'avatar_newyear_bear.png', stats: { hp: 700, maxHp: 700, atk: 35, def: 35 }, desc: '分享祝福的森林大胃王。', lore: '換上喜氣洋洋的紅色和服，拿著釣竿到處分享漁獲與祝福的熊吉。', skill1: { name: '新春撒網', cost: 30, desc: '自身獲得 ⚡[亢奮] 3回合，對手陷入 💤[疲憊] 3回合。' }, skill2: { name: '年年有餘', cost: 80, desc: '消耗所有能量造成 80 基礎傷害。自身恢復 100 HP與80盾，對手僅恢復 30 HP。' }, unlockHint: '收集 50 個碎片於圖鑑合成解鎖。' },
@@ -94,7 +82,6 @@ const VARIANTS = [
   { id: 'christmas_xiangxiang', baseId: 'xiangxiang', name: '聖誕節庠庠', icon: '🎁', title: '最棒的禮物', element: ELEMENTS.LIGHT, isEmoji: false, image: 'avatar_christmas_xiangxiang.png', stats: { hp: 850, maxHp: 850, atk: 70, def: 45 }, desc: '全圖鑑收集與異裝齊全的終極型態。', lore: '被柯特套上麋鹿裝的白虎。原本想在聖誕節好好補眠，卻因為收到太多禮物而難得精神百倍。', skill1: { name: '聖誕大禮包', cost: 40, desc: '隨機抽取三種增益狀態賦予自身(3回合)。' }, skill2: { name: '聖夜沉眠', cost: 90, desc: '造成100點光屬性傷害，並強制施加眩目/強制。' }, unlockHint: '收集齊其餘五件異裝後自動解鎖。' }
 ];
 
-
 const NORMAL_MONSTERS = [
   { id: 'm1', name: '草原史萊姆', title: '黏糊糊的', element: ELEMENTS.WOOD, isEmoji: false, icon: '🍄', image: 'monster_slime.png', prefHand: 'PAPER', stats: { hp: 250, maxHp: 250, atk: 25, def: 5 }, lore: '最常見的低級魔物，喜歡寄生在別人身上吸取養分。被收服後意外地適合拿來當抱枕。', skill1: { name: '寄生孢子', cost: 30, desc: '造成 10 傷害並施加 🌿[寄生] 2回合。' }, skill2: { name: '光合作用', cost: 60, desc: '回復自己 60 點生命值。' } },
   { id: 'm2', name: '巨石蟹', title: '硬邦邦的', element: ELEMENTS.WATER, isEmoji: false, icon: '🦀', image: 'monster_crab.png', prefHand: 'SCISSORS', stats: { hp: 400, maxHp: 400, atk: 20, def: 25 }, lore: '全身覆蓋堅硬岩石的螃蟹，防禦力驚人。生氣時會吐出冰封泡泡。', skill1: { name: '硬化', cost: 30, desc: '獲得 50 點護盾。' }, skill2: { name: '泡泡光線', cost: 60, desc: '造成 40 傷害並施加 ❄️[封印] 1回合。' } },
@@ -102,7 +89,6 @@ const NORMAL_MONSTERS = [
   { id: 'm4', name: '閃耀精靈', title: '刺眼的', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🧚', image: 'monster_fairy.png', prefHand: 'PAPER', stats: { hp: 280, maxHp: 280, atk: 35, def: 15 }, lore: '被光之星晶過度影響而失去理智的精靈，會發出強光致盲對手。', skill1: { name: '致盲', cost: 40, desc: '施加 💫[眩目] 1回合。' }, skill2: { name: '神聖新星', cost: 70, desc: '造成 40 點傷害並回復自身 40 血。' } },
   { id: 'm5', name: '影魔眼', title: '陰森森的', element: ELEMENTS.DARK, isEmoji: false, icon: '👁️', image: 'monster_eye.png', prefHand: 'ROCK', stats: { hp: 220, maxHp: 220, atk: 55, def: 5 }, lore: '漂浮在空中的巨大眼球，凝視會讓人陷入恐懼與沉默。', skill1: { name: '恐懼凝視', cost: 40, desc: '施加 🤐[沉默] 2回合。' }, skill2: { name: '虛空射線', cost: 60, desc: '造成 70 點高額傷害。' } }
 ];
-
 
 const BOSS_MONSTERS = [
   { id: 'b1', name: '災厄黑龍', title: '深淵霸主', element: ELEMENTS.DARK, isEmoji: false, icon: '🐉', image: 'boss_dragon.png', prefHand: 'ROCK', stats: { hp: 800, maxHp: 800, atk: 55, def: 25 }, lore: '盤踞在廢棄古城的巨龍，擁有毀滅性的吐息，被認為是大星晶碎裂的罪魁禍首之一。', skill1: { name: '龍威', cost: 40, desc: '扣除 20 能量並施加 🤐[沉默] 1回合。' }, skill2: { name: '毀滅吐息', cost: 90, desc: '無視護盾造成 150 點傷害。' } },
@@ -112,19 +98,16 @@ const BOSS_MONSTERS = [
   { id: 'b5', name: '冰霜巨龍', title: '絕對零度', element: ELEMENTS.WATER, isEmoji: false, icon: '❄️', image: 'boss_icedragon.png', prefHand: 'SCISSORS', stats: { hp: 700, maxHp: 700, atk: 50, def: 40 }, lore: '沉睡在冰川下的古老存在，其吐息能帶來絕對零度的冰河時代。', skill1: { name: '冰霜裝甲', cost: 40, desc: '獲得高達 80 點的護盾。' }, skill2: { name: '冰河時代', cost: 90, desc: '造成 100 傷害，清空能量並施加 ❄️[封印] 1回合。' } }
 ];
 
-
 const ADVANCED_MONSTERS = [
   { id: 'am1', name: '猩紅史萊姆', title: '沸騰的', element: ELEMENTS.FIRE, isEmoji: false, icon: '🩸', image: 'adv_slime.png', prefHand: 'ROCK', stats: { hp: 600, maxHp: 600, atk: 55, def: 20 }, lore: '吸收了過量火屬性星晶的變異體。', skill1: { name: '強酸腐蝕', cost: 40, desc: '造成20傷，施加防禦下降與易傷(3回)。' }, skill2: { name: '自爆', cost: 90, desc: '造成120點無視護盾的真實傷害。' }, isUncapturable: true },
   { id: 'am2', name: '極光護衛蟹', title: '堅不可摧', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🛡️', image: 'adv_crab.png', prefHand: 'PAPER', stats: { hp: 800, maxHp: 800, atk: 40, def: 50 }, lore: '外殼已經完全星晶化的變異蟹。', skill1: { name: '星晶裝甲', cost: 30, desc: '獲得100點護盾。' }, skill2: { name: '極光制裁', cost: 80, desc: '造成80傷並施加眩目(1回)。' }, isUncapturable: true },
   { id: 'am3', name: '深淵監視者', title: '凝視者', element: ELEMENTS.DARK, isEmoji: false, icon: '🧿', image: 'adv_eye.png', prefHand: 'SCISSORS', stats: { hp: 550, maxHp: 550, atk: 80, def: 15 }, lore: '來自更深層的恐懼。', skill1: { name: '精神污染', cost: 40, desc: '施加沉默(2回)與疲憊(3回)。' }, skill2: { name: '湮滅射線', cost: 70, desc: '造成100點高額傷害。' }, isUncapturable: true }
 ];
 
-
 const ADVANCED_BOSSES = [
   { id: 'ab1', name: '混沌縫合怪', title: '人造惡意', element: ELEMENTS.WOOD, isEmoji: false, icon: '🧟', image: 'adv_boss_amalgam.png', prefHand: 'ROCK', stats: { hp: 1500, maxHp: 1500, atk: 75, def: 40 }, lore: '不知名法師拼湊出的恐怖怪物。', skill1: { name: '劇毒孢子', cost: 40, desc: '造成40傷並施加寄生與燃燒(3回)。' }, skill2: { name: '大地粉碎', cost: 100, desc: '造成200點傷害，並施加強制(1回)。' }, isUncapturable: true },
   { id: 'ab2', name: '星曜古龍', title: '星晶化身', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🐲', image: 'adv_boss_dragon.png', prefHand: 'PAPER', stats: { hp: 2000, maxHp: 2000, atk: 90, def: 50 }, lore: '完全吞噬了大星晶核心的遠古巨龍，難以名狀的災厄。', skill1: { name: '星辰庇護', cost: 50, desc: '獲得150點護盾與再生(3回)。' }, skill2: { name: '星爆氣流', cost: 120, desc: '無視護盾造成250點真實傷害。' }, isUncapturable: true }
 ];
-
 
 const ALL_TALENTS = [
   { id: 't1', name: '活力', cost: 1, desc: '最大生命值 +100', icon: '❤️' },
@@ -153,7 +136,6 @@ const ALL_TALENTS = [
   { id: 't_christmas_xiangxiang', name: '最棒的禮物', cost: 5, desc: '每 3 回合自動恢復 10% 最大生命值並獲得 20 能量。(聖誕庠庠專屬)', icon: '🎄', req: 'cost5', exclusiveTo: 'christmas_xiangxiang' }
 ];
 
-
 const REWARD_POOL = [
   { id: 'r1', name: '生命湧動', icon: '❤️', desc: '最大生命值 +150，並回復等量生命。', apply: (p, progRef) => { p.maxHp += 150; p.hp += 150; return p; } },
   { id: 'r2', name: '夜行者貓飯', icon: '🍗', desc: '攻擊力永久 +25。', apply: (p, progRef) => { p.atk += 25; return p; } },
@@ -162,7 +144,6 @@ const REWARD_POOL = [
   { id: 'r5', name: '能量充沛', icon: '⚡', desc: '每次戰鬥開始時，額外獲得 30 點能量。', apply: (p, progRef) => { p.permaBuffs = {...p.permaBuffs, startEnergy: (p.permaBuffs?.startEnergy || 0) + 30}; return p; } },
   { id: 'r6', name: '星晶餽贈', icon: '💎', desc: '立刻獲得 30 顆星晶。', apply: (p, progRef) => { if(progRef) progRef.crystals += 30; return p; } }
 ];
-
 
 const STATUS_DOCS = [
     { name: '攻擊提升/下降', effect: '攻擊力增加/減少 20 點。', icon: '⚔️', color: 'text-orange-400' },
@@ -180,7 +161,6 @@ const STATUS_DOCS = [
     { name: '沉默', effect: '無法使用戰技與奧義。', icon: '🤐', color: 'text-purple-400' }
 ];
 
-
 // ==========================================
 // 礦坑系統設定
 // ==========================================
@@ -192,7 +172,6 @@ const MINE_LEVELS = [
   { lv: 5, name: '星晶核心礦', baseRate: 30, capBase: 200, slots: 4, upgradeCost: null },
 ];
 
-
 const MINE_CHAR_BONUS = {
   bear:  { type: 'rate',     value: 0.25, desc: '碎片產出 +25%（賣力挖礦）' },
   wolf:  { type: 'cooldown', value: 0.15, desc: '累積速度 +15%（效率型）' },
@@ -200,7 +179,6 @@ const MINE_CHAR_BONUS = {
   human: { type: 'cap',      value: 0.20, desc: '碎片上限 +20%（爆發型）' },
   elf:   { type: 'combo',    rate: 0.15, cap: 0.10, desc: '碎片產出 +15% 且上限 +10%（複合型）' },
 };
-
 
 // ==========================================
 // 烹飪系統設定
@@ -213,7 +191,6 @@ const INGREDIENTS = [
   { id: 'herb', name: '翠葉靈草', icon: '🌿', cost: 20 },
   { id: 'water',name: '元素靈水', icon: '💧', cost: 20 },
 ];
-
 
 const RECIPES = [
   {
@@ -254,9 +231,7 @@ const RECIPES = [
   },
 ];
 
-
 const COOKING_PREF_BONUS = 1.2; // 偏好料理效果 +20%
-
 
 const GUIDE_TERMS = [
     { term: '星晶 (Star Crystal)', desc: '核心貨幣，用於購買天賦與特殊型態。' },
@@ -264,7 +239,6 @@ const GUIDE_TERMS = [
     { term: '專精等級', desc: '角色通關戰役累計，滿 3 星可解鎖專屬 CG。' },
     { term: '友誼之巔', desc: '任意雙人羈絆達滿級 (20點) 時解鎖的特殊雙人回憶。' }
 ];
-
 
 // 【V2.6 成就系統定義】
 const ACHIEVEMENTS = [
@@ -280,7 +254,6 @@ const ACHIEVEMENTS = [
     { id: 'a_aff_3', name: '柯特的宵夜常客', desc: '解鎖 3 張雙人羈絆滿級CG', target: 3, reward: 600, getProgress: (p) => Object.values(p.affection || {}).filter(v => v >= 20).length },
 ];
 
-
 // ==========================================
 // 3. 遊戲機制輔助函數
 // ==========================================
@@ -291,7 +264,6 @@ const isVariantChar = (c) => VARIANTS.some(v => v.id === c?.id);
 const isFullGallery = (capturedArr) => (capturedArr || []).length >= (NORMAL_MONSTERS.length + BOSS_MONSTERS.length);
 const getActualCost = (cost, hasT8) => hasT8 ? Math.max(0, cost - 15) : cost;
 
-
 const getBaseTalents = (char) => {
     if (!char) return 3;
     if (isT0Char(char)) return 5;
@@ -299,7 +271,6 @@ const getBaseTalents = (char) => {
     if (NORMAL_MONSTERS.some(m => m.id === char.id) || ADVANCED_MONSTERS.some(m => m.id === char.id)) return 4;
     return 3;
 };
-
 
 const getStatusName = (type) => {
     const map = { 'BURN': '燃燒', 'PARASITE': '寄生', 'FREEZE': '封印', 'DAZZLE': '強制', 'SILENCE': '沉默', 'ATK_UP': '攻擊提升', 'DEF_UP': '防禦提升', 'REGEN': '再生', 'ATK_DOWN': '攻擊下降', 'DEF_DOWN': '防禦下降', 'VULNERABLE': '易傷', 'EVADE': '迴避', 'FATIGUE': '疲憊', 'EXCITE': '亢奮', 'VIP': 'VIP' };
@@ -310,12 +281,10 @@ const getStatusIcon = (type) => {
     return map[type] || '✨';
 };
 
-
 const checkChristmasUnlock = (unlocksArray) => {
     const req = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat'];
     return req.every(id => unlocksArray.includes(id)) && !unlocksArray.includes('christmas_xiangxiang');
 };
-
 
 // ==========================================
 // 4. React 介面組件
@@ -332,11 +301,8 @@ const SpriteAvatar = ({ char, size='w-16 h-16', grayscale=false }) => {
         </div>
     );
 };
-
-
 const NpcDialogue = ({ npcName, npcImage, npcImageFallback, dialogues }) => {
     const [idx, setIdx] = useState(0);
-
 
     const handleChat = () => {
         if (dialogues.length <= 1) return;
@@ -346,7 +312,6 @@ const NpcDialogue = ({ npcName, npcImage, npcImageFallback, dialogues }) => {
         } while (nextIdx === idx);
         setIdx(nextIdx);
     };
-
 
     return (
         <div className="flex flex-col md:flex-row gap-5 items-center bg-stone-800/60 p-6 rounded-3xl border border-stone-700 mb-8 shadow-xl max-w-4xl mx-auto">
@@ -363,7 +328,6 @@ const NpcDialogue = ({ npcName, npcImage, npcImageFallback, dialogues }) => {
                 </span>
             </div>
 
-
             <div className="flex-1 w-full bg-stone-900 p-6 rounded-2xl border border-stone-700 relative text-sm text-stone-300 min-h-[110px] flex items-center shadow-inner leading-relaxed">
                 <div className="italic text-base">「{dialogues[idx]}」</div>
                 <button
@@ -376,7 +340,6 @@ const NpcDialogue = ({ npcName, npcImage, npcImageFallback, dialogues }) => {
         </div>
     );
 };
-
 
 export default function App() {
   const [gameState, setGameState] = useState('intro'); 
@@ -406,15 +369,12 @@ export default function App() {
   const [shopTab, setShopTab] = useState('crystal');
   const [gachaPreviewIdx, setGachaPreviewIdx] = useState(0);
 
-
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
   const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null });
   const [isLoaded, setIsLoaded] = useState(false);
 
-
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
   const [enemy, setEnemy] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
-
 
   useEffect(() => {
     try {
@@ -437,31 +397,25 @@ export default function App() {
     setIsLoaded(true);
   }, []);
 
-
   const saveProgress = (np) => {
     setProgress(np);
     try { localStorage.setItem('starCrystalTales_V38_Stable', JSON.stringify(np)); } catch(e) {}
   };
 
-
   useEffect(() => { if (logsEndRef.current) logsEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
-
 
   const showToastMsg = (msg) => {
       setToast(msg);
       setTimeout(() => setToast(null), 3000);
   };
 
-
   if (!isLoaded) return <div className="min-h-screen bg-stone-950 flex items-center justify-center text-stone-500 font-bold text-xl">載入艾歐蘭斯大陸中...</div>;
-
 
   const unlocks = Array.isArray(progress.unlocks) ? progress.unlocks : [];
   const captured = Array.isArray(progress.captured) ? progress.captured : [];
   const encountered = Array.isArray(progress.encountered) ? progress.encountered : [];
   const mastery = progress.mastery || {};
   const affection = progress.affection || {};
-
 
   const selectMode = (mode) => { 
       setGameMode(mode); 
@@ -470,7 +424,6 @@ export default function App() {
       setSelectedTalentIds([]); 
       setGameState('select_char'); 
   };
-
 
   const getAvailableTalents = () => ALL_TALENTS.filter(t => {
       if (t.req && !unlocks.includes(t.req)) return false;
@@ -481,7 +434,6 @@ export default function App() {
       }
       return true;
   });
-
 
   const toggleTalent = (tid) => {
     setSelectedTalentIds(prev => {
@@ -496,7 +448,6 @@ export default function App() {
     });
   };
 
-
   const applyStatus = (ent, type, duration, value = 0, hand = null, logBuffer, isDeferred = false) => {
     if (!ent.status) ent.status = [];
     if ((ent.talents || []).includes('t12') && isDebuffStatus(type)) {
@@ -507,7 +458,6 @@ export default function App() {
     else ent.status.push({ type, duration, value, hand, isDeferred });
   };
 
-
 const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   let dmg = base;
   
@@ -517,7 +467,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   if ((def.talents || []).includes('t_halloween_cat') && (atk.status || []).some(s => isDebuffStatus(s?.type))) {
       dmg = Math.floor(dmg * 0.8);
   }
-
 
   const evadeIdx = (def.status || []).findIndex(s => s && s.type === 'EVADE');
   if (evadeIdx !== -1) {
@@ -532,13 +481,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       dmg = Math.floor(dmg * 1.3);
   }
 
-
   if ((def.talents || []).includes('t12')) dmg = Math.floor(dmg * 0.85);
-
 
   dmg = Math.max(0, dmg);
   let actualHpDamage = 0;
-
 
   if (!ignoreShield && def.shield > 0) {
     if (def.shield >= dmg) {
@@ -555,7 +501,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           logBuffer.push({ text: `💝 [苦甜回憶] 護盾破裂！恢復 20 點能量並提升攻擊！`, type: 'info' });
       }
 
-
       def.hp -= remainingDmg;
       actualHpDamage = remainingDmg;
       logBuffer.push({ text: `${def.char?.name || '對手'} 受到 ${remainingDmg} 點直接傷害！`, type: 'damage' });
@@ -568,12 +513,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   }
   if (def.hp < 0) def.hp = 0;
 
-
   if (dmg > 0 && (def.status || []).some(s => s && s.type === 'VIP')) {
       def.energy = Math.max(0, def.energy - 5);
       logBuffer.push({ text: `💳 [VIP] 強制扣除了 ${def.char?.name || '對手'} 5 點能量！`, type: 'info' });
   }
-
 
   if ((atk.talents || []).includes('t7') && actualHpDamage > 0) {
     const healAmt = Math.max(1, Math.floor(actualHpDamage * 0.15));
@@ -581,10 +524,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     logBuffer.push({ text: `[嗜血] ${atk.char?.name || '攻擊方'} 吸收了 ${healAmt} 點生命！`, type: 'heal' });
   }
 
-
   return dmg;
 };
-
 
   const executeSkill = (atk, def, num, buf, isPlayer) => {
     const skill = num === 1 ? atk.char.skill1 : atk.char.skill2;
@@ -594,7 +535,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     let dmgDealt = 0; const id = atk.char.id;
     const defDeferred = !isPlayer; 
     const atkDeferred = false;
-
 
     if (id === 'bear') {
         if (num === 1) applyStatus(atk, ['ATK_UP', 'DEF_UP', 'REGEN'][Math.floor(Math.random()*3)], 3, 20, null, buf, atkDeferred);
@@ -739,7 +679,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     }
   };
 
-
   const processEoR = (ent, other, buf) => {
     let next = [];
     if ((ent.talents||[]).includes('t_wolf') && ent.shield > 0) { ent.hp = Math.min(ent.maxHp, ent.hp + 25); buf.push({text: `[極寒護體] 恢復 25 HP！`, type: 'heal'}); }
@@ -750,12 +689,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         buf.push({text: `[睿智之風] 恢復 5 點能量！`, type: 'info'});
     }
 
-
     if ((ent.talents||[]).includes('t_harvest_elf') && (ent.status||[]).some(s => s?.type === 'REGEN')) {
         ent.energy = Math.min(100, ent.energy + 5);
         buf.push({text: `🌽 [豐饒之角] 再生觸發，恢復 5 能量！`, type: 'info'});
     }
-
 
     if ((ent.talents||[]).includes('t_halloween_cat')) {
         const dCount = (other.status || []).filter(s => s && isDebuffStatus(s.type)).length;
@@ -766,7 +703,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         }
     }
 
-
     if ((ent.talents||[]).includes('t_christmas_xiangxiang')) {
         ent.permaBuffs.turnCount = (ent.permaBuffs.turnCount || 0) + 1;
         if (ent.permaBuffs.turnCount % 3 === 0) {
@@ -776,7 +712,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             buf.push({text: `🎁 [最棒的禮物] 恢復 ${heal} 點生命與 20 點能量！`, type: 'heal'});
         }
     }
-
 
     for (let s of (ent.status || [])) {
         if (!s) continue;
@@ -794,7 +729,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     ent.status = next;
   };
 
-
   const handlePlayerSkill = (num) => {
     let p = { ...player, status: [...player.status], buffs: {...player.buffs}, permaBuffs: {...player.permaBuffs} };
     let e = { ...enemy, status: [...enemy.status], buffs: {...enemy.buffs}, permaBuffs: {...enemy.permaBuffs} };
@@ -804,11 +738,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (p.hp <= 0) handleDeath('player'); else if (e.hp <= 0) handleDeath('enemy');
   };
 
-
   const playRound = (choice) => {
     if (gameState !== 'battle') return;
     let p = JSON.parse(JSON.stringify(player)); let e = JSON.parse(JSON.stringify(enemy)); let buf = [];
-
 
     if (!(e.status||[]).some(s => s && s.type === 'SILENCE')) {
         const c2 = getActualCost(e.char.skill2.cost, (e.talents||[]).includes('t8'));
@@ -817,19 +749,15 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         else if (e.energy >= c1 && Math.random() > 0.5) executeSkill(e, p, 1, buf, false);
     }
 
-
     const getAiHand = () => {
         const eD = (e.status||[]).find(s => s && s.type === 'DAZZLE' && !s.isDeferred);
         if (eD && RPS_CHOICES[eD.hand]) return eD.hand;
-
 
         let available = ['ROCK', 'PAPER', 'SCISSORS'];
         const eF = (e.status||[]).find(s => s && s.type === 'FREEZE' && !s.isDeferred);
         if (eF) available = available.filter(k => k !== eF.hand);
 
-
         if (available.length === 0) return 'ROCK';
-
 
         if (e.char.prefHand && available.includes(e.char.prefHand)) {
             const roll = Math.random();
@@ -843,12 +771,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         return available[Math.floor(Math.random() * available.length)];
     };
 
-
     let aiChoice = getAiHand();
 
-
     buf.push({ text: `你出 【${RPS_CHOICES[choice].icon}】，對手出 【${RPS_CHOICES[aiChoice].icon}】`, type: 'info' });
-
 
     if (choice === aiChoice) {
         const ce = (ent) => { if ((ent.status||[]).some(s => s && s.type === 'FATIGUE')) return 0; let b = (ent.talents||[]).includes('t5') ? 40 : 20; if ((ent.status||[]).some(s => s && s.type === 'EXCITE')) b = Math.floor(b * 1.5); return b; };
@@ -869,9 +794,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             buf.push({text: `🩸 [狂化血脈] 攻擊提升，無視部分防禦！`, type: 'info'});
         }
 
-
         if ((atk.talents||[]).includes('t6') && atk.hp < atk.maxHp * 0.3) atkVal = Math.floor(atkVal * 1.5);
-
 
         let d = Math.max(10, Math.floor(atkVal * mult - defVal));
         
@@ -889,11 +812,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (p.hp <= 0) handleDeath('player'); else if (e.hp <= 0) handleDeath('enemy');
   };
 
-
   const startBattleMode = (selectedChar, tIds, specificEnemy = null) => {
     try {
         if (!selectedChar) throw new Error("未選擇出戰角色！");
-
 
         let pMax = selectedChar.stats.maxHp + (tIds.includes('t1') ? 100 : 0);
         let initE = tIds.includes('t3') ? 25 : 0; if (tIds.some(t=>['t9','t10','t11'].includes(t))) initE += 20;
@@ -903,7 +824,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         
         if (selectedChar.id === 'aldous') initE = Math.min(100, initE + 50);
 
-
         let pObj = { 
             char: selectedChar, talents: tIds, hp: pMax, maxHp: pMax, 
             atk: selectedChar.stats.atk + (tIds.includes('t2') ? 10 : 0), 
@@ -912,7 +832,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             permaBuffs: { startEnergy: 0, startShield: 0, seeds: pSeeds, coins: 0, turnCount: 0 }, status: [] 
         };
         if (tIds.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); pObj.status.push({ type: pool[0], duration: 3, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 3, value: 20, isNew: false, isDeferred: false }); }
-
 
         // 套用料理 Buff
         let mealLog = null;
@@ -961,7 +880,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         
         if (!eChar) throw new Error("敵方魔物生成失敗！");
 
-
         let validETalents = ALL_TALENTS.filter(t => {
             if (t.req && !unlocks.includes(t.req)) return false;
             if (t.exclusiveTo) {
@@ -976,9 +894,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         let eSeeds = eT.includes('t_elf') ? 2 : 0;
         if (eT.includes('t_harvest_elf')) eSeeds += 2;
 
-
         if (eChar.id === 'aldous') eInitE = Math.min(100, eInitE + 50);
-
 
         let eObj = { 
             char: eChar, talents: eT, hp: eMax, maxHp: eMax, 
@@ -989,17 +905,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         };
         if (eT.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); eObj.status.push({ type: pool[0], duration: 3, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 3, value: 20, isNew: false, isDeferred: false }); }
 
-
         let np = { ...progress };
         if (!encountered.includes(eChar.id)) { np.encountered = [...encountered, eChar.id]; }
         if (progress.pendingMeal) { np.pendingMeal = null; }
         saveProgress(np);
 
-
         const initLogs = [{ text: `夜晚的艾歐蘭斯充滿危險，戰鬥開始！`, type: 'system' }];
         if (mealLog) initLogs.push({ text: mealLog, type: 'info' });
         setPlayer(pObj); setEnemy(eObj); setNewlyCaptured(null); setLogs(initLogs); setGameState('battle');
-
 
     } catch (e) {
         console.error(e);
@@ -1007,12 +920,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     }
   };
 
-
   const handleDeath = (target) => {
     let np = { ...progress };
     const isAdvanced = gameMode === 'advanced_campaign';
     const maxStage = isAdvanced ? 4 : 2;
-
 
     if (target === 'player') { saveProgress(np); setGameState('game_over'); setWinner('enemy'); } 
     else {
@@ -1023,7 +934,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         np.ap = (np.ap || 0) + 1;
         // 【V2.6 成就追蹤】戰鬥勝利次數
         np.battlesWon = (np.battlesWon || 0) + 1;
-
 
         if (gameMode.includes('campaign') && campaignStage === maxStage) {
             const bid = player.char.baseId || player.char.id;
@@ -1040,7 +950,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         else { setGameState('game_over'); setWinner('player'); }
     }
   };
-
 
   const handleReward = (r) => {
     let prog = { ...progress }; 
@@ -1077,7 +986,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (eT.includes('t_harvest_elf')) eSeeds += 2;
     if (ne.id === 'aldous') eInitE = Math.min(100, eInitE + 50);
 
-
     let eObj = { 
         char: ne, 
         talents: eT, 
@@ -1097,7 +1005,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     setLogs([{ text: `深淵的 ${ne.name} 出現了！`, type: 'system' }]); 
     setGameState('battle');
   };
-
 
   const handleHomeActivity = (topic) => {
     if (!homeHost || !homeGuest) return;
@@ -1122,7 +1029,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     setActiveDialogue({ host: dialogs[topic].hostText, guest: dialogs[topic].guestReplies[gId] || dialogs[topic].guestReplies['default'] });
   };
 
-
   const renderBadges = (ent) => {
     const bgs = (ent.status||[]).filter(s=>s).map((s,i) => {
         let extra = '';
@@ -1136,13 +1042,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     return bgs;
   };
 
-
   const synthesizeChar = (id) => {
     let np = { ...progress };
     np.charFragments = { ...np.charFragments };
     const reqFrags = 50;
     const currentFrags = np.charFragments[id] || 0;
-
 
     if (currentFrags >= reqFrags) {
         const excess = currentFrags - reqFrags;
@@ -1155,12 +1059,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             if (isT0Char({id})) ratio = 50;
             else if (isVariantChar({id})) ratio = 20;
 
-
             const convertedFrags = excess * ratio;
             np.fragments = (np.fragments || 0) + convertedFrags;
             msg += `\n♻️ 溢出的 ${excess} 片專屬碎片，已套用尊榮匯率 (1:${ratio})，自動轉化為 ${convertedFrags} 個「通用星晶碎片」！`;
         }
-
 
         if (checkChristmasUnlock(np.unlocks)) {
             np.unlocks.push('christmas_xiangxiang');
@@ -1174,13 +1076,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     }
   };
 
-
   const upgradeCharCost = (id) => {
       if (['xiangxiang', 'kohaku', 'aldous', 'christmas_xiangxiang'].includes(id)) {
           setSysError('此角色已經登峰造極，無法進行潛能突破！');
           return;
       }
-
 
       let np = { ...progress };
       np.charFragments = { ...np.charFragments };
@@ -1188,7 +1088,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       
       const currentFrags = np.charFragments[id] || 0;
       const currentUpgrades = np.charCostUpgrades[id] || 0;
-
 
       if (currentUpgrades >= 3) {
           setSysError('此角色已達到潛能強化上限！');
@@ -1206,7 +1105,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       }
   };
 
-
   const ONE_TIME_CODES = {
       'NIGHTSHIFT2026': { desc: '夜班工程師的護肝補給 (100晶 + 5AP)', apply: (p) => { p.crystals += 100; p.ap += 5; } },
       'XIAOBU_MEOW': { desc: '賓士貓小布的特級罐罐 (200星晶碎片)', apply: (p) => { p.fragments = (p.fragments||0) + 200; } },
@@ -1215,11 +1113,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       'FF14WARRIOR': { desc: '光之戰士的祝福 (10AP)', apply: (p) => { p.ap += 10; } }
   };
 
-
   const handleRedeemCode = () => {
       const code = cheatCode.trim().toUpperCase();
       let np = { ...progress };
-
 
       if (code === '315') { 
           np.crystals += 5000; 
@@ -1258,7 +1154,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       setCheatCode('');
   };
 
-
   // 【V2.6 成就領取系統】
   const claimAchievement = (ach) => {
       let np = { ...progress };
@@ -1268,12 +1163,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       showToastMsg(`🏆 領取成就【${ach.name}】獎勵：💎 ${ach.reward} 星晶！`);
   };
 
-
   // ========================== 礦坑系統函數 ==========================
 
-
   const getMineInfo = () => progress.mine || { lv: 1, workers: [], lastCollect: null, pending: 0 };
-
 
   const calcMinePending = (mine) => {
     const lvData = MINE_LEVELS[mine.lv - 1];
@@ -1297,7 +1189,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     return Math.min((mine.pending || 0) + gained, cap);
   };
 
-
   const getMineCapacity = (mine) => {
     const lvData = MINE_LEVELS[mine.lv - 1];
     let capMultiplier = 1;
@@ -1308,7 +1199,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     });
     return Math.floor(lvData.capBase * capMultiplier);
   };
-
 
   const toggleMineWorker = (charId) => {
     const mine = getMineInfo();
@@ -1328,7 +1218,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     saveProgress(np);
   };
 
-
   const collectMine = () => {
     const mine = getMineInfo();
     const total = calcMinePending(mine);
@@ -1344,7 +1233,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     showToastMsg(`⛏️ 領取了 ${gained} 顆星晶碎片！`);
   };
 
-
   const upgradeMine = () => {
     const mine = getMineInfo();
     if (mine.lv >= 5) { setSysError('礦坑已達滿級！'); return; }
@@ -1356,9 +1244,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     showToastMsg(`⛏️ 礦坑升級至 Lv${mine.lv + 1}！`);
   };
 
-
   // ========================== 烹飪系統函數 ==========================
-
 
   const buyRecipe = (recipe) => {
     if (progress.unlockedRecipes.includes(recipe.id)) { showToastMsg('已擁有此食譜！'); return; }
@@ -1368,7 +1254,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     showToastMsg(`📖 獲得食譜：${recipe.name}！`);
   };
 
-
   const buyIngredient = (ingId) => {
     const ing = INGREDIENTS.find(i => i.id === ingId);
     if (!ing) return;
@@ -1377,7 +1262,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     saveProgress(np);
     showToastMsg(`🛒 購入 ${ing.icon} ${ing.name}！`);
   };
-
 
   const cookMeal = (recipe) => {
     if (progress.pendingMeal) { setSysError('你已有一道料理待生效，請先出戰使用！'); return; }
@@ -1397,18 +1281,15 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     showToastMsg(`🍳 烹飪完成：${recipe.name}！下次戰鬥生效。`);
   };
 
-
   const discardMeal = () => {
     const np = { ...progress, pendingMeal: null };
     saveProgress(np);
     showToastMsg('料理已丟棄。');
   };
 
-
   // ========================== 渲染函數區 ==========================
   const renderIntro = () => {
     const isAdvancedUnlocked = Object.values(progress.mastery || {}).some(lvl => lvl >= 3);
-
 
     return (
       <div className="min-h-screen p-8 flex flex-col items-center justify-center bg-stone-950 text-stone-200 relative overflow-hidden">
@@ -1453,7 +1334,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   {!isAdvancedUnlocked && <div className="text-[9px] text-yellow-500 font-bold mt-1">需1名3星專精角色</div>}
               </button>
 
-
               <button onClick={() => selectMode('brawl')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-blue-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center col-span-2 md:col-span-1">
                   <div className="text-3xl mb-2">🤺</div>
                   <h2 className="text-lg font-bold mb-1">無盡亂鬥</h2>
@@ -1496,7 +1376,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-
   const renderSelectChar = () => {
     let list = CHARACTERS.filter(c => !isT0Char(c) || unlocks.includes(c.id));
     if (unlocks.includes('xiangxiang')) list.push(HIDDEN_CHARACTER);
@@ -1537,7 +1416,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-
   const renderSelectTalent = () => {
     if (!player.char) return <div className="min-h-screen bg-stone-900 flex items-center justify-center"><button onClick={()=>setGameState('select_char')} className="bg-red-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg">角色載入異常，點擊返回選角</button></div>;
     
@@ -1577,14 +1455,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-
   const renderSelectBrawlEnemy = () => {
     let pool = CHARACTERS.filter(c => !isT0Char(c) || unlocks.includes(c.id));
     if (unlocks.includes('xiangxiang')) pool.push(HIDDEN_CHARACTER);
     VARIANTS.forEach(v => { if (unlocks.includes(v.id) && !v.isPlaceholder) pool.push(v); });
     pool = [...pool, ...NORMAL_MONSTERS.filter(m => encountered.includes(m.id)), ...BOSS_MONSTERS.filter(m => encountered.includes(m.id))];
     pool = [...pool, ...ADVANCED_MONSTERS.filter(m => encountered.includes(m.id)), ...ADVANCED_BOSSES.filter(m => encountered.includes(m.id))];
-
 
     return (
         <div className="min-h-screen p-8 bg-stone-900 text-stone-200">
@@ -1596,7 +1472,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     <Sparkles /> 隨機遭遇未知的強敵！ <Sparkles />
                 </button>
             </div>
-
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
                 {pool.map(c => {
@@ -1615,21 +1490,17 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-
   const renderBattle = () => {
     if (!player.char || !enemy.char) return <div className="min-h-screen bg-stone-950 flex items-center justify-center"><button className="text-white bg-red-600 px-6 py-3 rounded-xl font-bold shadow-lg" onClick={()=>setGameState('select_char')}>戰鬥載入異常，點擊返回選角</button></div>;
-
 
     const silenced = (player.status||[]).some(s => s && s.type === 'SILENCE' && !s.isDeferred);
     const dazzleStatus = (player.status||[]).find(s => s && s.type === 'DAZZLE' && !s.isDeferred);
     const freezeStatus = (player.status||[]).find(s => s && s.type === 'FREEZE' && !s.isDeferred);
 
-
     const skill1Cost = getActualCost(player.char.skill1.cost, (player.talents || []).includes('t8'));
     const skill2Cost = getActualCost(player.char.skill2.cost, (player.talents || []).includes('t8'));
     const canUseSkill1 = !silenced && player.energy >= skill1Cost;
     const canUseSkill2 = !silenced && player.energy >= skill2Cost;
-
 
     return (
         <div className="min-h-screen p-4 flex flex-col max-w-3xl mx-auto h-screen bg-stone-950 text-stone-200">
@@ -1685,7 +1556,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-
   const renderHome = () => {
     let hosts = CHARACTERS.filter(c => !isT0Char(c) || unlocks.includes(c.id)); 
     if(unlocks.includes('xiangxiang')) hosts.push(HIDDEN_CHARACTER);
@@ -1726,7 +1596,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                             <button onClick={()=>handleHomeActivity('snack')} className="bg-orange-900/50 p-4 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-orange-800 border border-orange-800/50 transition-colors shadow-md"><Coffee size={20}/> 分享營食 (1 AP)</button>
                             <button onClick={()=>handleHomeActivity('chat')} className="bg-purple-900/50 p-4 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-purple-800 border border-purple-800/50 transition-colors shadow-md"><MessageCircle size={20}/> 篝火閒聊 (1 AP)</button>
                         </div>
-
 
                         {/* 烹飪系統 */}
                         <div className="bg-stone-900 border border-stone-700 rounded-2xl p-5 mb-6 shadow-inner">
@@ -1799,7 +1668,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-
   const renderGallery = () => {
     return (
         <div className="min-h-screen p-8 bg-stone-900 text-stone-200">
@@ -1825,7 +1693,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                         ]} 
                     />
                 )}
-
 
                 {galleryTab === 'guide' ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto animate-fade-in">
@@ -1922,12 +1789,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                 );
                             }
 
-
                             const curFrags = progress.charFragments?.[c.id] || 0;
                             const upgrades = progress.charCostUpgrades?.[c.id] || 0;
                             const isAdvBoss = ADVANCED_BOSSES.some(b=>b.id===c.id);
                             const isAdvMon = ADVANCED_MONSTERS.some(m=>m.id===c.id);
-
 
                             return (
                                 <div key={c.id} className={`relative overflow-hidden bg-stone-800 border-2 rounded-3xl p-6 shadow-xl hover:-translate-y-1 transition-transform ${isAdvBoss?'border-red-600 shadow-red-900/20' : BOSS_MONSTERS.some(b=>b.id===c.id)?'border-purple-600 shadow-purple-900/20': isT0?'border-yellow-500 shadow-yellow-900/20': !!c.baseId?'border-stone-500':'border-stone-700'}`}>
@@ -1961,7 +1826,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                         <div><span className="text-purple-400 font-bold text-sm block mb-1">❂ 奧義：{c.skill2.name} <span className="text-[10px] font-normal text-stone-400 ml-1 bg-stone-800 px-2 py-0.5 rounded-full border border-stone-700 float-right text-white">耗能 {c.skill2.cost}E</span></span><p className="text-gray-400 mt-2 leading-relaxed">{c.skill2.desc}</p></div>
                                     </div>
 
-
                                     {isBasic && !isT0 && (
                                         <div className="mt-4 bg-stone-900/80 p-3 rounded-xl border border-stone-700 w-full">
                                             <div className="flex justify-between text-xs mb-1 text-blue-300 font-bold">
@@ -1981,7 +1845,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                         </div>
                                     )}
 
-
                                     <div className="mt-5"><span className="text-stone-400 font-bold text-xs mb-2 block flex justify-between"><span>📖 角色情報</span>{c.prefHand && <span className="text-yellow-400 bg-stone-900 px-2 py-0.5 rounded-md border border-stone-700">偏好: {RPS_CHOICES[c.prefHand].icon}</span>}</span><p className="text-stone-500 text-[11px] leading-relaxed">{c.lore}</p></div>
                                 </div>
                             );
@@ -1993,7 +1856,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-
   const renderShop = () => {
     const buyFrag = (charId, cost, amt) => {
         let np = {...progress, fragments: (progress.fragments || 0) - cost};
@@ -2002,7 +1864,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         saveProgress(np);
         showToastMsg(`成功購買 ${amt} 個碎片！`);
     };
-
 
     const crystalItems = [
       { id: 'work', name: '公會打工', desc: '消耗 1 點 AP 協助公會處理雜務，獲得 5 顆星晶。', cost: 1, currency: 'ap', icon: '💼', canBuy: true, bought: false, isInfinite: true, onBuy: () => { let np={...progress, ap: progress.ap - 1, crystals: progress.crystals + 5}; saveProgress(np); showToastMsg('打工成功！'); } },
@@ -2014,7 +1875,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       { id: 'char_talents', name: '專屬覺醒指南 (Cost 3)', desc: '解鎖所有角色的「專屬天賦」。', cost: 25, currency: 'crystal', icon: '✨', canBuy: !unlocks.includes('char_talents'), bought: unlocks.includes('char_talents'), onBuy: () => { let np={...progress, crystals: progress.crystals - 25}; np.unlocks=[...unlocks,'char_talents']; saveProgress(np); } },
       { id: 'tamer_kert', name: '訓獸師的心得', desc: '解鎖魔物收服機制！', cost: 60, currency: 'crystal', icon: '🐾', canBuy: !unlocks.includes('tamer_kert'), bought: unlocks.includes('tamer_kert'), onBuy: () => { let np={...progress, crystals: progress.crystals - 60}; np.unlocks=[...unlocks,'tamer_kert']; saveProgress(np); } }
     ];
-
 
     const fragmentItems = [
       { id: 'f_ap', name: '柯特的愛心便當', desc: '充滿愛心的手作料理，消耗 100 碎片恢復 1 點 AP。', cost: 100, currency: 'fragment', icon: '🍱', canBuy: true, bought: false, isInfinite: true, onBuy: () => { let np={...progress, ap: progress.ap + 1, fragments: (progress.fragments || 0) - 100}; saveProgress(np); showToastMsg('享用了愛心便當，AP 恢復了！'); } },
@@ -2032,13 +1892,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       { id: 'f_aldous', name: '奧爾德斯碎片 x5', desc: '傳說情報，大長老的專屬碎片。', cost: 300, currency: 'fragment', icon: '🦉', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('aldous', 300, 5) },
     ];
 
-
     const recipeItems = RECIPES.map(r => ({
       id: `recipe_${r.id}`, name: `📖 ${r.name}`, desc: `【${r.grade}】${r.buff.desc}`, cost: r.cost, currency: 'crystal', icon: r.icon,
       canBuy: !progress.unlockedRecipes.includes(r.id), bought: progress.unlockedRecipes.includes(r.id), isInfinite: false,
       onBuy: () => buyRecipe(r)
     }));
-
 
     const ingredientItems = INGREDIENTS.map(ing => ({
       id: `ing_${ing.id}`, name: ing.name, desc: `目前持有：${progress.ingredients[ing.id] || 0} 個`, cost: ing.cost, currency: 'fragment', icon: ing.icon,
@@ -2046,9 +1904,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       onBuy: () => buyIngredient(ing.id)
     }));
 
-
     const displayItems = shopTab === 'crystal' ? crystalItems : shopTab === 'fragment' ? fragmentItems : shopTab === 'recipe' ? recipeItems : ingredientItems;
-
 
     return (
         <div className="min-h-screen p-8 bg-stone-900 text-stone-200">
@@ -2072,14 +1928,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 ]} 
             />
 
-
             <div className="flex justify-center gap-4 mb-8 flex-wrap">
                 <button onClick={() => setShopTab('crystal')} className={`px-8 py-3 rounded-full font-bold transition-all shadow-md ${shopTab === 'crystal' ? 'bg-blue-600 text-white' : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'}`}>💎 星晶交易區</button>
                 <button onClick={() => setShopTab('fragment')} className={`px-8 py-3 rounded-full font-bold transition-all shadow-md ${shopTab === 'fragment' ? 'bg-cyan-600 text-white' : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'}`}>💠 碎片補給區</button>
                 <button onClick={() => setShopTab('recipe')} className={`px-8 py-3 rounded-full font-bold transition-all shadow-md ${shopTab === 'recipe' ? 'bg-orange-600 text-white' : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'}`}>📖 食譜商店</button>
                 <button onClick={() => setShopTab('ingredient')} className={`px-8 py-3 rounded-full font-bold transition-all shadow-md ${shopTab === 'ingredient' ? 'bg-green-600 text-white' : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'}`}>🧺 食材補給</button>
             </div>
-
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto animate-fade-in">
                 {displayItems.map(item => {
@@ -2095,7 +1949,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-
   const renderMine = () => {
     const mine = getMineInfo();
     const lvData = MINE_LEVELS[mine.lv - 1];
@@ -2105,7 +1958,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const pendingPct = Math.min(100, cap > 0 ? Math.floor((pending / cap) * 100) : 0);
     const slots = lvData.slots;
 
-
     const basicChars = [
       CHARACTERS.find(c => c.id === 'bear'),
       CHARACTERS.find(c => c.id === 'wolf'),
@@ -2113,7 +1965,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       CHARACTERS.find(c => c.id === 'human'),
       CHARACTERS.find(c => c.id === 'elf'),
     ].filter(Boolean);
-
 
     return (
       <div className="min-h-screen p-8 bg-stone-900 text-stone-200">
@@ -2125,7 +1976,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             <h2 className="text-4xl font-bold text-yellow-400 tracking-widest drop-shadow-[0_0_10px_rgba(250,204,21,0.3)]">⛏️ 星晶礦坑</h2>
             <p className="text-stone-400 text-sm mt-2">派遣夥伴自動採集星晶碎片，離線時持續產出！</p>
           </div>
-
 
           {/* 礦坑狀態卡片 */}
           <div className="bg-stone-800 border-2 border-yellow-800 rounded-3xl p-6 mb-6 shadow-xl">
@@ -2151,7 +2001,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               {mine.workers.length === 0 ? '尚未派遣任何夥伴' : pending > 0 ? `⛏️ 領取 ${pending} 顆碎片` : '碎片槽已空，等待中...'}
             </button>
           </div>
-
 
           {/* 派遣區 */}
           <div className="bg-stone-800 border-2 border-stone-700 rounded-3xl p-6 mb-6 shadow-xl">
@@ -2181,7 +2030,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               })}
             </div>
           </div>
-
 
           {/* 升級區 */}
           {mine.lv < 5 ? (
@@ -2220,7 +2068,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-
   const renderGacha = () => {
       const gachaCost = 30;
       const gachaTenCost = 250; 
@@ -2235,11 +2082,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         { char: VARIANTS.find(v=>v.id==='halloween_cat'), rarity: 'SR' }
       ];
 
-
       const nextPreview = () => setGachaPreviewIdx((prev) => (prev + 1) % featuredPrizes.length);
       const prevPreview = () => setGachaPreviewIdx((prev) => (prev - 1 + featuredPrizes.length) % featuredPrizes.length);
       const currentPrize = featuredPrizes[gachaPreviewIdx];
-
 
       const pull = () => {
           const roll = Math.random() * 100;
@@ -2267,7 +2112,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           }
       };
 
-
       const handlePull = (times) => {
           const cost = times === 10 ? gachaTenCost : gachaCost;
           if (progress.crystals < cost) {
@@ -2293,7 +2137,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   if (res.rarity === 'SSR') ratio = 50;
                   else if (res.rarity === 'SR') ratio = 20;
 
-
                   if ((isOneTimeOnly && np.unlocks.includes(res.id)) || (!isOneTimeOnly && currentUpgrades >= 3)) {
                       const convertedAmt = res.amt * ratio;
                       np.fragments = (np.fragments || 0) + convertedAmt;
@@ -2308,7 +2151,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           saveProgress(np);
           setGachaResult(results);
       };
-
 
       return (
           <div className="min-h-screen p-8 bg-stone-950 text-stone-200 relative overflow-hidden">
@@ -2325,7 +2167,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                       <h2 className="text-5xl font-bold text-purple-400 mb-4 tracking-widest drop-shadow-[0_0_15px_rgba(192,132,252,0.4)]">迷途酒館</h2>
                       <p className="text-stone-400">「這杯算我請的！要來點特別的情報嗎？」—— 神秘酒保</p>
                   </div>
-
 
                   {!gachaResult ? (
                       <div className="flex flex-col items-center justify-center animate-fade-in">
@@ -2352,7 +2193,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-stone-800 text-stone-300 text-[10px] px-3 py-0.5 rounded-full border border-stone-600 font-bold tracking-widest">本期情報一覽</div>
                               </div>
 
-
                               {/* 機率公示表 */}
                               <div className="grid grid-cols-2 text-[10px] text-stone-400 bg-stone-950 p-3 rounded-xl border border-stone-800 w-full mb-6 gap-y-2 gap-x-4 shadow-inner">
                                   <div><span className="text-stone-300 font-bold">💠 50%</span> 基礎資源 (AP/碎片)</div>
@@ -2360,7 +2200,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                   <div><span className="text-purple-400 font-bold">🧧 15%</span> 異裝角色碎片</div>
                                   <div><span className="text-yellow-400 font-bold">🌟 5%</span> 傳說大獎碎片</div>
                               </div>
-
 
                               <div className="flex gap-4 w-full">
                                   <button onClick={() => handlePull(1)} className="flex-1 bg-purple-700 hover:bg-purple-600 py-4 rounded-2xl font-bold shadow-lg transition-transform active:scale-95 flex flex-col items-center border border-purple-500">
@@ -2396,7 +2235,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       );
   };
 
-
   if (sysError) {
       return (
           <div className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-8">
@@ -2410,7 +2248,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       );
   }
 
-
   if (sysInfo) {
       return (
           <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-8">
@@ -2422,7 +2259,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
            </div>
       );
   }
-
 
   return (
       <>
@@ -2474,6 +2310,3 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       </>
   );
 }
-
-
-```
