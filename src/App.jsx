@@ -552,7 +552,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         if (num === 1) { dealDirectDmg(30, atk, def, buf); applyStatus(def, 'BURN', 3, 20, null, buf, defDeferred); }
         else { dealDirectDmg(70, atk, def, buf); const bIdx = (def.status||[]).findIndex(s => s && s.type === 'BURN'); if (bIdx >= 0) { const b = def.status[bIdx]; dealDirectDmg(b.duration * b.value, atk, def, buf, true); atk.hp = Math.min(atk.maxHp, atk.hp + b.duration * 30); def.status.splice(bIdx, 1); } }
     } else if (id === 'elf') {
-        if (num === 1) { const diff = Math.abs(atk.energy - def.energy); dealDirectDmg(atk.energy, atk, atk, buf, true); dealDirectDmg(def.energy, atk, def, buf, true); atk.hp = Math.min(atk.maxHp, atk.hp + diff); atk.energy = 0; def.energy = 0; }
+        if (num === 1) { const diff = Math.abs(atk.energy - def.energy); dealDirectDmg(atk.energy, atk, def, buf, true); dealDirectDmg(def.energy, atk, def, buf, true); atk.hp = Math.min(atk.maxHp, atk.hp + diff); atk.energy = 0; def.energy = 0; }
         else { if(!atk.permaBuffs) atk.permaBuffs={}; atk.permaBuffs.seeds = (atk.permaBuffs.seeds || 0) + 1; dealDirectDmg(atk.permaBuffs.seeds * 20, atk, def, buf); }
     } else if (id === 'xiangxiang') {
         if (num === 1) { atk.shield += 50; applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); }
@@ -698,7 +698,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         const dCount = (other.status || []).filter(s => s && isDebuffStatus(s.type)).length;
         if (dCount > 0) {
             const dmg = dCount * 15;
-            other.hp = Math.max(0, other.hp - dmg);
+            dealDirectDmg(dmg, ent, other, buf);
             buf.push({text: `🦇 [幻夜貓蹤] 對手恐懼，受到 ${dmg} 點傷害！`, type: 'damage'});
         }
     }
@@ -715,7 +715,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
     for (let s of (ent.status || [])) {
         if (!s) continue;
-        if (s.type === 'BURN') { const bDmg = (other.talents||[]).includes('t_human') ? 30 : 20; ent.hp = Math.max(0, ent.hp - bDmg); buf.push({text: `🔥 燃燒造成 ${bDmg} 傷害！`, type: 'damage'}); }
+        if (s.type === 'BURN') { const baseBDmg = s.value || 20; const bDmg = (other.talents||[]).includes('t_human') ? baseBDmg + 10 : baseBDmg; ent.hp = Math.max(0, ent.hp - bDmg); buf.push({text: `🔥 燃燒造成 ${bDmg} 傷害！`, type: 'damage'}); }
         if (s.type === 'PARASITE') { ent.hp = Math.max(0, ent.hp - 15); other.hp = Math.min(other.maxHp, other.hp + 15); buf.push({text: `🌿 寄生吸取 15 HP！`, type: 'damage'}); }
         if (s.type === 'REGEN') { ent.hp = Math.min(ent.maxHp, ent.hp + 20); buf.push({text: `💖 再生恢復 20 HP！`, type: 'heal'}); }
         
