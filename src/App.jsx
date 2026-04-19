@@ -1761,22 +1761,30 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         if (tutorialStep === 0 || tutorialStep === 8) return null;
         const msg = TUTORIAL_MSGS[tutorialStep];
         if (!msg) return null;
-        const posClass = (tutorialStep === 3 || tutorialStep === 7) ? 'top-12' : 'bottom-0';
+        const isActionStep = tutorialStep === 3 || tutorialStep === 7;
+        const posClass = isActionStep ? 'top-12' : 'bottom-0';
         return (
-            <div className={`fixed inset-x-0 ${posClass} z-50 p-3 pointer-events-none`}>
-                <div className="max-w-3xl mx-auto bg-stone-900/95 border-2 border-yellow-500/60 rounded-2xl p-4 shadow-2xl pointer-events-auto">
-                    <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1">
-                            <div className="font-bold text-yellow-400 text-sm mb-1">{msg.title}</div>
-                            <div className="text-stone-300 text-xs leading-relaxed whitespace-pre-line">{msg.body}</div>
-                        </div>
-                        {msg.btn && (
-                            <button
-                                onClick={() => setTutorialStep(msg.next)}
-                                className="shrink-0 bg-yellow-500 hover:bg-yellow-400 text-stone-900 font-bold text-xs px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg"
-                            >
-                                {msg.btn} →
-                            </button>
+            <div className={`fixed inset-x-0 ${posClass} z-50 p-2 pointer-events-none`}>
+                <div className="max-w-3xl mx-auto bg-stone-900/95 border border-yellow-500/60 rounded-xl shadow-2xl pointer-events-auto">
+                    <div className={`flex items-center gap-2 ${isActionStep ? 'px-3 py-2' : 'p-4'}`}>
+                        {isActionStep ? (
+                            <>
+                                <span className="text-yellow-400 text-xs font-bold shrink-0">{msg.title}</span>
+                                <span className="text-stone-400 text-xs truncate">{msg.body.split('\n')[0]}</span>
+                                <button onClick={() => setTutorialStep(0)} className="ml-auto shrink-0 text-stone-500 hover:text-white text-base leading-none px-1">✕</button>
+                            </>
+                        ) : (
+                            <>
+                                <div className="flex-1">
+                                    <div className="font-bold text-yellow-400 text-sm mb-1">{msg.title}</div>
+                                    <div className="text-stone-300 text-xs leading-relaxed whitespace-pre-line">{msg.body}</div>
+                                </div>
+                                {msg.btn && (
+                                    <button onClick={() => setTutorialStep(msg.next)} className="shrink-0 bg-yellow-500 hover:bg-yellow-400 text-stone-900 font-bold text-xs px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg">
+                                        {msg.btn} →
+                                    </button>
+                                )}
+                            </>
                         )}
                     </div>
                     <div className="flex gap-1 mt-3">
