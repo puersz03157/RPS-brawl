@@ -440,8 +440,15 @@ const SpriteAvatar = ({ char, size='w-16 h-16', grayscale=false }) => {
         </div>
     );
 };
+const DialogueAvatar = ({ src, fallback }) => {
+    const [err, setErr] = useState(false);
+    if (err) return <span className="text-3xl">{fallback}</span>;
+    return <img src={src} alt="" className="w-full h-full object-cover" onError={() => setErr(true)} />;
+};
+
 const NpcDialogue = ({ npcName, npcImage, npcImageFallback, dialogues }) => {
     const [idx, setIdx] = useState(0);
+    const [npcImgError, setNpcImgError] = useState(false);
 
     const handleChat = () => {
         if (dialogues.length <= 1) return;
@@ -456,8 +463,8 @@ const NpcDialogue = ({ npcName, npcImage, npcImageFallback, dialogues }) => {
         <div className="flex flex-col md:flex-row gap-5 items-center bg-stone-800/60 p-6 rounded-3xl border border-stone-700 mb-8 shadow-xl max-w-4xl mx-auto">
             <div className="flex flex-col items-center shrink-0">
                 <div className="w-24 h-24 bg-stone-900 border-2 border-stone-600 rounded-2xl flex items-center justify-center overflow-hidden shadow-inner">
-                    {npcImage ? (
-                        <img src={npcImage} alt={npcName} className="w-full h-full object-cover" onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML += `<span class="text-5xl">${npcImageFallback}</span>`; }} />
+                    {npcImage && !npcImgError ? (
+                        <img src={npcImage} alt={npcName} className="w-full h-full object-cover" onError={() => setNpcImgError(true)} />
                     ) : (
                         <span className="text-5xl">{npcImageFallback}</span>
                     )}
@@ -2970,7 +2977,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             <div className="shrink-0 flex flex-col items-center gap-2">
               <div className={`w-20 h-20 rounded-2xl overflow-hidden bg-stone-900 border-2 ${chapter.themeBorder} shadow-xl flex items-center justify-center`}>
                 {line.image
-                  ? <img src={line.image} alt={line.speaker} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; e.target.parentElement.innerHTML = `<span class="text-3xl">${speakerChar?.icon || '❓'}</span>`; }}/>
+                  ? <DialogueAvatar src={line.image} fallback={speakerChar?.icon || '❓'} />
                   : <span className="text-3xl">{speakerChar?.icon || '❓'}</span>
                 }
               </div>
