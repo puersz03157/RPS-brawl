@@ -1647,10 +1647,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           setSysInfo('🐾 全圖鑑收服！解鎖所有異裝、大獎與高階魔物！(無限測試碼) 🧧'); 
           saveProgress(np); 
       }
-      else if (code === '828') { 
-          [...CHARACTERS.map(c=>c.id), 'xiangxiang'].forEach(id => { np.mastery = {...np.mastery}; np.mastery[id] = 3; }); 
-          np.ap = 99; 
-          setSysInfo('🌟 全員專精 3 星、AP滿級！(無限測試碼)'); saveProgress(np); 
+      else if (code === '828') {
+          [...CHARACTERS.map(c=>c.id), 'xiangxiang'].forEach(id => { np.mastery = {...np.mastery}; np.mastery[id] = 3; });
+          np.ap = 99;
+          np.completedStoryChapters = [1, 2, 3, 4, 5];
+          setSysInfo('🌟 全員專精 3 星、AP滿級、主線全章節解鎖！(無限測試碼)'); saveProgress(np);
       }
       else if (ONE_TIME_CODES[code]) {
           if (np.usedCodes.includes(code)) {
