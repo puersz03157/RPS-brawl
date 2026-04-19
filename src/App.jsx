@@ -951,6 +951,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     let next = [];
     if ((ent.talents||[]).includes('t_wolf') && ent.shield > 0) { ent.hp = Math.min(ent.maxHp, ent.hp + 25); buf.push({text: `[極寒護體] 恢復 25 HP！`, type: 'heal'}); }
     if ((ent.talents||[]).includes('t_xiangxiang') && ent.hp < ent.maxHp * 0.5) { ent.hp = Math.min(ent.maxHp, ent.hp + 20); ent.shield += 10; buf.push({text: `[愛心宵夜] 恢復 20 HP 並獲得 10 護盾！`, type: 'heal'}); }
+    if ((ent.talents||[]).includes('t_cat')) {
+        const dCount = (other.status || []).filter(s => s && isDebuffStatus(s.type)).length;
+        if (dCount > 0) {
+            const dmg = dCount * 15;
+            dealDirectDmg(dmg, ent, other, buf);
+            buf.push({text: `🐾 [虐襲] 對手身上 ${dCount} 個負面狀態，受到 ${dmg} 點傷害！`, type: 'damage'});
+        }
+    }
     
     if (ent.char?.id === 'aldous') {
         ent.energy = Math.min(100, ent.energy + 5);
@@ -2935,8 +2943,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   const renderStoryDialogue = () => {
     const chapter = STORY_CHAPTERS.find(c => c.id === storyChapterId);
     if (!chapter) return null;
-    const line = chapter.dialogue[storyDialogueIdx];
-    const isLast = storyDialogueIdx >= chapter.dialogue.length - 1;
+    const safeIdx = Math.min(storyDialogueIdx, chapter.dialogue.length - 1);
+    const line = chapter.dialogue[safeIdx];
+    if (!line) return null;
+    const isLast = safeIdx >= chapter.dialogue.length - 1;
     const isLeft = line.side === 'left';
     const speakerChar = line.charId ? CHARACTERS.find(c => c.id === line.charId) : null;
 
@@ -2947,7 +2957,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           <span className={`text-sm font-bold ${chapter.themeColor}`}>{chapter.elementIcon} 第{chapter.id}章 · {chapter.name}</span>
           <div className="ml-auto flex gap-1.5 items-center">
             {chapter.dialogue.map((_, i) => (
-              <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i < storyDialogueIdx ? chapter.themeColor.replace('text-','bg-') + ' opacity-50' : i === storyDialogueIdx ? chapter.themeColor.replace('text-','bg-') : 'bg-stone-700'}`}/>
+              <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i < safeIdx ? chapter.themeColor.replace('text-','bg-') + ' opacity-50' : i === safeIdx ? chapter.themeColor.replace('text-','bg-') : 'bg-stone-700'}`}/>
             ))}
           </div>
         </div>
@@ -2969,7 +2979,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           </div>
 
           <div className="flex justify-between items-center">
-            <span className="text-stone-600 text-xs">{storyDialogueIdx + 1} / {chapter.dialogue.length}</span>
+            <span className="text-stone-600 text-xs">{safeIdx + 1} / {chapter.dialogue.length}</span>
             {isLast ? (
               <button onClick={() => {
                 setStorySelectedCharId(null);
