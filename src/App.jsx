@@ -191,7 +191,12 @@ const NORMAL_MONSTERS = [
   { id: 'm2', name: '巨石蟹', title: '硬邦邦的', element: ELEMENTS.WATER, isEmoji: false, icon: '🦀', image: 'monster_crab.png', prefHand: 'SCISSORS', stats: { hp: 400, maxHp: 400, atk: 20, def: 25 }, lore: '全身覆蓋堅硬岩石的螃蟹，防禦力驚人。生氣時會吐出冰封泡泡。', skill1: { name: '硬化', cost: 30, desc: '獲得 50 點護盾。' }, skill2: { name: '泡泡光線', cost: 60, desc: '造成 40 傷害並施加 ❄️[封印] 1回合。' } },
   { id: 'm3', name: '爆炎犬', title: '熱騰騰的', element: ELEMENTS.FIRE, isEmoji: false, icon: '🐕', image: 'monster_dog.png', prefHand: 'ROCK', stats: { hp: 300, maxHp: 300, atk: 45, def: 10 }, lore: '性格暴躁的犬型魔物，全身燃燒著火焰，咬合力極強。收服後冬天可以用來當暖爐。', skill1: { name: '火焰牙', cost: 30, desc: '造成 20 傷害並施加 🔥[燃燒] 2回合。' }, skill2: { name: '地獄火', cost: 70, desc: '造成高達 80 點傷害。' } },
   { id: 'm4', name: '閃耀精靈', title: '刺眼的', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🧚', image: 'monster_fairy.png', prefHand: 'PAPER', stats: { hp: 280, maxHp: 280, atk: 35, def: 15 }, lore: '被光之星晶過度影響而失去理智的精靈，會發出強光致盲對手。', skill1: { name: '致盲', cost: 40, desc: '施加 💫[眩目] 1回合。' }, skill2: { name: '神聖新星', cost: 70, desc: '造成 40 點傷害並回復自身 40 血。' } },
-  { id: 'm5', name: '影魔眼', title: '陰森森的', element: ELEMENTS.DARK, isEmoji: false, icon: '👁️', image: 'monster_eye.png', prefHand: 'ROCK', stats: { hp: 220, maxHp: 220, atk: 55, def: 5 }, lore: '漂浮在空中的巨大眼球，凝視會讓人陷入恐懼與沉默。', skill1: { name: '恐懼凝視', cost: 40, desc: '施加 🤐[沉默] 2回合。' }, skill2: { name: '虛空射線', cost: 60, desc: '造成 70 點高額傷害。' } }
+  { id: 'm5', name: '影魔眼', title: '陰森森的', element: ELEMENTS.DARK, isEmoji: false, icon: '👁️', image: 'monster_eye.png', prefHand: 'ROCK', stats: { hp: 220, maxHp: 220, atk: 55, def: 5 }, lore: '漂浮在空中的巨大眼球，凝視會讓人陷入恐懼與沉默。', skill1: { name: '恐懼凝視', cost: 40, desc: '施加 🤐[沉默] 2回合。' }, skill2: { name: '虛空射線', cost: 60, desc: '造成 70 點高額傷害。' } },
+  { id: 'm6', name: '刺藤傀儡', title: '荊棘纏繞的', element: ELEMENTS.WOOD, isEmoji: false, icon: '🪴', image: 'monster_vine.png', prefHand: 'SCISSORS', stats: { hp: 350, maxHp: 350, atk: 20, def: 30 }, lore: '由魔力星晶滋養的藤蔓怪，渾身佈滿荊棘。行動遲緩，但能讓靠近的敵人越戰越弱。', skill1: { name: '荊棘纏繞', cost: 35, desc: '對敵施加 📉[降攻] 與 📉[降防] 各 2 回合。' }, skill2: { name: '蔓延怒刺', cost: 65, desc: '造成 30 傷害，敵方每個負面狀態額外追加 20 傷。' } },
+  { id: 'm7', name: '海藍水母', title: '飄渺無形的', element: ELEMENTS.WATER, isEmoji: false, icon: '🪼', image: 'monster_jellyfish.png', prefHand: 'PAPER', stats: { hp: 230, maxHp: 230, atk: 35, def: 10 }, lore: '在深海中靜靜飄蕩的神秘水母，半透明的傘蓋能折射光線讓人難以捕捉。觸手帶有強力麻痺毒素。', skill1: { name: '幻象漂浮', cost: 30, desc: '獲得 💨[迴避] 1次，並奪取敵方 20 點能量。' }, skill2: { name: '電擊觸手', cost: 65, desc: '造成 60 傷害，施加 ❄️[封印] 1回合並再奪取 30 點能量。' } },
+  { id: 'm8', name: '熔岩蜥蜴', title: '滾燙的', element: ELEMENTS.FIRE, isEmoji: false, icon: '🦎', image: 'monster_lizard.png', prefHand: 'ROCK', stats: { hp: 320, maxHp: 320, atk: 35, def: 15 }, lore: '棲息於火山岩漿地帶的蜥蜴型魔物。表皮由凝固岩漿構成，蓄積熱能後能引爆全身造成毀滅性衝擊。', skill1: { name: '熔甲防禦', cost: 35, desc: '獲得 60 點護盾。' }, skill2: { name: '熔岩爆裂', cost: 70, desc: '消耗所有護盾，造成 40 加護盾等量的真實傷害。' } },
+  { id: 'm9', name: '星晶鷺鳥', title: '輕盈飛翔的', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🦢', image: 'monster_heron.png', prefHand: 'SCISSORS', stats: { hp: 260, maxHp: 260, atk: 40, def: 10 }, lore: '翅膀結晶化的光屬性鳥型魔物，飛行速度極快。振翅產生的光芒能令對手陷入眩目。', skill1: { name: '星光羽翼', cost: 30, desc: '獲得 ⚡[亢奮] 3回合，並獲得 30 點護盾。' }, skill2: { name: '天光衝擊', cost: 60, desc: '造成 55 傷害，並強制對手下回 💫[強制出拳]。' } },
+  { id: 'm10', name: '噬夢獸', title: '令人昏昏欲睡的', element: ELEMENTS.DARK, isEmoji: false, icon: '🦇', image: 'monster_bat.png', prefHand: 'PAPER', stats: { hp: 280, maxHp: 280, atk: 45, def: 10 }, lore: '在夜間悄悄侵入夢境吸食精神力的蝙蝠型魔物。讓對手陷入持續疲憊的同時，自身卻越來越精力充沛。', skill1: { name: '夢魘爪', cost: 35, desc: '施加 💤[疲憊] 3回合，並自身恢復 30 HP。' }, skill2: { name: '虛空侵蝕', cost: 70, desc: '無視護盾造成 50 傷害，敵方每個負面狀態額外吸血 20 HP。' } }
 ];
 
 const BOSS_MONSTERS = [
@@ -233,7 +238,7 @@ const ALL_TALENTS = [
   { id: 't6', name: '逆境', cost: 2, desc: '生命值低於 30% 時，攻擊力提升 50%', icon: '🔥' },
   { id: 't7', name: '嗜血', cost: 3, desc: '造成傷害時，回復等同傷害量 20% 的生命', icon: '🦇' },
   { id: 't8', name: '賢者', cost: 3, desc: '所有技能與奧義，耗能減少 20%', icon: '📖' },
-  { id: 't_bear', name: '厚實脂肪', cost: 3, desc: '開場隨機獲得 2 種增益狀態(3回合)。(熊吉專屬)', icon: '🍯', req: 'char_talents', exclusiveTo: 'bear' },
+  { id: 't_bear', name: '厚實脂肪', cost: 3, desc: '開場隨機獲得 2 種增益狀態(全場持續)。(熊吉專屬)', icon: '🍯', req: 'char_talents', exclusiveTo: 'bear' },
   { id: 't_wolf', name: '極寒護體', cost: 3, desc: '回合結束時，若有護盾則恢復 25 HP。(白澤專屬)', icon: '❄️', req: 'char_talents', exclusiveTo: 'wolf' },
   { id: 't_cat', name: '虐襲', cost: 3, desc: '回合結束時，對手每個負面狀態受 15 傷。(布提婭專屬)', icon: '🐾', req: 'char_talents', exclusiveTo: 'cat' },
   { id: 't_human', name: '助燃劑', cost: 3, desc: '敵人受到的燃燒傷害提升 50%。(普爾斯專屬)', icon: '🛢️', req: 'char_talents', exclusiveTo: 'human' },
@@ -803,6 +808,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         else if (id === 'm3') { if (num === 1) applyStatus(def, 'BURN', 2, 15, null, buf, defDeferred); else dealDirectDmg(80, atk, def, buf); }
         else if (id === 'm4') { if (num === 1) applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); else atk.hp = Math.min(atk.maxHp, atk.hp + 40); }
         else if (id === 'm5') { if (num === 1) applyStatus(def, 'SILENCE', 2, 0, null, buf, defDeferred); else dealDirectDmg(70, atk, def, buf); }
+        else if (id === 'm6') { if (num === 1) { applyStatus(def, 'ATK_DOWN', 2, 20, null, buf, defDeferred); applyStatus(def, 'DEF_DOWN', 2, 20, null, buf, defDeferred); } else { const debuffCount = (def.status||[]).filter(s => s && isDebuffStatus(s.type)).length; dealDirectDmg(30 + debuffCount * 20, atk, def, buf); } }
+        else if (id === 'm7') { if (num === 1) { applyStatus(atk, 'EVADE', 1, 0, null, buf, atkDeferred); def.energy = Math.max(0, def.energy - 20); buf.push({text: `💧 海藍水母奪取了 20 點能量！`, type: 'info'}); } else { dealDirectDmg(60, atk, def, buf); applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); def.energy = Math.max(0, def.energy - 30); buf.push({text: `💧 電擊觸手再奪取 30 點能量！`, type: 'info'}); } }
+        else if (id === 'm8') { if (num === 1) { atk.shield += 60; buf.push({text: `🦎 熔甲防禦！獲得 60 點護盾。`, type: 'info'}); } else { const shieldAmt = atk.shield; atk.shield = 0; dealDirectDmg(40 + shieldAmt, atk, def, buf, true); buf.push({text: `🌋 熔岩爆裂！消耗 ${shieldAmt} 點護盾引爆！`, type: 'info'}); } }
+        else if (id === 'm9') { if (num === 1) { applyStatus(atk, 'EXCITE', 3, 0, null, buf, atkDeferred); atk.shield += 30; buf.push({text: `🦢 星光羽翼！獲得亢奮與 30 護盾。`, type: 'info'}); } else { dealDirectDmg(55, atk, def, buf); applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); } }
+        else if (id === 'm10') { if (num === 1) { applyStatus(def, 'FATIGUE', 3, 0, null, buf, defDeferred); atk.hp = Math.min(atk.maxHp, atk.hp + 30); buf.push({text: `🦇 夢魘爪！恢復 30 HP。`, type: 'heal'}); } else { dealDirectDmg(50, atk, def, buf, true); const debuffCount = (def.status||[]).filter(s => s && isDebuffStatus(s.type)).length; const lifeSteal = debuffCount * 20; atk.hp = Math.min(atk.maxHp, atk.hp + lifeSteal); if (lifeSteal > 0) buf.push({text: `🦇 虛空侵蝕吸取了 ${lifeSteal} HP！`, type: 'heal'}); } }
         else if (id === 'b1') { if (num === 1) { def.energy = Math.max(0, def.energy - 20); applyStatus(def, 'SILENCE', 1, 0, null, buf, defDeferred); } else dealDirectDmg(150, atk, def, buf, true); }
         else if (id === 'b2') { if (num === 1) { atk.shield += 30; applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); } else dealDirectDmg(130, atk, def, buf); }
         else if (id === 'b3') { if (num === 1) { atk.atk += 10; applyStatus(def, 'BURN', 2, 25, null, buf, defDeferred); } else dealDirectDmg(180, atk, def, buf); }
@@ -990,7 +1000,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, 
             permaBuffs: { startEnergy: 0, startShield: 0, seeds: pSeeds, coins: 0, turnCount: 0 }, status: [] 
         };
-        if (tIds.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); pObj.status.push({ type: pool[0], duration: 3, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 3, value: 20, isNew: false, isDeferred: false }); }
+        if (tIds.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); pObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
 
         // 套用料理 Buff
         let mealLog = null;
@@ -1062,7 +1072,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false }, 
             permaBuffs: { startEnergy: 0, startShield: 0, seeds: eSeeds, coins: 0, turnCount: 0 }, status: [] 
         };
-        if (eT.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); eObj.status.push({ type: pool[0], duration: 3, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 3, value: 20, isNew: false, isDeferred: false }); }
+        if (eT.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); eObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
 
         let np = { ...progress };
         if (!encountered.includes(eChar.id)) { np.encountered = [...encountered, eChar.id]; }
@@ -1539,32 +1549,34 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               </div>
           )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl mb-8 z-10">
+              {/* 主線夜巡 - 佔滿第一行 */}
+              <button onClick={() => setGameState('story_chapters')} className="col-span-2 md:col-span-3 bg-stone-800 p-5 border-2 border-indigo-900 hover:border-indigo-500 rounded-2xl shadow-lg flex items-center justify-between transition-all active:scale-95 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-indigo-900/10 group-hover:bg-indigo-900/20 pointer-events-none transition-colors"></div>
+                  <div className="flex items-center gap-4 z-10">
+                      <div className="text-4xl">📖</div>
+                      <div className="text-left">
+                          <h2 className="text-xl font-bold text-indigo-300 mb-0.5">主線夜巡</h2>
+                          <p className="text-stone-400 text-xs">跟隨故事推進，解開大星晶碎裂的真相。</p>
+                      </div>
+                  </div>
+                  <div className="z-10 bg-indigo-900/60 border border-indigo-700 text-indigo-400 text-xs font-bold px-3 py-1 rounded-full">即將開放</div>
+              </button>
+
+              {/* 夜巡戰役 */}
               <button onClick={() => selectMode('campaign')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-yellow-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
                   <div className="text-3xl mb-2">🗺️</div>
                   <h2 className="text-lg font-bold mb-1">夜巡戰役</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">連續討伐，挑戰深淵霸主。</p>
               </button>
-              
-              <button onClick={() => {
-                  if (isAdvancedUnlocked) selectMode('advanced_campaign');
-                  else setSysError('【權限不足】請先將任意一位角色的「專精等級」提升至 3 星 (完成普通夜巡3次)，以證明你有足夠的實力面對深淵的真正面貌！');
-              }} className={`bg-stone-800 p-4 border-2 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center relative overflow-hidden ${isAdvancedUnlocked ? 'border-red-900 hover:border-red-500' : 'border-stone-800 opacity-60 grayscale cursor-not-allowed'}`}>
-                  {isAdvancedUnlocked && <div className="absolute inset-0 bg-red-900/10 pointer-events-none"></div>}
-                  <div className="text-3xl mb-2">
-                      {isAdvancedUnlocked ? <Skull className="text-red-500" size={32} /> : <Lock className="text-stone-500" size={32} />}
-                  </div>
-                  <h2 className={`text-lg font-bold mb-1 ${isAdvancedUnlocked ? 'text-red-400' : 'text-stone-500'}`}>
-                      {isAdvancedUnlocked ? '征戰夜巡' : '🔒 征戰夜巡'}
-                  </h2>
-                  <p className={`${isAdvancedUnlocked ? 'text-red-400/60' : 'text-stone-500'} text-[10px] hidden md:block`}>高階 5 連戰，更高回報。</p>
-                  {!isAdvancedUnlocked && <div className="text-[9px] text-yellow-500 font-bold mt-1">需1名3星專精角色</div>}
-              </button>
 
-              <button onClick={() => selectMode('brawl')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-blue-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center col-span-2 md:col-span-1">
+              {/* 自訂對決 */}
+              <button onClick={() => selectMode('brawl')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-blue-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
                   <div className="text-3xl mb-2">🤺</div>
                   <h2 className="text-lg font-bold mb-1">自訂對決</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">自選對手切磋，強敵獎勵更豐厚。</p>
               </button>
+
+              {/* 白晝營地 */}
               <button onClick={() => { setGameState('home'); setHomeStep('select_host'); setHomeHost(null); setHomeGuest(null); setActiveDialogue(null); }} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-green-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
                   <div className="text-3xl mb-2"><Home className="text-green-400" size={32}/></div>
                   <h2 className="text-lg font-bold mb-1">白晝營地</h2>
@@ -1584,6 +1596,22 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   <div className="text-3xl mb-2">⛏️</div>
                   <h2 className="text-lg font-bold mb-1">星晶礦坑</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">掛機採集，自動產出碎片。</p>
+              </button>
+
+              {/* 征戰夜巡 - 最後 */}
+              <button onClick={() => {
+                  if (isAdvancedUnlocked) selectMode('advanced_campaign');
+                  else setSysError('【權限不足】請先將任意一位角色的「專精等級」提升至 3 星 (完成普通夜巡3次)，以證明你有足夠的實力面對深淵的真正面貌！');
+              }} className={`col-span-2 md:col-span-1 bg-stone-800 p-4 border-2 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center relative overflow-hidden ${isAdvancedUnlocked ? 'border-red-900 hover:border-red-500' : 'border-stone-800 opacity-60 grayscale cursor-not-allowed'}`}>
+                  {isAdvancedUnlocked && <div className="absolute inset-0 bg-red-900/10 pointer-events-none"></div>}
+                  <div className="text-3xl mb-2">
+                      {isAdvancedUnlocked ? <Skull className="text-red-500" size={32} /> : <Lock className="text-stone-500" size={32} />}
+                  </div>
+                  <h2 className={`text-lg font-bold mb-1 ${isAdvancedUnlocked ? 'text-red-400' : 'text-stone-500'}`}>
+                      {isAdvancedUnlocked ? '征戰夜巡' : '🔒 征戰夜巡'}
+                  </h2>
+                  <p className={`${isAdvancedUnlocked ? 'text-red-400/60' : 'text-stone-500'} text-[10px] hidden md:block`}>高階 5 連戰，更高回報。</p>
+                  {!isAdvancedUnlocked && <div className="text-[9px] text-yellow-500 font-bold mt-1">需1名3星專精角色</div>}
               </button>
           </div>
           <div className="flex items-center gap-4 z-10">
@@ -2449,6 +2477,104 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
+  const renderStoryChapters = () => {
+    const chapters = [
+      {
+        num: 1, name: '翡翠森之徑', element: ELEMENTS.WOOD, elementIcon: '🌿',
+        bg: 'from-green-950 to-stone-900', border: 'border-green-800', hoverBorder: 'hover:border-green-500',
+        titleColor: 'text-green-400', tagBg: 'bg-green-900/60 border-green-700 text-green-300',
+        attacker: { name: '普爾斯', icon: '🧑‍🚒' },
+        unlocks: { name: '熊吉', icon: '🐻' },
+        desc: '星晶污染蔓延至翡翠森林，草木魔物橫行。普爾斯受命調查異變根源，卻在深處遇見了一位身陷困境的熊族戰士……',
+        image: 'chapter1_bg.png',
+      },
+      {
+        num: 2, name: '冰封星晶湖', element: ELEMENTS.WATER, elementIcon: '❄️',
+        bg: 'from-blue-950 to-stone-900', border: 'border-blue-800', hoverBorder: 'hover:border-blue-500',
+        titleColor: 'text-blue-400', tagBg: 'bg-blue-900/60 border-blue-700 text-blue-300',
+        attacker: { name: '熊吉', icon: '🐻' },
+        unlocks: { name: '白澤', icon: '🐺' },
+        desc: '傳說中永不結凍的星晶湖，如今被異常的寒氣封鎖。熊吉循著星晶波動前往，卻遭遇了徘徊湖畔、冷峻難測的孤狼劍客……',
+        image: 'chapter2_bg.png',
+      },
+      {
+        num: 3, name: '焦熱煉獄山', element: ELEMENTS.FIRE, elementIcon: '🔥',
+        bg: 'from-red-950 to-stone-900', border: 'border-red-800', hoverBorder: 'hover:border-red-500',
+        titleColor: 'text-red-400', tagBg: 'bg-red-900/60 border-red-700 text-red-300',
+        attacker: { name: '白澤', icon: '🐺' },
+        unlocks: { name: '布提婭', icon: '🐈‍⬛' },
+        desc: '熔岩與魔焰交織的煉獄之山，連接著大陸深處的能量通道。白澤奉命封鎖異變源頭，在灼熱中遇見了一隻神秘的夜靈黑貓……',
+        image: 'chapter3_bg.png',
+      },
+      {
+        num: 4, name: '曦光遺忘神殿', element: ELEMENTS.LIGHT, elementIcon: '✨',
+        bg: 'from-yellow-950 to-stone-900', border: 'border-yellow-800', hoverBorder: 'hover:border-yellow-500',
+        titleColor: 'text-yellow-400', tagBg: 'bg-yellow-900/60 border-yellow-700 text-yellow-300',
+        attacker: { name: '布提婭', icon: '🐈‍⬛' },
+        unlocks: { name: '布布', icon: '🧚' },
+        desc: '隱沒於高原的古老神殿，曾是光之星晶的守護聖地。布提婭循著貓的直覺潛入，卻發現殿中困著一位失去記憶的光之精靈……',
+        image: 'chapter4_bg.png',
+      },
+      {
+        num: 5, name: '深淵星晶裂隙', element: ELEMENTS.DARK, elementIcon: '🌑',
+        bg: 'from-purple-950 to-stone-900', border: 'border-purple-800', hoverBorder: 'hover:border-purple-500',
+        titleColor: 'text-purple-400', tagBg: 'bg-purple-900/60 border-purple-700 text-purple-300',
+        attacker: { name: '布布', icon: '🧚' },
+        unlocks: { name: '夜巡戰役 & 自訂對決', icon: '⚔️' },
+        desc: '大星晶碎裂的震源——深淵裂隙。黑暗能量持續外溢，吞噬著一切光明。布布鼓起勇氣踏入裂隙，迎接決定艾歐蘭斯命運的最終對決……',
+        image: 'chapter5_bg.png',
+      },
+    ];
+
+    return (
+      <div className="min-h-screen bg-stone-950 text-stone-200 p-6">
+        <div className="max-w-3xl mx-auto">
+          <button onClick={() => setGameState('intro')} className="mb-6 flex items-center gap-2 text-stone-400 hover:text-white transition-colors">
+            <ArrowLeft size={18}/> 返回主選單
+          </button>
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-indigo-300 mb-2">📖 主線夜巡</h1>
+            <p className="text-stone-400 text-sm">跟隨夜行者們的旅程，解開大星晶碎裂的真相。</p>
+          </div>
+          <div className="flex flex-col gap-4">
+            {chapters.map((ch) => (
+              <div key={ch.num} className={`relative bg-gradient-to-r ${ch.bg} border-2 ${ch.border} rounded-2xl overflow-hidden shadow-xl opacity-60 cursor-not-allowed`}>
+                <div className="absolute inset-0 pointer-events-none">
+                  <img src={ch.image} alt="" className="w-full h-full object-cover opacity-10" onError={e => e.target.style.display='none'} />
+                </div>
+                <div className="relative z-10 p-5 flex gap-4 items-start">
+                  <div className="text-4xl shrink-0 mt-1">{ch.elementIcon}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-stone-500 text-xs font-bold">第 {ch.num} 章</span>
+                      <h2 className={`font-bold text-lg ${ch.titleColor}`}>{ch.name}</h2>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ch.tagBg}`}>{ch.element.name}屬性</span>
+                    </div>
+                    <p className="text-stone-400 text-xs leading-relaxed mb-3 line-clamp-2">{ch.desc}</p>
+                    <div className="flex items-center gap-4 text-xs flex-wrap">
+                      <div className="flex items-center gap-1 text-stone-400">
+                        <span>攻略角色：</span>
+                        <span className="text-stone-200 font-bold">{ch.attacker.icon} {ch.attacker.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-stone-400">
+                        <span>通關解鎖：</span>
+                        <span className="text-yellow-400 font-bold">{ch.unlocks.icon} {ch.unlocks.name}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="shrink-0 flex flex-col items-center gap-1">
+                    <Lock size={20} className="text-stone-600" />
+                    <span className="text-stone-600 text-[10px] font-bold">即將開放</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderMine = () => {
     const mine = getMineInfo();
     const lvData = MINE_LEVELS[mine.lv - 1];
@@ -2783,6 +2909,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   case 'shop': return renderShop();
                   case 'gacha': return renderGacha();
                   case 'mine': return renderMine();
+                  case 'story_chapters': return renderStoryChapters();
                   case 'select_reward': return (
                       <div className="min-h-screen p-8 flex flex-col items-center justify-center bg-stone-900 text-stone-200">
                           <h2 className="text-4xl font-bold text-yellow-500 mb-8 animate-bounce">🎁 戰鬥勝利！</h2>
