@@ -166,8 +166,8 @@ const RPS_CHOICES = {
 const CHARACTERS = [
   { id: 'bear', name: '熊吉', icon: '🐻', title: '森林守護者', element: ELEMENTS.WOOD, image: 'avatar_bear.png', prefAction: 'snack', stats: { hp: 650, maxHp: 650, atk: 40, def: 30 }, desc: '依賴增益強化自身的爆發型戰士。', lore: '原本是守護森林神木的巨熊獸人。大星晶碎裂導致森林枯萎，為了解決異變而踏上旅程。超級喜歡蜂蜜，肚子餓的時候會變得暴躁。', skill1: { name: '熊吼之怒', cost: 20, desc: '自身隨機獲得一種增益：攻擊提升、防禦提升或再生 (3回合)。' }, skill2: { name: '魚竿甩擊', cost: 80, desc: '消耗身上所有增益，基礎 50 傷害 (每層增益+40)，並施加 🌿[寄生] 3回合。' } },
   { id: 'wolf', name: '白澤', icon: '🐺', title: '滄海孤狼', element: ELEMENTS.WATER, image: 'avatar_wolf.png', prefAction: 'gaming', stats: { hp: 500, maxHp: 500, atk: 55, def: 20 }, desc: '善用冰封護盾進行防禦與風險反擊。', lore: '來自極寒之地的冷酷劍客，奉命尋找失落的星晶。外表高冷，但其實是個會默默幫大家守夜的傲嬌，非常注重保暖。', skill1: { name: '冰封防禦', cost: 30, desc: '給予自身 50 護盾，並獲得「下一次猜拳戰敗時獲得 50 能量」狀態。' }, skill2: { name: '護盾攻擊', cost: 80, desc: '消耗所有護盾造成等量傷害，並自身恢復消耗護盾值一半的 HP。' } },
-  { id: 'cat', name: '布提婭', icon: '🐈‍⬛', title: '夜靈貓', element: ELEMENTS.DARK, image: 'avatar_cat.png', prefAction: 'snack', stats: { hp: 400, maxHp: 400, atk: 70, def: 15 }, desc: '能施加多種負面狀態並吸取生命。', lore: '意外吞下了暗屬性的星晶碎片，化身為擁有強大魔力的夜靈貓。傲慢任性，覺得人類都是她的鏟屎官，但為了保護高級罐罐會拼盡全力。', skill1: { name: '奇異之光', cost: 40, desc: '必定降攻或降防(3回)，且必定附加封印或眩目(1回)。' }, skill2: { name: '黑暗之抓', cost: 75, desc: '無視護盾造成 80 傷害。對方每有一種負面狀態，自身恢復 30 HP。' } },
-  { id: 'human', name: '普爾斯', icon: '🧑‍🚒', title: '烈焰鬥士', element: ELEMENTS.FIRE, image: 'avatar_human.png', prefAction: 'gaming', stats: { hp: 550, maxHp: 550, atk: 50, def: 20 }, desc: '能引爆燃燒造成毀滅性爆發與回復。', lore: '熱血的工會討伐者，以一把燃燒的大劍聞名。總是衝在最前線享受狩獵魔物的快感，不管遇到什麼困難都覺得「烤個肉吃就能解決」。', skill1: { name: '燃燒之劍', cost: 40, desc: '給予對方 30 傷害，並施加 🔥[燃燒] 3回合。' }, skill2: { name: '黑炎爆發', cost: 80, desc: '給予 70 傷害，立即結算對手燃燒，每結算一回合自身恢復 30 HP。' } },
+  { id: 'cat', name: '布提婭', icon: '🐈‍⬛', title: '夜靈貓', element: ELEMENTS.DARK, image: 'avatar_cat.png', prefAction: 'snack', stats: { hp: 400, maxHp: 400, atk: 70, def: 15 }, desc: '能施加多種負面狀態並吸取生命。', lore: '意外吞下了暗屬性的星晶碎片，化身為擁有強大魔力的夜靈貓。傲慢任性，覺得人類都是她的鏟屎官，但為了保護高級罐罐會拼盡全力。', skill1: { name: '奇異之光', cost: 40, desc: '施加降攻或降防(3回)，再施加封印(1回)。已有的效果不會重複疊加。' }, skill2: { name: '黑暗之抓', cost: 75, desc: '無視護盾造成 80 傷害。對方每有一種負面狀態，自身恢復 30 HP。' } },
+  { id: 'human', name: '普爾斯', icon: '🧑‍🚒', title: '烈焰鬥士', element: ELEMENTS.FIRE, image: 'avatar_human.png', prefAction: 'gaming', stats: { hp: 550, maxHp: 550, atk: 50, def: 20 }, desc: '能引爆燃燒造成毀滅性爆發與回復。', lore: '熱血的工會討伐者，以一把燃燒的大劍聞名。總是衝在最前線享受狩獵魔物的快感，不管遇到什麼困難都覺得「烤個肉吃就能解決」。', skill1: { name: '燃燒之劍', cost: 40, desc: '給予對方 30 傷害，施加 🔥[燃燒] 3回合。目標已燃燒時，改為延長 3 回合。' }, skill2: { name: '黑炎爆發', cost: 80, desc: '給予 70 傷害，立即結算對手燃燒，每結算一回合自身恢復 30 HP。' } },
   { id: 'elf', name: '布布', icon: '🧚', title: '光之精靈', element: ELEMENTS.LIGHT, image: 'avatar_elf.png', prefAction: 'chat', stats: { hp: 450, maxHp: 450, atk: 45, def: 25 }, desc: '運用能量反噬與葵花子戰鬥的奇兵。', lore: '誕生於光之星晶的精靈，負責引導夜行者們收集星晶。天然呆，喜歡收集發亮的東西和各種植物種子（尤其是葵花子）。', skill1: { name: '能量炸彈', cost: 50, desc: '清空雙方能量並造成各自能量傷害，自身恢復能量差值的 HP。' }, skill2: { name: '囤囤之力', cost: 35, desc: '獲得一個葵花子，每有一個葵花子給予對手 20 傷害 (不消耗)。' } },
   { id: 'kohaku', name: '琥珀', icon: '🦊', title: '商會會長', element: ELEMENTS.LIGHT, image: 'avatar_kohaku.png', prefAction: 'snack', stats: { hp: 750, maxHp: 750, atk: 55, def: 40 }, desc: '利用金幣與VIP狀態進行極致剝削。', lore: '艾歐蘭斯商會的最高負責人。看似笑瞇瞇其實精打細算，掌握著整個大陸的經濟命脈。用錢砸人是他的拿手好戲。', skill1: { name: '尊榮推銷', cost: 30, desc: '自身獲得 1 枚【商會金幣】與 50 盾，並強制對手成為 💳[VIP] 3回合。' }, skill2: { name: '資本鎮壓', cost: 80, desc: '基礎 80 傷。每消耗 1 枚金幣追加 50 真實傷害並回 30 HP。' } },
   { id: 'aldous', name: '奧爾德斯', icon: '🦉', title: '大長老', element: ELEMENTS.DARK, image: 'avatar_aldous.png', prefAction: 'chat', stats: { hp: 680, maxHp: 680, atk: 80, def: 30 }, desc: '擁有看破機制的極限單體爆發力。', lore: '黑羽公會大長老，實力深不可測的貓頭鷹獸人。雖然年事已高，但揮舞天羽斬的速度依舊無人能及。戰鬥時周身環繞睿智之風。', skill1: { name: '長老的威壓', cost: 40, desc: '施加 ❄️[封印] 1回、🤐[沉默] 2回與 📉[降防] 3回。' }, skill2: { name: '秘劍・天羽斬', cost: 60, desc: '無視護盾 80 傷。若對手處於沉默或封印，傷害變為 4 倍(320)並吸血 50%。' } }
@@ -229,10 +229,10 @@ const ALL_TALENTS = [
   { id: 't2', name: '怪力', cost: 1, desc: '攻擊力 +10', icon: '⚔️' },
   { id: 't3', name: '靈光', cost: 1, desc: '戰鬥開始時，初始能量 +25', icon: '⚡' },
   { id: 't4', name: '鐵壁', cost: 2, desc: '戰鬥開始時，獲得 80 點護盾', icon: '🛡️' },
-  { id: 't5', name: '鬥氣', cost: 2, desc: '平手時，獲得能量提升為 40，並恢復 15 HP', icon: '🔄' },
+  { id: 't5', name: '鬥氣', cost: 2, desc: '平手時，獲得能量提升為 30，並恢復 15 HP', icon: '🔄' },
   { id: 't6', name: '逆境', cost: 2, desc: '生命值低於 30% 時，攻擊力提升 50%', icon: '🔥' },
-  { id: 't7', name: '嗜血', cost: 3, desc: '造成傷害時，回復等同傷害量 15% 的生命', icon: '🦇' },
-  { id: 't8', name: '賢者', cost: 3, desc: '所有技能與奧義，耗能減少 15 點', icon: '📖' },
+  { id: 't7', name: '嗜血', cost: 3, desc: '造成傷害時，回復等同傷害量 20% 的生命', icon: '🦇' },
+  { id: 't8', name: '賢者', cost: 3, desc: '所有技能與奧義，耗能減少 20%', icon: '📖' },
   { id: 't_bear', name: '厚實脂肪', cost: 3, desc: '開場隨機獲得 2 種增益狀態(3回合)。(熊吉專屬)', icon: '🍯', req: 'char_talents', exclusiveTo: 'bear' },
   { id: 't_wolf', name: '極寒護體', cost: 3, desc: '回合結束時，若有護盾則恢復 25 HP。(白澤專屬)', icon: '❄️', req: 'char_talents', exclusiveTo: 'wolf' },
   { id: 't_cat', name: '虐襲', cost: 3, desc: '回合結束時，對手每個負面狀態受 15 傷。(布提婭專屬)', icon: '🐾', req: 'char_talents', exclusiveTo: 'cat' },
@@ -377,7 +377,7 @@ const isT0Char = (c) => ['xiangxiang', 'kohaku', 'aldous', 'christmas_xiangxiang
 const isMonsterChar = (c) => NORMAL_MONSTERS.some(m => m.id === c?.id) || BOSS_MONSTERS.some(b => b.id === c?.id) || ADVANCED_MONSTERS.some(m => m.id === c?.id) || ADVANCED_BOSSES.some(b => b.id === c?.id);
 const isVariantChar = (c) => VARIANTS.some(v => v.id === c?.id);
 const isFullGallery = (capturedArr) => (capturedArr || []).length >= (NORMAL_MONSTERS.length + BOSS_MONSTERS.length);
-const getActualCost = (cost, hasT8) => hasT8 ? Math.max(0, cost - 15) : cost;
+const getActualCost = (cost, hasT8) => hasT8 ? Math.max(0, Math.ceil(cost * 0.8)) : cost;
 
 const getBaseTalents = (char) => {
     if (!char) return 3;
@@ -651,7 +651,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   }
 
   if ((atk.talents || []).includes('t7') && actualHpDamage > 0) {
-    const healAmt = Math.max(1, Math.floor(actualHpDamage * 0.15));
+    const healAmt = Math.max(1, Math.floor(actualHpDamage * 0.20));
     atk.hp = Math.min(atk.maxHp, atk.hp + healAmt);
     logBuffer.push({ text: `[嗜血] ${atk.char?.name || '攻擊方'} 吸收了 ${healAmt} 點生命！`, type: 'heal' });
   }
@@ -669,7 +669,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const atkDeferred = false;
 
     if (id === 'bear') {
-        if (num === 1) applyStatus(atk, ['ATK_UP', 'DEF_UP', 'REGEN'][Math.floor(Math.random()*3)], 3, 20, null, buf, atkDeferred);
+        if (num === 1) { const existBufTypes = (atk.status||[]).filter(s=>s).map(s=>s.type); const availBufs = ['ATK_UP','DEF_UP','REGEN'].filter(t=>!existBufTypes.includes(t)); if (availBufs.length > 0) applyStatus(atk, availBufs[Math.floor(Math.random()*availBufs.length)], 3, 20, null, buf, atkDeferred); else buf.push({text:`${atk.char.name} 身上已有所有增益，無法再獲得新的！`, type:'info'}); }
         else { const count = (atk.status||[]).filter(s => s && isBuffStatus(s.type)).length; dmgDealt = dealDirectDmg(50 + count * 40, atk, def, buf); applyStatus(def, 'PARASITE', 3, 15, null, buf, defDeferred); atk.status = Array.isArray(atk.status) ? atk.status.filter(s => s && !isBuffStatus(s.type)) : []; }
     } else if (id === 'newyear_bear') {
         if (num === 1) { applyStatus(atk, 'EXCITE', 3, 0, null, buf, atkDeferred); applyStatus(def, 'FATIGUE', 3, 0, null, buf, defDeferred); }
@@ -678,10 +678,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         if (num === 1) { atk.shield += 50; if(!atk.buffs) atk.buffs={}; atk.buffs.energyOnLoss = true; }
         else { dmgDealt = dealDirectDmg(atk.shield, atk, def, buf); atk.hp = Math.min(atk.maxHp, atk.hp + Math.floor(atk.shield/2)); atk.shield = 0; }
     } else if (id === 'cat') {
-        if (num === 1) { applyStatus(def, ['ATK_DOWN', 'DEF_DOWN'][Math.floor(Math.random()*2)], 3, 20, null, buf, defDeferred); applyStatus(def, ['FREEZE','DAZZLE'][Math.floor(Math.random()*2)], 1, 0, getRandomHand(), buf, defDeferred); }
+        if (num === 1) { const existDebufTypes = (def.status||[]).filter(s=>s).map(s=>s.type); const availStats = ['ATK_DOWN','DEF_DOWN'].filter(t=>!existDebufTypes.includes(t)); if (availStats.length > 0) applyStatus(def, availStats[Math.floor(Math.random()*availStats.length)], 3, 20, null, buf, defDeferred); else buf.push({text:`對手已中所有屬性下降效果！`, type:'info'}); if (!existDebufTypes.includes('FREEZE')) applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); else buf.push({text:`對手已處於封印狀態！`, type:'info'}); }
         else { dmgDealt = dealDirectDmg(80, atk, def, buf, true); const count = (def.status||[]).filter(s => s && isDebuffStatus(s.type)).length; atk.hp = Math.min(atk.maxHp, atk.hp + count * 30); }
     } else if (id === 'human') {
-        if (num === 1) { dealDirectDmg(30, atk, def, buf); applyStatus(def, 'BURN', 3, 20, null, buf, defDeferred); }
+        if (num === 1) { dealDirectDmg(30, atk, def, buf); const existBurn = (def.status||[]).find(s=>s&&s.type==='BURN'); if (existBurn) { existBurn.duration += 3; buf.push({text:`🔥 燃燒延長了 3 回合！(剩餘 ${existBurn.duration} 回)`, type:'info'}); } else applyStatus(def, 'BURN', 3, 20, null, buf, defDeferred); }
         else { dealDirectDmg(70, atk, def, buf); const bIdx = (def.status||[]).findIndex(s => s && s.type === 'BURN'); if (bIdx >= 0) { const b = def.status[bIdx]; dealDirectDmg(b.duration * b.value, atk, def, buf, true); atk.hp = Math.min(atk.maxHp, atk.hp + b.duration * 30); def.status.splice(bIdx, 1); } }
     } else if (id === 'elf') {
         if (num === 1) { const diff = Math.abs(atk.energy - def.energy); dealDirectDmg(atk.energy, atk, def, buf, true); dealDirectDmg(def.energy, atk, def, buf, true); atk.hp = Math.min(atk.maxHp, atk.hp + diff); atk.energy = 0; def.energy = 0; }
@@ -910,7 +910,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
     if (choice === aiChoice) {
         playSound('rps_draw');
-        const ce = (ent) => { if ((ent.status||[]).some(s => s && s.type === 'FATIGUE')) return 0; let b = (ent.talents||[]).includes('t5') ? 40 : 20; if ((ent.status||[]).some(s => s && s.type === 'EXCITE')) b = Math.floor(b * 1.5); return b; };
+        const ce = (ent) => { if ((ent.status||[]).some(s => s && s.type === 'FATIGUE')) return 0; let b = (ent.talents||[]).includes('t5') ? 30 : 20; if ((ent.status||[]).some(s => s && s.type === 'EXCITE')) b = Math.floor(b * 1.5); return b; };
         p.energy = Math.min(100, p.energy + ce(p)); e.energy = Math.min(100, e.energy + ce(e));
         if ((p.talents||[]).includes('t5')) p.hp = Math.min(p.maxHp, p.hp + 15);
         buf.push({ text: '平手！雙方各退一步。', type: 'info' });
