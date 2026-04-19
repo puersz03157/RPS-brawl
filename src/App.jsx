@@ -354,10 +354,22 @@ const RECIPES = [
 const COOKING_PREF_BONUS = 1.2; // 偏好料理效果 +20%
 
 const GUIDE_TERMS = [
-    { term: '星晶 (Star Crystal)', desc: '核心貨幣，用於購買天賦與特殊型態。' },
-    { term: 'AP (行動點數)', desc: '戰鬥勝利獲得，用於營地互動提升角色羈絆。' },
-    { term: '專精等級', desc: '角色通關戰役累計，滿 3 星可解鎖專屬 CG。' },
-    { term: '友誼之巔', desc: '任意雙人羈絆達滿級 (20點) 時解鎖的特殊雙人回憶。' }
+    { term: '星晶 (Star Crystal)', desc: '核心貨幣，可在星晶商店購買天賦、特殊型態，或透過公會打工與成就獎勵取得。' },
+    { term: 'AP (行動點數)', desc: '戰鬥勝利後獲得，用於日晝營地提升角色羈絆，也可在商店「打工專區」製作戰鬥道具。' },
+    { term: '專精等級', desc: '角色在戰役通關時累積，最高 3 星，滿 3 星可解鎖該角色的專屬 CG。' },
+    { term: '友誼之巔', desc: '任意雙人羈絆達滿級（20 點）時，解鎖的特殊雙人回憶 CG。' },
+    { term: '平手能量', desc: '出拳平手時，雙方各獲得 20 點能量。裝備「鬥氣」天賦可提升至 30 點，並額外回復 15 HP。擁有「疲憊」狀態時平手能量歸零；擁有「亢奮」狀態時能量提升 50%。' },
+    { term: '護盾', desc: '受到傷害時，護盾值優先被消耗，歸零後才扣除生命值。部分天賦（鐵壁）與料理可提供初始護盾。' },
+    { term: '天賦配置', desc: '選角後進入天賦配置畫面，可裝備 3 個天賦（T0 角色 5 個，Boss/魔物角色 4 個）。效果持續整場戰鬥，視模式不同可攜帶入下一場。' },
+    { term: '長按頭像', desc: '長按戰鬥畫面中的敵方或我方頭像，可查看詳細能力、技能說明，以及敵方出拳偏好——是預判對手行動的關鍵情報。' },
+    { term: '戰技 / 奧義', desc: '能量達門檻時亮起，可主動發動。戰技耗能較低、效果穩定；奧義耗能較高、威力強大。「賢者」天賦可減少 20% 耗能。處於「沉默」狀態時無法發動。' },
+];
+
+const GUIDE_SYSTEMS = [
+    { icon: '🍳', name: '料理系統', desc: '在日晝營地的料理台，以食材烹飪各種料理。效果（HP 上限、攻擊力、護盾、初始能量、每回合再生）於下一場戰鬥開始時生效，且在整個戰役／主線章節的所有戰鬥中持續有效。使用符合角色偏好的食材，效果可額外提升 20%。' },
+    { icon: '🎒', name: '戰鬥道具', desc: '在星晶商店「打工專區」消耗 AP 製作道具後可攜入戰場。每場戰鬥最多使用 3 次，隨時可用。可用道具：✨ 星晶砂粉（回復 100 HP）、🧪 亢奮藥劑（亢奮 3 回合）、💨 煙霧彈（迴避 1 次）、💊 萬能解藥（清除所有負面狀態）。' },
+    { icon: '📖', name: '主線夜巡', desc: '依章節推進劇情，每章可自由選擇出陣角色並配置天賦（非強制使用推薦角色）。料理加成於章節所有戰鬥中持續有效。完成每章可解鎖對應成就並獲得食材獎勵。' },
+    { icon: '💼', name: '公會打工 / 打工專區', desc: '在星晶商店的「打工專區」分頁，可消耗 1 AP 完成公會打工（獲得 50 星晶），或消耗 AP 製作戰鬥道具備用。AP 來源為戰鬥勝利獎勵。' },
 ];
 
 // 【V2.6 成就系統定義】
@@ -2578,9 +2590,22 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 )}
 
                 {galleryTab === 'guide' ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto animate-fade-in">
-                        <div className="bg-stone-800 p-8 rounded-3xl border border-stone-700"><h3 className="text-2xl font-bold text-yellow-400 mb-6 flex items-center gap-2"><HelpCircle size={24}/> 基礎術語</h3><div className="space-y-4">{GUIDE_TERMS.map((g,i)=>(<div className="bg-stone-900 p-4 rounded-xl border border-stone-800" key={i}><span className="text-blue-400 font-bold block mb-1 text-lg">{g.term}</span><p className="text-stone-400 text-sm leading-relaxed">{g.desc}</p></div>))}</div></div>
-                        <div className="bg-stone-800 p-8 rounded-3xl border border-stone-700"><h3 className="text-2xl font-bold text-green-400 mb-6 flex items-center gap-2"><Sparkles size={24}/> 狀態表</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{STATUS_DOCS.map((s,i)=>(<div className="bg-stone-900 p-4 rounded-xl border border-stone-800 flex items-start gap-3" key={i}><span className="text-2xl mt-1">{s.icon}</span><div><span className={`font-bold block ${s.color}`}>{s.name}</span><p className="text-stone-400 text-xs mt-1 leading-relaxed">{s.effect}</p></div></div>))}</div></div>
+                    <div className="flex flex-col gap-8 max-w-4xl mx-auto animate-fade-in">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="bg-stone-800 p-8 rounded-3xl border border-stone-700"><h3 className="text-2xl font-bold text-yellow-400 mb-6 flex items-center gap-2"><HelpCircle size={24}/> 基礎術語</h3><div className="space-y-4">{GUIDE_TERMS.map((g,i)=>(<div className="bg-stone-900 p-4 rounded-xl border border-stone-800" key={i}><span className="text-blue-400 font-bold block mb-1">{g.term}</span><p className="text-stone-400 text-sm leading-relaxed">{g.desc}</p></div>))}</div></div>
+                            <div className="bg-stone-800 p-8 rounded-3xl border border-stone-700"><h3 className="text-2xl font-bold text-green-400 mb-6 flex items-center gap-2"><Sparkles size={24}/> 狀態表</h3><div className="grid grid-cols-1 md:grid-cols-2 gap-4">{STATUS_DOCS.map((s,i)=>(<div className="bg-stone-900 p-4 rounded-xl border border-stone-800 flex items-start gap-3" key={i}><span className="text-2xl mt-1">{s.icon}</span><div><span className={`font-bold block ${s.color}`}>{s.name}</span><p className="text-stone-400 text-xs mt-1 leading-relaxed">{s.effect}</p></div></div>))}</div></div>
+                        </div>
+                        <div className="bg-stone-800 p-8 rounded-3xl border border-stone-700">
+                            <h3 className="text-2xl font-bold text-purple-400 mb-6 flex items-center gap-2"><BookOpen size={24}/> 系統說明</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {GUIDE_SYSTEMS.map((s,i)=>(
+                                    <div className="bg-stone-900 p-4 rounded-xl border border-stone-800 flex items-start gap-3" key={i}>
+                                        <span className="text-3xl mt-0.5 shrink-0">{s.icon}</span>
+                                        <div><span className="text-purple-300 font-bold block mb-1">{s.name}</span><p className="text-stone-400 text-sm leading-relaxed">{s.desc}</p></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 ) : galleryTab === 'achievements' ? (
                     <div className="max-w-4xl mx-auto animate-fade-in">
