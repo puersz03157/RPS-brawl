@@ -2267,8 +2267,24 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
     return (
         <div className="min-h-screen p-4 flex flex-col max-w-3xl mx-auto h-screen bg-stone-950 text-stone-200">
-            <div className="text-center text-xs text-stone-500 mb-2 font-bold">
-                {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : gameMode === 'story' ? `${STORY_CHAPTERS.find(c=>c.id===storyChapterId)?.name || '主線夜巡'} · 第 ${storyBattleStage + 1}/3 戰` : '自訂對決'}
+            <div className="flex items-center justify-between mb-2 gap-2">
+                <div className="text-xs text-stone-500 font-bold truncate">
+                    {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : gameMode === 'story' ? `${STORY_CHAPTERS.find(c=>c.id===storyChapterId)?.name || '主線夜巡'} · 第 ${storyBattleStage + 1}/3 戰` : '自訂對決'}
+                </div>
+                <div className="flex gap-2 shrink-0">
+                    <button disabled className="flex items-center gap-1 text-[11px] bg-stone-900 border border-stone-800 text-stone-600 px-2.5 py-1 rounded-lg cursor-not-allowed select-none">
+                        🎒 道具<span className="text-[9px] ml-0.5 text-stone-700">未開放</span>
+                    </button>
+                    {gameMode !== 'tutorial' && (
+                        <button onClick={() => {
+                            if (gameMode === 'story') setGameState('story_chapters');
+                            else if (gameMode === 'brawl') setGameState('intro');
+                            else setGameState('select_char');
+                        }} className="flex items-center gap-1 text-[11px] bg-stone-900 hover:bg-red-950 border border-stone-800 hover:border-red-900 text-stone-500 hover:text-red-400 px-2.5 py-1 rounded-lg transition-colors select-none">
+                            <ArrowLeft size={11}/> 撤退
+                        </button>
+                    )}
+                </div>
             </div>
             
             <div className={`p-4 rounded-xl mb-2 flex items-center gap-4 bg-stone-900 border-2 ${enemy.char.element.border} relative overflow-hidden shadow-lg ${tutHL(2)}`}>
