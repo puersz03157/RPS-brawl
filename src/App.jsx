@@ -1771,7 +1771,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                             <>
                                 <span className="text-yellow-400 text-xs font-bold shrink-0">{msg.title}</span>
                                 <span className="text-stone-400 text-xs truncate">{msg.body.split('\n')[0]}</span>
-                                <button onClick={() => setTutorialStep(0)} className="ml-auto shrink-0 text-stone-500 hover:text-white text-base leading-none px-1">✕</button>
+                                <button onClick={() => setTutorialStep(tutorialStep === 3 ? 4 : 0)} className="ml-auto shrink-0 text-stone-500 hover:text-white text-base leading-none px-1">✕</button>
                             </>
                         ) : (
                             <>
