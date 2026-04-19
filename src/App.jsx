@@ -588,6 +588,18 @@ const BATTLE_ITEMS = [
   { id: 'antidote',      icon: '💊', name: '萬能解藥', effect: '清除所有負面狀態' },
 ];
 
+const FORGE_PERMANENT = [
+  { id: 'armor_burst',     name: '爆裂星晶', icon: '💠', cost: 80,  desc: '出拳獲勝時，額外造成 30 點真實傷害。' },
+  { id: 'armor_corrosion', name: '腐蝕刃',   icon: '🗡️', cost: 120, desc: '出拳獲勝時，對敵隨機施加降攻或降防 2 回合。' },
+  { id: 'armor_chaos',     name: '干擾符文', icon: '🌀', cost: 150, desc: '每回合結束有 30% 機率對敵施加隨機負面狀態。' },
+  { id: 'armor_overload',  name: '超載電容', icon: '⚡', cost: 180, desc: '戰鬥開始時，對敵施加疲憊 3 回合。' },
+];
+const FORGE_CONSUMABLE = [
+  { id: 'carm_pierce', name: '破甲符',   icon: '💢', cost: 20, desc: '出拳獲勝時，對敵施加易傷 1 回合。(消耗品)' },
+  { id: 'carm_dark',   name: '暗晶碎塊', icon: '🌑', cost: 25, desc: '戰鬥開始時，對敵施加封印 2 回合。(消耗品)' },
+];
+const ALL_ARMORS = [...FORGE_PERMANENT, ...FORGE_CONSUMABLE];
+
 export default function App() {
   const [gameState, setGameState] = useState('intro'); 
   const [gameMode, setGameMode] = useState('campaign'); 
@@ -630,7 +642,7 @@ export default function App() {
   const [storySelectedCharId, setStorySelectedCharId] = useState(null);
 
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
-  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {} });
+  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null });
   const [isLoaded, setIsLoaded] = useState(false);
 
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
@@ -659,7 +671,11 @@ export default function App() {
                 ingredients: p.ingredients || {}, unlockedRecipes: Array.isArray(p.unlockedRecipes) ? p.unlockedRecipes : [], pendingMeal: p.pendingMeal || null,
                 tutorialDone: p.tutorialDone || false,
                 completedStoryChapters: Array.isArray(p.completedStoryChapters) ? p.completedStoryChapters : [],
-                items: p.items || {}
+                items: p.items || {},
+                unlockedArmors: Array.isArray(p.unlockedArmors) ? p.unlockedArmors : [],
+                equippedArmor: p.equippedArmor || null,
+                consumableArmors: p.consumableArmors || {},
+                pendingConsumableArmor: p.pendingConsumableArmor || null,
             });
         }
     } catch(e) { console.warn("Save file invalid, starting fresh.", e); }
@@ -998,6 +1014,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         }
     }
 
+    if (ent.permaBuffs?.armor === 'armor_chaos' && Math.random() < 0.3) {
+        const debuffPool = ['BURN', 'PARASITE', 'SILENCE', 'ATK_DOWN', 'DEF_DOWN', 'FATIGUE'];
+        const chosen = debuffPool[Math.floor(Math.random() * debuffPool.length)];
+        applyStatus(other, chosen, 1, chosen === 'BURN' ? 20 : 0, null, buf);
+        buf.push({text: `🌀 [干擾符文] 對敵觸發隨機負面狀態！`, type: 'info'});
+    }
+
     for (let s of (ent.status || [])) {
         if (!s) continue;
         if (s.type === 'BURN') { const baseBDmg = s.value || 20; const bDmg = (other.talents||[]).includes('t_human') ? baseBDmg + 10 : baseBDmg; ent.hp = Math.max(0, ent.hp - bDmg); buf.push({text: `🔥 燃燒造成 ${bDmg} 傷害！`, type: 'damage'}); }
@@ -1094,6 +1117,24 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         if ((!isPW ? choice : aiChoice) === 'PAPER' && (def.talents||[]).includes('t11')) d = Math.floor(d * 0.5);
         
         dealDirectDmg(d, atk, def, buf);
+
+        // 武裝出拳獲勝效果（玩家勝出時）
+        if (isPW) {
+            const aId = p.permaBuffs?.armor;
+            if (aId === 'armor_burst') {
+                dealDirectDmg(30, p, e, buf, true);
+                buf.push({ text: `💠 [爆裂星晶] 追加 30 點真實傷害！`, type: 'damage' });
+            } else if (aId === 'armor_corrosion') {
+                const dtype = Math.random() < 0.5 ? 'ATK_DOWN' : 'DEF_DOWN';
+                applyStatus(e, dtype, 2, 15, null, buf);
+                buf.push({ text: `🗡️ [腐蝕刃] 施加${dtype === 'ATK_DOWN' ? '降攻' : '降防'} 2 回合！`, type: 'info' });
+            }
+            const cId = p.permaBuffs?.consumableArmor;
+            if (cId === 'carm_pierce') {
+                applyStatus(e, 'VULNERABLE', 1, 0, null, buf);
+                buf.push({ text: `💢 [破甲符] 施加易傷 1 回合！`, type: 'info' });
+            }
+        }
     }
     processEoR(p, e, buf); processEoR(e, p, buf);
     setPlayer(p); setEnemy(e); setLogs(prev => [...prev, ...buf]);
@@ -1136,12 +1177,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         
         if (selectedChar.id === 'aldous') initE = Math.min(100, initE + 50);
 
-        let pObj = { 
-            char: selectedChar, talents: tIds, hp: pMax, maxHp: pMax, 
-            atk: selectedChar.stats.atk + (tIds.includes('t2') ? 10 : 0), 
-            def: selectedChar.stats.def, energy: initE, shield: tIds.includes('t4') ? 80 : 0, 
-            buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, 
-            permaBuffs: { startEnergy: 0, startShield: 0, seeds: pSeeds, coins: 0, turnCount: 0 }, status: [] 
+        let pObj = {
+            char: selectedChar, talents: tIds, hp: pMax, maxHp: pMax,
+            atk: selectedChar.stats.atk + (tIds.includes('t2') ? 10 : 0),
+            def: selectedChar.stats.def, energy: initE, shield: tIds.includes('t4') ? 80 : 0,
+            buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false },
+            permaBuffs: { startEnergy: 0, startShield: 0, seeds: pSeeds, coins: 0, turnCount: 0, armor: progress.equippedArmor || null, consumableArmor: progress.pendingConsumableArmor || null }, status: []
         };
         if (tIds.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); pObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
 
@@ -1226,6 +1267,19 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
         const initLogs = [{ text: `夜晚的艾歐蘭斯充滿危險，戰鬥開始！`, type: 'system' }];
         if (mealLog) initLogs.push({ text: mealLog, type: 'info' });
+
+        // 武裝戰鬥開始效果
+        const armorId = progress.equippedArmor;
+        const cArmorId = progress.pendingConsumableArmor;
+        if (armorId === 'armor_overload') {
+            applyStatus(eObj, 'FATIGUE', 3, 0, null, initLogs, false);
+            initLogs.push({ text: `⚡ [超載電容] 戰鬥開始，對敵施加疲憊 3 回合！`, type: 'info' });
+        }
+        if (cArmorId === 'carm_dark') {
+            applyStatus(eObj, 'SILENCE', 2, 0, null, initLogs, false);
+            initLogs.push({ text: `🌑 [暗晶碎塊] 戰鬥開始，對敵施加封印 2 回合！`, type: 'info' });
+        }
+
         setPlayer(pObj); setEnemy(eObj); setNewlyCaptured(null); setLogs(initLogs); setBattleItemUses(3); setShowItemPanel(false); setGameState('battle');
 
     } catch (e) {
@@ -1433,8 +1487,16 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         else if (gameMode === 'campaign') { earned = campaignStage < maxStage ? 3 : 8; }
         else { earned = getBrawlReward(enemy.char); }
         
-        np.crystals += earned; saveProgress(np); setRewardCrystals(earned);
-        if (gameMode.includes('campaign') && campaignStage < maxStage) { setAvailableRewards(shuffle([...REWARD_POOL]).slice(0, 3)); setGameState('select_reward'); } 
+        np.crystals += earned;
+        // 消耗型武裝在最終勝利後消耗
+        const isFinalWin = gameMode === 'brawl' || (gameMode.includes('campaign') && campaignStage === maxStage);
+        if (isFinalWin && np.pendingConsumableArmor) {
+            const cId = np.pendingConsumableArmor;
+            np.consumableArmors = { ...np.consumableArmors, [cId]: Math.max(0, (np.consumableArmors[cId] || 1) - 1) };
+            np.pendingConsumableArmor = null;
+        }
+        saveProgress(np); setRewardCrystals(earned);
+        if (gameMode.includes('campaign') && campaignStage < maxStage) { setAvailableRewards(shuffle([...REWARD_POOL]).slice(0, 3)); setGameState('select_reward'); }
         else { setGameState('game_over'); setWinner('player'); }
     }
   };
@@ -1903,6 +1965,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   <div className="text-3xl mb-2">⛏️</div>
                   <h2 className="text-lg font-bold mb-1">星晶礦坑</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">掛機採集，自動產出碎片。</p>
+              </button>
+              <button onClick={() => setGameState('forge')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-purple-600 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
+                  <div className="text-3xl mb-2">🔨</div>
+                  <h2 className="text-lg font-bold mb-1">鍛造工坊</h2>
+                  <p className="text-stone-400 text-[10px] hidden md:block">用碎片打造戰鬥武裝。</p>
               </button>
 
               {/* 征戰夜巡 - 最後 */}
@@ -3237,6 +3304,131 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
+  const renderForge = () => {
+    const forgeEquip = (armorId) => {
+        const np = { ...progress, equippedArmor: progress.equippedArmor === armorId ? null : armorId };
+        saveProgress(np);
+    };
+    const forgeCraft = (armor, isConsumable) => {
+        if (progress.fragments < armor.cost) { setSysError('碎片不足！'); return; }
+        if (!isConsumable && progress.unlockedArmors.includes(armor.id)) { setSysError('已製作過此永久武裝！'); return; }
+        const np = { ...progress, fragments: progress.fragments - armor.cost };
+        if (isConsumable) {
+            np.consumableArmors = { ...progress.consumableArmors, [armor.id]: (progress.consumableArmors[armor.id] || 0) + 1 };
+        } else {
+            np.unlockedArmors = [...progress.unlockedArmors, armor.id];
+        }
+        saveProgress(np);
+        showToastMsg(`✅ 製作完成：${armor.name}！`);
+    };
+    const setConsumableForBattle = (armorId) => {
+        const np = { ...progress, pendingConsumableArmor: progress.pendingConsumableArmor === armorId ? null : armorId };
+        saveProgress(np);
+    };
+
+    return (
+      <div className="min-h-screen p-8 bg-stone-950 text-stone-200">
+        <div className="max-w-3xl mx-auto">
+          <button onClick={() => setGameState('intro')} className="mb-8 flex items-center gap-2 text-stone-400 hover:text-white transition-colors"><ArrowLeft /> 返回首頁</button>
+
+          <NpcDialogue
+            npcName="鍛造師葛魯"
+            npcImage={null}
+            npcImageFallback="🐂"
+            dialogues={[
+              "歡迎來到鍛造工坊！我是礦坑老頭葛魯的徒弟，專門幫夜行者製作武裝。",
+              "用碎片換成武裝，能在戰鬥中給你帶來意外之喜。",
+              "永久武裝只需製作一次，可隨時切換裝備。",
+              "消耗型武裝效果更爆發，但用完就沒了，記得補貨！",
+              "碎片去礦坑或打魔物都能拿到，別忘了多存一點！",
+            ]}
+          />
+
+          <div className="bg-stone-800 px-5 py-3 rounded-2xl border border-stone-700 text-center mb-6 font-bold text-lg">
+            🧩 持有碎片：<span className="text-yellow-400">{progress.fragments}</span>
+            {progress.equippedArmor && (() => {
+                const a = ALL_ARMORS.find(x => x.id === progress.equippedArmor);
+                return a ? <span className="ml-4 text-sm text-purple-400">裝備中：{a.icon} {a.name}</span> : null;
+            })()}
+            {progress.pendingConsumableArmor && (() => {
+                const a = ALL_ARMORS.find(x => x.id === progress.pendingConsumableArmor);
+                return a ? <span className="ml-4 text-sm text-orange-400">消耗備用：{a.icon} {a.name}</span> : null;
+            })()}
+          </div>
+
+          {/* 永久武裝 */}
+          <div className="bg-stone-800 rounded-3xl border border-stone-700 p-6 mb-6 shadow-xl">
+            <h3 className="text-xl font-bold text-purple-400 mb-4">⚔️ 永久武裝</h3>
+            <p className="text-stone-400 text-sm mb-5">製作後永久擁有，每次戰鬥只能裝備一件。</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {FORGE_PERMANENT.map(armor => {
+                const owned = progress.unlockedArmors.includes(armor.id);
+                const equipped = progress.equippedArmor === armor.id;
+                return (
+                  <div key={armor.id} className={`bg-stone-900 rounded-2xl p-4 border-2 transition-all ${equipped ? 'border-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.3)]' : 'border-stone-700'}`}>
+                    <div className="flex items-start gap-3 mb-3">
+                      <span className="text-3xl shrink-0">{armor.icon}</span>
+                      <div>
+                        <div className="font-bold text-white">{armor.name}</div>
+                        <div className="text-xs text-stone-400 mt-1">{armor.desc}</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {!owned ? (
+                        <button onClick={() => forgeCraft(armor, false)} disabled={progress.fragments < armor.cost}
+                          className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${progress.fragments >= armor.cost ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-stone-700 text-stone-500 cursor-not-allowed'}`}>
+                          🧩 {armor.cost} 碎片 製作
+                        </button>
+                      ) : (
+                        <button onClick={() => forgeEquip(armor.id)}
+                          className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${equipped ? 'bg-stone-600 text-stone-300 hover:bg-stone-500' : 'bg-purple-600 hover:bg-purple-500 text-white'}`}>
+                          {equipped ? '✓ 卸除裝備' : '裝備'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 消耗型武裝 */}
+          <div className="bg-stone-800 rounded-3xl border border-stone-700 p-6 shadow-xl">
+            <h3 className="text-xl font-bold text-orange-400 mb-4">💥 消耗型武裝</h3>
+            <p className="text-stone-400 text-sm mb-5">每場勝利消耗一個，可選一件備用於下次戰鬥。</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {FORGE_CONSUMABLE.map(armor => {
+                const stock = progress.consumableArmors[armor.id] || 0;
+                const pending = progress.pendingConsumableArmor === armor.id;
+                return (
+                  <div key={armor.id} className={`bg-stone-900 rounded-2xl p-4 border-2 transition-all ${pending ? 'border-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.3)]' : 'border-stone-700'}`}>
+                    <div className="flex items-start gap-3 mb-3">
+                      <span className="text-3xl shrink-0">{armor.icon}</span>
+                      <div>
+                        <div className="font-bold text-white flex items-center gap-2">{armor.name} <span className="text-xs text-stone-400">×{stock}</span></div>
+                        <div className="text-xs text-stone-400 mt-1">{armor.desc}</div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => forgeCraft(armor, true)} disabled={progress.fragments < armor.cost}
+                        className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${progress.fragments >= armor.cost ? 'bg-orange-700 hover:bg-orange-600 text-white' : 'bg-stone-700 text-stone-500 cursor-not-allowed'}`}>
+                        🧩 {armor.cost} 製作
+                      </button>
+                      <button onClick={() => setConsumableForBattle(armor.id)} disabled={stock <= 0}
+                        className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${stock > 0 ? (pending ? 'bg-stone-600 text-stone-300 hover:bg-stone-500' : 'bg-orange-600 hover:bg-orange-500 text-white') : 'bg-stone-700 text-stone-500 cursor-not-allowed'}`}>
+                        {pending ? '✓ 取消備用' : '備用'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderGacha = () => {
       const gachaCost = 20;
       const gachaTenCost = 150;
@@ -3465,6 +3657,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   case 'shop': return renderShop();
                   case 'gacha': return renderGacha();
                   case 'mine': return renderMine();
+                  case 'forge': return renderForge();
                   case 'story_chapters': return renderStoryChapters();
                   case 'story_select_char': return renderStorySelectChar();
                   case 'story_dialogue': return renderStoryDialogue();
