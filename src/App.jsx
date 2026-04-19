@@ -372,6 +372,11 @@ const ACHIEVEMENTS = [
     { id: 'a_mastery_all', name: '全職業制霸', desc: '將 5 名角色的專精提升至 3 星', target: 5, reward: 1000, getProgress: (p) => Object.values(p.mastery || {}).filter(v => v >= 3).length },
     { id: 'a_aff_1', name: '最好的朋友', desc: '解鎖 1 張雙人羈絆滿級CG', target: 1, reward: 200, getProgress: (p) => Object.values(p.affection || {}).filter(v => v >= 20).length },
     { id: 'a_aff_3', name: '最棒的摯友', desc: '解鎖 3 張雙人羈絆滿級CG', target: 3, reward: 600, getProgress: (p) => Object.values(p.affection || {}).filter(v => v >= 20).length },
+    { id: 'a_story_1', name: '翡翠森之獵手', desc: '完成主線夜巡第一章「翡翠森之徑」', target: 1, reward: 0, rewardIngredients: { herb: 3 }, rewardDesc: '🌿 翠葉靈草 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(1) ? 1 : 0 },
+    { id: 'a_story_2', name: '冰封湖的訪客', desc: '完成主線夜巡第二章「冰封星晶湖」', target: 1, reward: 0, rewardIngredients: { fish: 3 }, rewardDesc: '🐟 銀流溪魚 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(2) ? 1 : 0 },
+    { id: 'a_story_3', name: '煉獄山的試煉者', desc: '完成主線夜巡第三章「焦熱煉獄山」', target: 1, reward: 0, rewardIngredients: { meat: 3 }, rewardDesc: '🥩 野獸魔肉 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(3) ? 1 : 0 },
+    { id: 'a_story_4', name: '神殿遺忘的光', desc: '完成主線夜巡第四章「曦光遺忘神殿」', target: 1, reward: 0, rewardIngredients: { egg: 3 }, rewardDesc: '🥚 星紋鳥蛋 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(4) ? 1 : 0 },
+    { id: 'a_story_5', name: '深淵裂隙封鎖者', desc: '完成主線夜巡第五章「深淵星晶裂隙」', target: 1, reward: 0, rewardIngredients: { mush: 3, water: 3 }, rewardDesc: '🍄 夜光孢菇 ×3 + 💧 元素靈水 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(5) ? 1 : 0 },
 ];
 
 // ==========================================
@@ -555,6 +560,13 @@ const STORY_CHAPTERS = [
   },
 ];
 
+const BATTLE_ITEMS = [
+  { id: 'stardust',      icon: '✨', name: '星晶砂粉', effect: '恢復 100 HP' },
+  { id: 'excite_potion', icon: '🧪', name: '亢奮藥劑', effect: '獲得 ⚡[亢奮] 3回合' },
+  { id: 'smoke_bomb',    icon: '💨', name: '煙霧彈',   effect: '獲得 💨[迴避] 1次' },
+  { id: 'antidote',      icon: '💊', name: '萬能解藥', effect: '清除所有負面狀態' },
+];
+
 export default function App() {
   const [gameState, setGameState] = useState('intro'); 
   const [gameMode, setGameMode] = useState('campaign'); 
@@ -587,6 +599,8 @@ export default function App() {
   const [tutorialStep, setTutorialStep] = useState(0);
   const [toast, setToast] = useState(null);
   const [gachaResult, setGachaResult] = useState(null);
+  const [battleItemUses, setBattleItemUses] = useState(3);
+  const [showItemPanel, setShowItemPanel] = useState(false);
   const [shopTab, setShopTab] = useState('crystal');
   const [gachaPreviewIdx, setGachaPreviewIdx] = useState(0);
   const [storyChapterId, setStoryChapterId] = useState(null);
@@ -595,7 +609,7 @@ export default function App() {
   const [storySelectedCharId, setStorySelectedCharId] = useState(null);
 
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
-  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [] });
+  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {} });
   const [isLoaded, setIsLoaded] = useState(false);
 
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
@@ -623,7 +637,8 @@ export default function App() {
                 mine: p.mine || { lv: 1, workers: [], lastCollect: null, pending: 0 },
                 ingredients: p.ingredients || {}, unlockedRecipes: Array.isArray(p.unlockedRecipes) ? p.unlockedRecipes : [], pendingMeal: p.pendingMeal || null,
                 tutorialDone: p.tutorialDone || false,
-                completedStoryChapters: Array.isArray(p.completedStoryChapters) ? p.completedStoryChapters : []
+                completedStoryChapters: Array.isArray(p.completedStoryChapters) ? p.completedStoryChapters : [],
+                items: p.items || {}
             });
         }
     } catch(e) { console.warn("Save file invalid, starting fresh.", e); }
@@ -1182,7 +1197,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
         const initLogs = [{ text: `夜晚的艾歐蘭斯充滿危險，戰鬥開始！`, type: 'system' }];
         if (mealLog) initLogs.push({ text: mealLog, type: 'info' });
-        setPlayer(pObj); setEnemy(eObj); setNewlyCaptured(null); setLogs(initLogs); setGameState('battle');
+        setPlayer(pObj); setEnemy(eObj); setNewlyCaptured(null); setLogs(initLogs); setBattleItemUses(3); setShowItemPanel(false); setGameState('battle');
 
     } catch (e) {
         console.error(e);
@@ -1276,8 +1291,39 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (mealLog) initLogs.push({ text: mealLog, type: 'info' });
     setLogs(initLogs);
     setNewlyCaptured(null);
+    setBattleItemUses(3); setShowItemPanel(false);
     setGameMode('story');
     setGameState('battle');
+  };
+
+  const NEGATIVE_STATUSES = ['BURN','PARASITE','FREEZE','DAZZLE','SILENCE','ATK_DOWN','DEF_DOWN','VULNERABLE','FATIGUE'];
+  const handleUseItem = (itemId) => {
+    if (battleItemUses <= 0) { setSysError('本場戰鬥道具使用次數已達上限（3次）！'); return; }
+    if ((progress.items?.[itemId] || 0) <= 0) { setSysError('道具數量不足！'); return; }
+    let newPlayer = { ...player, status: [...(player.status||[])] };
+    let logText = '';
+    switch (itemId) {
+      case 'stardust':
+        newPlayer.hp = Math.min(newPlayer.maxHp, newPlayer.hp + 100);
+        logText = '✨ 使用星晶砂粉！恢復 100 HP！'; break;
+      case 'excite_potion':
+        newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'EXCITE'), { type: 'EXCITE', duration: 3, value: 0, isNew: true, isDeferred: false }];
+        logText = '🧪 使用亢奮藥劑！獲得 ⚡[亢奮] 3回合！'; break;
+      case 'smoke_bomb':
+        newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'EVADE'), { type: 'EVADE', duration: 1, value: 0, isNew: true, isDeferred: false }];
+        logText = '💨 使用煙霧彈！獲得 💨[迴避] 1次！'; break;
+      case 'antidote':
+        newPlayer.status = newPlayer.status.filter(s => !NEGATIVE_STATUSES.includes(s.type));
+        logText = '💊 使用萬能解藥！清除所有負面狀態！'; break;
+      default: return;
+    }
+    setPlayer(newPlayer);
+    setBattleItemUses(prev => prev - 1);
+    setLogs(prev => [...prev, { text: logText, type: 'heal' }]);
+    let np = { ...progress, items: { ...progress.items, [itemId]: Math.max(0, (progress.items?.[itemId] || 0) - 1) } };
+    saveProgress(np);
+    setShowItemPanel(false);
+    playSound('heal');
   };
 
   const getBrawlReward = (eChar) => {
@@ -1415,8 +1461,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     };
     if (eT.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); eObj.status.push({ type: pool[0], duration: 3, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 3, value: 20, isNew: false, isDeferred: false }); }
     
-    setEnemy(eObj); 
-    setLogs([{ text: `深淵的 ${ne.name} 出現了！`, type: 'system' }]); 
+    setEnemy(eObj);
+    setBattleItemUses(3); setShowItemPanel(false);
+    setLogs([{ text: `深淵的 ${ne.name} 出現了！`, type: 'system' }]);
     setGameState('battle');
   };
 
@@ -1606,10 +1653,16 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   // 【V2.6 成就領取系統】
   const claimAchievement = (ach) => {
       let np = { ...progress };
-      np.crystals += ach.reward;
       np.claimedAchievements = [...np.claimedAchievements, ach.id];
+      if (ach.reward > 0) np.crystals += ach.reward;
+      if (ach.rewardIngredients) {
+          const ing = { ...np.ingredients };
+          Object.entries(ach.rewardIngredients).forEach(([id, qty]) => { ing[id] = (ing[id] || 0) + qty; });
+          np.ingredients = ing;
+      }
       saveProgress(np);
-      showToastMsg(`🏆 領取成就【${ach.name}】獎勵：💎 ${ach.reward} 星晶！`);
+      const rewardText = ach.reward > 0 ? `💎 ${ach.reward} 星晶` : ach.rewardDesc || '食材獎勵';
+      showToastMsg(`🏆 領取成就【${ach.name}】獎勵：${rewardText}！`);
   };
 
   // ========================== 礦坑系統函數 ==========================
@@ -1839,7 +1892,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               </button>
           </div>
           <div className="flex items-center gap-4 z-10">
-              <button onClick={() => setGameState('gallery')} className="flex items-center gap-2 text-stone-400 hover:text-white bg-stone-800 px-6 py-3 rounded-full border border-stone-700 transition-all hover:shadow-lg"><BookOpen size={20}/> 艾歐蘭斯圖鑑 {isFullGallery(captured) && !unlocks.includes('xiangxiang') && <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full animate-ping"></span>}</button>
+              <div className="relative">
+                  <button onClick={() => setGameState('gallery')} className="flex items-center gap-2 text-stone-400 hover:text-white bg-stone-800 px-6 py-3 rounded-full border border-stone-700 transition-all hover:shadow-lg"><BookOpen size={20}/> 艾歐蘭斯圖鑑</button>
+                  {(ACHIEVEMENTS.some(a => a.getProgress(progress) >= a.target && !(progress.claimedAchievements||[]).includes(a.id)) || (isFullGallery(captured) && !unlocks.includes('xiangxiang'))) && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping pointer-events-none"></span>
+                  )}
+              </div>
               <div className="relative flex items-center">
                   <button onClick={() => setShowCheat(!showCheat)} className="text-stone-700 hover:text-stone-400 text-xl transition-colors bg-stone-800 p-3 rounded-full border border-stone-700 shadow-md">🎁</button>
                   {showCheat && (
@@ -2272,8 +2330,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : gameMode === 'story' ? `${STORY_CHAPTERS.find(c=>c.id===storyChapterId)?.name || '主線夜巡'} · 第 ${storyBattleStage + 1}/3 戰` : '自訂對決'}
                 </div>
                 <div className="flex gap-2 shrink-0">
-                    <button disabled className="flex items-center gap-1 text-[11px] bg-stone-900 border border-stone-800 text-stone-600 px-2.5 py-1 rounded-lg cursor-not-allowed select-none">
-                        🎒 道具<span className="text-[9px] ml-0.5 text-stone-700">未開放</span>
+                    <button onClick={() => setShowItemPanel(true)} className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border transition-colors select-none ${battleItemUses > 0 ? 'bg-stone-900 border-stone-700 text-stone-400 hover:bg-stone-700 hover:text-white' : 'bg-stone-900 border-stone-800 text-stone-600 cursor-not-allowed'}`}>
+                        🎒 道具<span className={`text-[9px] ml-0.5 font-bold ${battleItemUses > 0 ? 'text-yellow-500' : 'text-stone-700'}`}>{battleItemUses}/3</span>
                     </button>
                     {gameMode !== 'tutorial' && (
                         <button onClick={() => {
@@ -2339,6 +2397,41 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 </div>
             </div>
             <BattleInspectModal />
+            {showItemPanel && (
+                <div className="fixed inset-0 bg-black/75 z-50 flex items-end justify-center p-4" onClick={() => setShowItemPanel(false)}>
+                    <div className="bg-stone-900 border-2 border-stone-700 rounded-2xl p-5 max-w-sm w-full shadow-2xl mb-2" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <div className="font-bold text-white flex items-center gap-2">🎒 使用道具 <span className="text-xs text-yellow-400 bg-stone-800 px-2 py-0.5 rounded-full border border-stone-700">剩餘 {battleItemUses}/3 次</span></div>
+                            <button className="text-stone-500 hover:text-white text-lg leading-none" onClick={() => setShowItemPanel(false)}>✕</button>
+                        </div>
+                        {BATTLE_ITEMS.every(bi => !(progress.items?.[bi.id] > 0)) ? (
+                            <p className="text-stone-500 text-sm text-center py-4">背包是空的，前往商店打工區製作道具吧！</p>
+                        ) : (
+                            <div className="flex flex-col gap-2">
+                                {BATTLE_ITEMS.map(bi => {
+                                    const count = progress.items?.[bi.id] || 0;
+                                    if (count <= 0) return null;
+                                    return (
+                                        <div key={bi.id} className="flex items-center justify-between bg-stone-800 rounded-xl p-3 border border-stone-700">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">{bi.icon}</span>
+                                                <div>
+                                                    <div className="font-bold text-sm text-stone-100">{bi.name} <span className="text-stone-500 text-xs">×{count}</span></div>
+                                                    <div className="text-xs text-stone-400">{bi.effect}</div>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => handleUseItem(bi.id)} disabled={battleItemUses <= 0}
+                                                className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-colors ${battleItemUses > 0 ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-stone-700 text-stone-500 cursor-not-allowed'}`}>
+                                                使用
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
             <TutorialOverlay />
             <TutorialReward />
         </div>
@@ -2386,6 +2479,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                             <button onClick={()=>handleHomeActivity('chat')} className="bg-purple-900/50 p-4 rounded-xl font-bold flex justify-center items-center gap-2 hover:bg-purple-800 border border-purple-800/50 transition-colors shadow-md"><MessageCircle size={20}/> 篝火閒聊 (1 AP)</button>
                         </div>
 
+                        <div className="bg-stone-900 min-h-[120px] p-6 rounded-xl flex flex-col justify-end text-sm italic text-stone-400 shadow-inner mb-6">
+                            {activeDialogue ? (<><div className="text-green-400 text-left mb-3 bg-green-900/20 p-3 rounded-lg border border-green-900/50 max-w-[80%] self-start">「{activeDialogue.host}」</div><div className="text-yellow-400 text-right bg-stone-700/30 p-3 rounded-lg border border-stone-700/50 max-w-[80%] self-end">「{activeDialogue.guest}」</div></>) : "消耗 AP 互動以揭曉故事..."}
+                        </div>
                         {/* 烹飪系統 */}
                         <div className="bg-stone-900 border border-stone-700 rounded-2xl p-5 mb-6 shadow-inner">
                           <h3 className="text-base font-bold text-orange-400 mb-3 flex items-center gap-2">🍳 篝火料理台
@@ -2445,9 +2541,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                             </div>
                           )}
                         </div>
-                        <div className="bg-stone-900 min-h-[120px] p-6 rounded-xl flex flex-col justify-end text-sm italic text-stone-400 shadow-inner">
-                            {activeDialogue ? (<><div className="text-green-400 text-left mb-3 bg-green-900/20 p-3 rounded-lg border border-green-900/50 max-w-[80%] self-start">「{activeDialogue.host}」</div><div className="text-yellow-400 text-right bg-stone-700/30 p-3 rounded-lg border border-stone-700/50 max-w-[80%] self-end">「{activeDialogue.guest}」</div></>) : "消耗 AP 互動以揭曉故事..."}
-                        </div>
                         <button onClick={()=>{setHomeStep('select_guest'); setActiveDialogue(null);}} className="mt-8 text-stone-500 hover:text-white transition-colors underline">邀請其他夥伴</button>
                     </div>
                 )}
@@ -2463,9 +2556,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             <div className="max-w-6xl mx-auto pb-10">
                 <button onClick={() => setGameState('intro')} className="mb-8 flex items-center gap-2 text-stone-400 hover:text-white transition-colors"><ArrowLeft/> 返回首頁</button>
                 <div className="flex gap-4 justify-center mb-8 flex-wrap">
-                    {['companions', 'enemies', 'achievements', 'guide'].map(t=>(<button key={t} onClick={() => setGalleryTab(t)} className={`px-8 py-3 rounded-full font-bold transition-all flex items-center gap-2 ${galleryTab===t? 'bg-blue-600 shadow-lg' : 'bg-stone-800 text-stone-400 hover:bg-stone-700'}`}>
+                    {['companions', 'enemies', 'achievements', 'guide'].map(t=>{ const hasUnclaimedAch = t==='achievements' && ACHIEVEMENTS.some(a => a.getProgress(progress) >= a.target && !(progress.claimedAchievements||[]).includes(a.id)); return (<button key={t} onClick={() => setGalleryTab(t)} className={`relative px-8 py-3 rounded-full font-bold transition-all flex items-center gap-2 ${galleryTab===t? 'bg-blue-600 shadow-lg' : 'bg-stone-800 text-stone-400 hover:bg-stone-700'}`}>
                         {t==='companions'?'夜行者':t==='enemies'?'深淵魔物':t==='achievements'?<><Trophy size={18}/> 成就勳章</>:'冒險指南'}
-                    </button>))}
+                        {hasUnclaimedAch && <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></span>}
+                    </button>); })}
                 </div>
                 
                 {galleryTab !== 'achievements' && (
@@ -2504,7 +2598,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                             <div className="flex-1 w-full md:w-auto mb-4 md:mb-0">
                                                 <div className="flex items-center gap-3 mb-1">
                                                     <span className={`font-bold text-lg ${isClaimed ? 'text-stone-500' : isCompleted ? 'text-yellow-400' : 'text-stone-200'}`}>{ach.name}</span>
-                                                    <span className="text-[10px] bg-stone-950 px-2 py-1 rounded text-cyan-300 font-mono">💎 {ach.reward} 星晶</span>
+                                                    <span className="text-[10px] bg-stone-950 px-2 py-1 rounded text-cyan-300 font-mono">{ach.rewardDesc || `💎 ${ach.reward} 星晶`}</span>
                                                 </div>
                                                 <div className="text-sm text-stone-400 mb-3">{ach.desc}</div>
                                                 <div className="flex items-center gap-3">
@@ -2654,8 +2748,22 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         showToastMsg(`成功購買 ${amt} 個碎片！`);
     };
 
+    const craftItem = (id, name, icon) => () => {
+      let np = { ...progress, ap: progress.ap - workItems.find(w => w.id === id)?.cost };
+      np.items = { ...np.items, [id]: (np.items?.[id] || 0) + 1 };
+      saveProgress(np);
+      showToastMsg(`✅ 製作完成：${icon} ${name}！`);
+    };
+
+    const workItems = [
+      { id: 'guild_work', name: '公會打工', desc: '消耗 1 點 AP 協助公會處理雜務，獲得 5 顆星晶。', cost: 1, currency: 'ap', icon: '💼', canBuy: progress.ap >= 1, bought: false, isInfinite: true, onBuy: () => { let np={...progress, ap: progress.ap - 1, crystals: progress.crystals + 5}; saveProgress(np); showToastMsg('打工成功！獲得 5 💎'); } },
+      { id: 'stardust',      name: '道具製作：星晶砂粉', desc: `戰鬥中使用，立即回復 100 HP。持有：${progress.items?.stardust||0} 個`,      cost: 1, currency: 'ap', icon: '✨', canBuy: progress.ap >= 1, bought: false, isInfinite: true, onBuy: craftItem('stardust',      '星晶砂粉', '✨') },
+      { id: 'excite_potion', name: '道具製作：亢奮藥劑', desc: `戰鬥中使用，獲得亢奮狀態 3 回合。持有：${progress.items?.excite_potion||0} 個`, cost: 2, currency: 'ap', icon: '🧪', canBuy: progress.ap >= 2, bought: false, isInfinite: true, onBuy: craftItem('excite_potion', '亢奮藥劑', '🧪') },
+      { id: 'smoke_bomb',    name: '道具製作：煙霧彈',   desc: `戰鬥中使用，獲得迴避效果 1 次。持有：${progress.items?.smoke_bomb||0} 個`,    cost: 3, currency: 'ap', icon: '💨', canBuy: progress.ap >= 3, bought: false, isInfinite: true, onBuy: craftItem('smoke_bomb',    '煙霧彈',   '💨') },
+      { id: 'antidote',      name: '道具製作：萬能解藥', desc: `戰鬥中使用，清除自身所有負面狀態。持有：${progress.items?.antidote||0} 個`,      cost: 3, currency: 'ap', icon: '💊', canBuy: progress.ap >= 3, bought: false, isInfinite: true, onBuy: craftItem('antidote',      '萬能解藥', '💊') },
+    ];
+
     const crystalItems = [
-      { id: 'work', name: '公會打工', desc: '消耗 1 點 AP 協助公會處理雜務，獲得 5 顆星晶。', cost: 1, currency: 'ap', icon: '💼', canBuy: true, bought: false, isInfinite: true, onBuy: () => { let np={...progress, ap: progress.ap - 1, crystals: progress.crystals + 5}; saveProgress(np); showToastMsg('打工成功！'); } },
       { id: 'massage', name: '星晶按摩', desc: '花費 5 顆星晶享受魔力按摩，恢復 1 點 AP。', cost: 5, currency: 'crystal', icon: '💆', canBuy: true, bought: false, isInfinite: true, onBuy: () => { let np={...progress, crystals: progress.crystals - 5, ap: progress.ap + 1}; saveProgress(np); showToastMsg('AP 恢復了！'); } },
       { id: 'max4', name: '擴展天賦槽 (4點)', desc: '將天賦點數上限提升至 4 點。', cost: 15, currency: 'crystal', icon: '⬆️', canBuy: progress.maxTalents === 3, bought: progress.maxTalents >= 4, onBuy: () => { let np={...progress, crystals: progress.crystals - 15, maxTalents: 4}; saveProgress(np); } },
       { id: 'max5', name: '擴展天賦槽 (5點)', desc: '將天賦點數上限提升至 5 點。', cost: 30, currency: 'crystal', icon: '🌟', canBuy: progress.maxTalents === 4, bought: progress.maxTalents >= 5, onBuy: () => { let np={...progress, crystals: progress.crystals - 30, maxTalents: 5}; saveProgress(np); } },
@@ -2692,15 +2800,16 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       onBuy: () => buyIngredient(ing.id)
     }));
 
-    const displayItems = shopTab === 'crystal' ? crystalItems : shopTab === 'fragment' ? fragmentItems : shopTab === 'recipe' ? recipeItems : ingredientItems;
+    const displayItems = shopTab === 'crystal' ? crystalItems : shopTab === 'fragment' ? fragmentItems : shopTab === 'recipe' ? recipeItems : shopTab === 'ingredient' ? ingredientItems : workItems;
 
     return (
         <div className="min-h-screen p-8 bg-stone-900 text-stone-200">
             <button onClick={()=>setGameState('intro')} className="mb-8 flex items-center gap-2 text-stone-400 hover:text-white transition-colors"><ArrowLeft/> 返回首頁</button>
             <div className="flex justify-between items-center mb-6 max-w-4xl mx-auto"><h2 className="text-3xl font-bold text-cyan-400">星晶商店</h2>
-                <div className="flex gap-4">
-                    <div className="text-blue-300 font-bold bg-stone-800 px-4 py-2 rounded-full border border-stone-700 shadow-lg">💎 星晶：{progress.crystals}</div>
-                    <div className="text-cyan-300 font-bold bg-stone-800 px-4 py-2 rounded-full border border-stone-700 shadow-lg">💠 碎片：{progress.fragments || 0}</div>
+                <div className="flex gap-3 flex-wrap justify-end">
+                    <div className="text-blue-300 font-bold bg-stone-800 px-4 py-2 rounded-full border border-stone-700 shadow-lg">💎 {progress.crystals}</div>
+                    <div className="text-cyan-300 font-bold bg-stone-800 px-4 py-2 rounded-full border border-stone-700 shadow-lg">💠 {progress.fragments || 0}</div>
+                    <div className="text-green-400 font-bold bg-stone-800 px-4 py-2 rounded-full border border-stone-700 shadow-lg">⚡ AP {progress.ap}</div>
                 </div>
             </div>
             
@@ -2724,9 +2833,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     "料理可以在戰鬥前給角色加持 Buff，效果相當可觀。",
                     "每種料理都有「偏好角色」，對應角色使用效果提升 20%！",
                     "投資食譜是一次性的，買下之後可以反覆製作。。"
-                ] : [
+                ] : shopTab === 'ingredient' ? [
                     "礦坑掛機採集會自動產出星晶碎片，可在我這購入一些珍貴食材。",
                     "囤好各類食材，回到白晝營地就能靈活搭配不同料理！"
+                ] : [
+                    "缺星晶的時候就來這裡打個工，雖然薪水不多但聊勝於無。",
+                    "道具可以在戰鬥中使用，說不定能扭轉局面。",
+                    "製作道具需要消耗 AP，請好好規劃你的行動力！"
                 ]}
             />
 
@@ -2735,6 +2848,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 <button onClick={() => setShopTab('fragment')} className={`px-8 py-3 rounded-full font-bold transition-all shadow-md ${shopTab === 'fragment' ? 'bg-cyan-600 text-white' : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'}`}>💠 碎片補給區</button>
                 <button onClick={() => setShopTab('recipe')} className={`px-8 py-3 rounded-full font-bold transition-all shadow-md ${shopTab === 'recipe' ? 'bg-orange-600 text-white' : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'}`}>📖 食譜商店</button>
                 <button onClick={() => setShopTab('ingredient')} className={`px-8 py-3 rounded-full font-bold transition-all shadow-md ${shopTab === 'ingredient' ? 'bg-green-600 text-white' : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'}`}>🧺 食材補給</button>
+                <button onClick={() => setShopTab('work')} className={`px-8 py-3 rounded-full font-bold transition-all shadow-md ${shopTab === 'work' ? 'bg-yellow-600 text-white' : 'bg-stone-800 text-stone-400 hover:bg-stone-700 border border-stone-700'}`}>💼 打工專區</button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto animate-fade-in">
