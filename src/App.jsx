@@ -213,6 +213,17 @@ const ADVANCED_BOSSES = [
   { id: 'ab2', name: '星曜古龍', title: '星晶化身', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🐲', image: 'adv_boss_dragon.png', prefHand: 'PAPER', stats: { hp: 2000, maxHp: 2000, atk: 90, def: 50 }, lore: '完全吞噬了大星晶核心的遠古巨龍，難以名狀的災厄。', skill1: { name: '星辰庇護', cost: 50, desc: '獲得150點護盾與再生(3回)。' }, skill2: { name: '星爆氣流', cost: 120, desc: '無視護盾造成250點真實傷害。' }, isUncapturable: true }
 ];
 
+const TUTORIAL_ENEMY = {
+    id: 'tutorial_dummy', name: '訓練魔傀儡', title: '乖巧的', element: ELEMENTS.WOOD,
+    isEmoji: true, emoji: '🪆', icon: '🪆',
+    prefHand: 'ROCK',
+    stats: { hp: 220, maxHp: 220, atk: 12, def: 5 },
+    lore: '由教官以魔法製成的訓練用傀儡，不會造成致命傷害。',
+    skill1: { name: '輕拍', cost: 999, desc: '造成 10 點傷害。' },
+    skill2: { name: '搖晃', cost: 999, desc: '造成 20 點傷害。' },
+    isUncapturable: true
+};
+
 const ALL_TALENTS = [
   { id: 't1', name: '活力', cost: 1, desc: '最大生命值 +100', icon: '❤️' },
   { id: 't2', name: '怪力', cost: 1, desc: '攻擊力 +10', icon: '⚔️' },
@@ -474,13 +485,14 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [resetStep, setResetStep] = useState(0);
   const [resetInput, setResetInput] = useState('');
+  const [tutorialStep, setTutorialStep] = useState(0);
   const [toast, setToast] = useState(null);
   const [gachaResult, setGachaResult] = useState(null);
   const [shopTab, setShopTab] = useState('crystal');
   const [gachaPreviewIdx, setGachaPreviewIdx] = useState(0);
 
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
-  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null });
+  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false });
   const [isLoaded, setIsLoaded] = useState(false);
 
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
@@ -506,7 +518,8 @@ export default function App() {
                 charCostUpgrades: p.charCostUpgrades || {},
                 battlesWon: p.battlesWon || 0, gachaPulls: p.gachaPulls || 0, claimedAchievements: Array.isArray(p.claimedAchievements) ? p.claimedAchievements : [],
                 mine: p.mine || { lv: 1, workers: [], lastCollect: null, pending: 0 },
-                ingredients: p.ingredients || {}, unlockedRecipes: Array.isArray(p.unlockedRecipes) ? p.unlockedRecipes : [], pendingMeal: p.pendingMeal || null
+                ingredients: p.ingredients || {}, unlockedRecipes: Array.isArray(p.unlockedRecipes) ? p.unlockedRecipes : [], pendingMeal: p.pendingMeal || null,
+                tutorialDone: p.tutorialDone || false
             });
         }
     } catch(e) { console.warn("Save file invalid, starting fresh.", e); }
@@ -931,7 +944,31 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     }
     processEoR(p, e, buf); processEoR(e, p, buf);
     setPlayer(p); setEnemy(e); setLogs(prev => [...prev, ...buf]);
+    if (tutorialStep === 3) setTutorialStep(4);
     if (p.hp <= 0) handleDeath('player'); else if (e.hp <= 0) handleDeath('enemy');
+  };
+
+  const startTutorial = () => {
+    const tutChar = CHARACTERS[0];
+    const pObj = {
+        char: tutChar, talents: [], hp: tutChar.stats.maxHp, maxHp: tutChar.stats.maxHp,
+        atk: tutChar.stats.atk, def: tutChar.stats.def, energy: 0, shield: 0,
+        buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false },
+        permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: []
+    };
+    const eObj = {
+        char: TUTORIAL_ENEMY, talents: [], hp: TUTORIAL_ENEMY.stats.maxHp, maxHp: TUTORIAL_ENEMY.stats.maxHp,
+        atk: TUTORIAL_ENEMY.stats.atk, def: TUTORIAL_ENEMY.stats.def, energy: 0, shield: 0,
+        buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false },
+        permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: []
+    };
+    setGameMode('tutorial');
+    setPlayer(pObj);
+    setEnemy(eObj);
+    setLogs([{ text: '【訓練場】教官為你安排了一場模擬戰鬥！', type: 'system' }]);
+    setWinner(null);
+    setTutorialStep(1);
+    setGameState('battle');
   };
 
   const startBattleMode = (selectedChar, tIds, specificEnemy = null) => {
@@ -1043,6 +1080,20 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const handleDeath = (target) => {
+    if (gameMode === 'tutorial') {
+        if (target === 'player') {
+            setEnemy(prev => ({ ...prev, hp: TUTORIAL_ENEMY.stats.maxHp, shield: 0, status: [], energy: 0 }));
+            setLogs(prev => [...prev, { text: '💪 別灰心！傀儡恢復了血量，繼續挑戰！', type: 'info' }]);
+            return;
+        }
+        if (target === 'enemy') {
+            playSound('victory');
+            const np2 = { ...progress, crystals: (progress.crystals || 0) + 50, tutorialDone: true };
+            saveProgress(np2);
+            setTutorialStep(8);
+            return;
+        }
+    }
     let np = { ...progress };
     const isAdvanced = gameMode === 'advanced_campaign';
     const maxStage = isAdvanced ? 4 : 2;
@@ -1434,6 +1485,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               <div className="bg-stone-800 border border-stone-700 px-6 py-2 rounded-full shadow-lg text-cyan-300">💠 碎片：{progress.fragments || 0}</div>
               <div className="bg-stone-800 border border-stone-700 px-6 py-2 rounded-full shadow-lg text-green-400">⚡ AP：{progress.ap}</div>
           </div>
+          {isLoaded && !progress.tutorialDone && (
+              <div className="w-full max-w-4xl mb-4 z-10 animate-pulse">
+                  <button onClick={startTutorial} className="w-full bg-yellow-600 hover:bg-yellow-500 text-stone-900 font-bold py-3 px-6 rounded-2xl shadow-xl flex items-center justify-center gap-3 text-base transition-all active:scale-95 border-2 border-yellow-400">
+                      <span className="text-xl">📖</span> 新手？點我開始互動教學！ <span className="text-xl">⚔️</span>
+                  </button>
+              </div>
+          )}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-4xl mb-8 z-10">
               <button onClick={() => selectMode('campaign')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-yellow-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
                   <div className="text-3xl mb-2">🗺️</div>
@@ -1685,6 +1743,74 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const canUseSkill1 = !silenced && player.energy >= skill1Cost;
     const canUseSkill2 = !silenced && player.energy >= skill2Cost;
 
+    const tutHL = (...steps) => tutorialStep > 0 && steps.includes(tutorialStep)
+        ? 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-stone-950 transition-all'
+        : '';
+
+    const TUTORIAL_MSGS = {
+        1: { title: '⚔️ 歡迎來到夜行者訓練場！', body: '我是教官，讓我帶你熟悉艾歐蘭斯的戰鬥規則。先認識一下你的對手吧！', btn: '開始', next: 2 },
+        2: { title: '👆 這是你的對手', body: '注意牠的血量（紅色血條）和能量（黃色能量條）。你的目標是把對手的血量打到 0！', btn: '知道了', next: 3 },
+        3: { title: '✊ 選擇你的手勢出拳！', body: '石頭 ✊ 剋 剪刀 ✌️　剪刀 ✌️ 剋 布 🖐️　布 🖐️ 剋 石頭 ✊\n試著出任意一拳！', btn: null, next: 4 },
+        4: { title: '📊 看看結果！', body: '✅ 贏了 → 對敵造成傷害　❌ 輸了 → 自己受傷　🤝 平手 → 雙方各獲得能量 ⚡\n能量是使用技能的關鍵！', btn: '知道了', next: 5 },
+        5: { title: '⚡ 技能系統', body: '左側「戰技」和「奧義」在能量足夠時亮起。合適時機使用可以大幅扭轉戰局！', btn: '明白了', next: 6 },
+        6: { title: '🔍 查看敵方情報', body: '長按敵方頭像可以查看牠的出拳偏好、技能說明，這是預判行動的關鍵資訊！', btn: '好的', next: 7 },
+        7: { title: '🏆 教學完成！', body: '用你學到的知識打倒訓練魔傀儡，完成你的第一場勝利！', btn: null, next: null },
+    };
+
+    const TutorialOverlay = () => {
+        if (tutorialStep === 0 || tutorialStep === 8) return null;
+        const msg = TUTORIAL_MSGS[tutorialStep];
+        if (!msg) return null;
+        return (
+            <div className="fixed inset-x-0 bottom-0 z-50 p-3 pointer-events-none">
+                <div className="max-w-3xl mx-auto bg-stone-900/95 border-2 border-yellow-500/60 rounded-2xl p-4 shadow-2xl pointer-events-auto">
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                            <div className="font-bold text-yellow-400 text-sm mb-1">{msg.title}</div>
+                            <div className="text-stone-300 text-xs leading-relaxed whitespace-pre-line">{msg.body}</div>
+                        </div>
+                        {msg.btn && (
+                            <button
+                                onClick={() => setTutorialStep(msg.next)}
+                                className="shrink-0 bg-yellow-500 hover:bg-yellow-400 text-stone-900 font-bold text-xs px-4 py-2 rounded-xl transition-all active:scale-95 shadow-lg"
+                            >
+                                {msg.btn} →
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex gap-1 mt-3">
+                        {[1,2,3,4,5,6,7].map(s => (
+                            <div key={s} className={`h-1 flex-1 rounded-full ${s <= tutorialStep ? 'bg-yellow-400' : 'bg-stone-700'}`} />
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const TutorialReward = () => {
+        if (tutorialStep !== 8) return null;
+        return (
+            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                <div className="bg-stone-900 border-2 border-yellow-500 rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center">
+                    <div className="text-5xl mb-3">🎉</div>
+                    <h2 className="text-xl font-bold text-yellow-400 mb-2">訓練完成！</h2>
+                    <p className="text-stone-300 text-sm mb-4 leading-relaxed">你已掌握夜行者的基礎戰鬥技巧！<br/>以下是給你的入門獎勵：</p>
+                    <div className="bg-stone-800 border border-yellow-600 rounded-xl py-3 mb-5 flex items-center justify-center gap-2">
+                        <span className="text-2xl">💎</span>
+                        <span className="text-yellow-400 font-bold text-xl">× 50 星晶</span>
+                    </div>
+                    <p className="text-stone-400 text-xs mb-5">現在可以前往商店購買天賦，或到酒館招募夥伴碎片！</p>
+                    <div className="flex flex-col gap-2">
+                        <button onClick={() => { setTutorialStep(0); setGameState('shop'); setShopTab('crystal'); }} className="w-full bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-2.5 rounded-xl transition-all active:scale-95">💎 前往星晶商店</button>
+                        <button onClick={() => { setTutorialStep(0); setGameState('gacha'); setGachaResult(null); }} className="w-full bg-purple-700 hover:bg-purple-600 text-white font-bold py-2.5 rounded-xl transition-all active:scale-95">🍻 前往迷途酒館</button>
+                        <button onClick={() => { setTutorialStep(0); setGameState('intro'); }} className="w-full bg-stone-700 hover:bg-stone-600 text-stone-300 font-bold py-2.5 rounded-xl transition-all active:scale-95">返回首頁</button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const startLongPress = (inspectData) => (e) => {
         longPressDetectedRef.current = false;
         longPressTimerRef.current = setTimeout(() => {
@@ -1777,11 +1903,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     return (
         <div className="min-h-screen p-4 flex flex-col max-w-3xl mx-auto h-screen bg-stone-950 text-stone-200">
             <div className="text-center text-xs text-stone-500 mb-2 font-bold">
-                {gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : '無盡亂鬥'}
+                {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : '無盡亂鬥'}
             </div>
             
-            <div className={`p-4 rounded-xl mb-2 flex items-center gap-4 bg-stone-900 border-2 ${enemy.char.element.border} relative overflow-hidden shadow-lg`}>
-                <div className="relative cursor-pointer select-none shrink-0" {...lpProps({ type: 'enemy' })}>
+            <div className={`p-4 rounded-xl mb-2 flex items-center gap-4 bg-stone-900 border-2 ${enemy.char.element.border} relative overflow-hidden shadow-lg ${tutHL(2)}`}>
+                <div className={`relative cursor-pointer select-none shrink-0 rounded-full ${tutHL(6)}`} {...lpProps({ type: 'enemy' })}>
                     <SpriteAvatar char={enemy.char} size="w-20 h-20 md:w-24 md:h-24" />
                     <div className="absolute -bottom-1 -right-1 bg-stone-700 text-stone-300 text-[9px] font-bold px-1 py-0.5 rounded-full border border-stone-600 leading-none">長按</div>
                 </div>
@@ -1813,16 +1939,16 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     </div>
                 </div>
                 <div className="grid grid-cols-5 gap-2 relative z-10">
-                    <div className="col-span-2 flex flex-col gap-2">
+                    <div className={`col-span-2 flex flex-col gap-2 ${tutHL(5)}`}>
                         <button disabled={!canUseSkill1} onClick={()=>{ if(!longPressDetectedRef.current) handlePlayerSkill(1); longPressDetectedRef.current=false; }} {...lpProps({ type: 'skill1' })} className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 p-2 rounded-lg font-bold text-[11px] flex justify-between items-center shadow-md transition-colors select-none"><span>{player.char.skill1.name}</span><span className="bg-stone-900/50 px-1.5 py-0.5 rounded text-white">{skill1Cost}E</span></button>
                         <button disabled={!canUseSkill2} onClick={()=>{ if(!longPressDetectedRef.current) handlePlayerSkill(2); longPressDetectedRef.current=false; }} {...lpProps({ type: 'skill2' })} className="bg-purple-700 hover:bg-purple-600 disabled:opacity-50 p-2 rounded-lg font-bold text-[11px] flex justify-between items-center shadow-md transition-colors select-none"><span>奧義</span><span className="bg-stone-900/50 px-1.5 py-0.5 rounded text-white">{skill2Cost}E</span></button>
                     </div>
-                    <div className="col-span-3 grid grid-cols-3 gap-2">
+                    <div className={`col-span-3 grid grid-cols-3 gap-2 ${tutHL(3)}`}>
                         {Object.values(RPS_CHOICES).map(c => {
                             const isDazzledOut = dazzleStatus && dazzleStatus.hand !== c.id;
                             const isFreezedOut = freezeStatus && freezeStatus.hand === c.id;
                             const dis = isDazzledOut || isFreezedOut;
-                            
+
                             return <button key={c.id} disabled={dis} onClick={()=>playRound(c.id)} className={`relative p-2 rounded-xl bg-stone-700 text-2xl border-b-4 border-stone-800 shadow-md ${dis?'opacity-40 cursor-not-allowed':'active:translate-y-1 active:border-b-0 hover:bg-stone-600 transition-colors'}`}>
                                 {c.icon}<div className="text-[10px] mt-1">{c.name}</div>
                                 {dis && <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-xl rounded-xl z-20">🔒</div>}
@@ -1832,6 +1958,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 </div>
             </div>
             <BattleInspectModal />
+            <TutorialOverlay />
+            <TutorialReward />
         </div>
     );
   };
