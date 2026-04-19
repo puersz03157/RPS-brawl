@@ -1761,7 +1761,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         if (tutorialStep === 0 || tutorialStep === 8) return null;
         const msg = TUTORIAL_MSGS[tutorialStep];
         if (!msg) return null;
-        const posClass = tutorialStep === 3 ? 'top-12' : 'bottom-0';
+        const posClass = (tutorialStep === 3 || tutorialStep === 7) ? 'top-12' : 'bottom-0';
         return (
             <div className={`fixed inset-x-0 ${posClass} z-50 p-3 pointer-events-none`}>
                 <div className="max-w-3xl mx-auto bg-stone-900/95 border-2 border-yellow-500/60 rounded-2xl p-4 shadow-2xl pointer-events-auto">
