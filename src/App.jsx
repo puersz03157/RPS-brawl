@@ -455,6 +455,8 @@ export default function App() {
   const [selectedTalentIds, setSelectedTalentIds] = useState([]);
   const [logs, setLogs] = useState([]);
   const logsEndRef = useRef(null);
+  const longPressTimerRef = useRef(null);
+  const longPressDetectedRef = useRef(false);
   const [winner, setWinner] = useState(null);
   const [rewardCrystals, setRewardCrystals] = useState(0);
   const [newlyCaptured, setNewlyCaptured] = useState(null);
@@ -468,6 +470,7 @@ export default function App() {
   
   const [sysError, setSysError] = useState(null);
   const [sysInfo, setSysInfo] = useState(null);
+  const [battleInspect, setBattleInspect] = useState(null);
   const [toast, setToast] = useState(null);
   const [gachaResult, setGachaResult] = useState(null);
   const [shopTab, setShopTab] = useState('crystal');
@@ -1618,6 +1621,95 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const canUseSkill1 = !silenced && player.energy >= skill1Cost;
     const canUseSkill2 = !silenced && player.energy >= skill2Cost;
 
+    const startLongPress = (inspectData) => (e) => {
+        longPressDetectedRef.current = false;
+        longPressTimerRef.current = setTimeout(() => {
+            longPressDetectedRef.current = true;
+            setBattleInspect(inspectData);
+        }, 500);
+    };
+    const endLongPress = () => {
+        if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+    };
+    const lpProps = (inspectData) => ({
+        onMouseDown: startLongPress(inspectData),
+        onTouchStart: startLongPress(inspectData),
+        onMouseUp: endLongPress,
+        onMouseLeave: endLongPress,
+        onTouchEnd: endLongPress,
+        onTouchCancel: endLongPress,
+    });
+
+    const BattleInspectModal = () => {
+        if (!battleInspect) return null;
+        const { type } = battleInspect;
+        const isEnemy = type === 'enemy';
+        const isPlayer = type === 'player';
+        const isSkill = type === 'skill1' || type === 'skill2';
+        const char = isEnemy ? enemy.char : player.char;
+        const skill = type === 'skill1' ? player.char.skill1 : player.char.skill2;
+        const skillCost = type === 'skill1' ? skill1Cost : skill2Cost;
+
+        return (
+            <div className="fixed inset-0 bg-black/75 z-50 flex items-end justify-center p-4" onClick={() => setBattleInspect(null)}>
+                <div className="bg-stone-900 border-2 border-stone-700 rounded-2xl p-5 max-w-sm w-full shadow-2xl mb-2" onClick={e => e.stopPropagation()}>
+                    {(isEnemy || isPlayer) && (
+                        <>
+                            <div className="flex items-center gap-3 mb-4">
+                                <SpriteAvatar char={char} size="w-14 h-14" />
+                                <div className="flex-1">
+                                    <div className={`font-bold text-base ${isEnemy ? 'text-red-400' : 'text-green-400'}`}>{char.name}</div>
+                                    <div className="text-[10px] text-stone-400">{char.title || ''}{char.element ? ` · ${char.element.name}` : ''}</div>
+                                </div>
+                                <button className="text-stone-500 hover:text-white text-lg leading-none" onClick={() => setBattleInspect(null)}>✕</button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-2 text-center text-xs mb-3">
+                                <div className="bg-stone-800 rounded-lg p-2"><div className={`font-bold ${isEnemy ? 'text-red-400' : 'text-green-400'}`}>HP</div><div>{isEnemy ? char.stats?.maxHp : player.maxHp}</div></div>
+                                <div className="bg-stone-800 rounded-lg p-2"><div className="font-bold text-orange-400">ATK</div><div>{isEnemy ? char.stats?.atk : player.atk}</div></div>
+                                <div className="bg-stone-800 rounded-lg p-2"><div className="font-bold text-blue-400">DEF</div><div>{isEnemy ? char.stats?.def : player.def}</div></div>
+                            </div>
+                            {isEnemy && char.prefHand && (
+                                <div className="bg-stone-800 rounded-xl p-3 mb-3">
+                                    <div className="text-yellow-400 font-bold text-xs mb-2">出拳偏好</div>
+                                    <div className="flex gap-2">
+                                        {Object.values(RPS_CHOICES).map(h => (
+                                            <div key={h.id} className={`flex-1 rounded-lg p-2 text-center text-xs ${h.id === char.prefHand ? 'bg-yellow-600/30 border border-yellow-500' : 'bg-stone-700'}`}>
+                                                <div className="text-xl">{h.icon}</div>
+                                                <div>{h.name}</div>
+                                                <div className={`font-bold ${h.id === char.prefHand ? 'text-yellow-300' : 'text-stone-400'}`}>{h.id === char.prefHand ? '50%' : '25%'}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            <div className="space-y-2 mb-3">
+                                <div className="bg-blue-900/40 border border-blue-800 rounded-lg p-2 text-xs">
+                                    <div className="flex items-center gap-2 mb-1"><span className="font-bold text-blue-300">戰技 · {char.skill1.name}</span><span className="text-stone-500">{isEnemy ? char.skill1.cost : skill1Cost}E</span></div>
+                                    <p className="text-stone-300">{char.skill1.desc}</p>
+                                </div>
+                                <div className="bg-purple-900/40 border border-purple-800 rounded-lg p-2 text-xs">
+                                    <div className="flex items-center gap-2 mb-1"><span className="font-bold text-purple-300">奧義 · {char.skill2.name}</span><span className="text-stone-500">{isEnemy ? char.skill2.cost : skill2Cost}E</span></div>
+                                    <p className="text-stone-300">{char.skill2.desc}</p>
+                                </div>
+                            </div>
+                            {char.lore && <p className="text-stone-500 text-[10px] italic leading-relaxed">{char.lore}</p>}
+                        </>
+                    )}
+                    {isSkill && (
+                        <>
+                            <div className="flex items-center justify-between mb-3">
+                                <div className={`font-bold text-base ${type === 'skill1' ? 'text-blue-300' : 'text-purple-300'}`}>{type === 'skill1' ? '戰技' : '奧義'} · {skill.name}</div>
+                                <button className="text-stone-500 hover:text-white text-lg leading-none" onClick={() => setBattleInspect(null)}>✕</button>
+                            </div>
+                            <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 ${type === 'skill1' ? 'bg-blue-700' : 'bg-purple-700'}`}>{skillCost} 能量</div>
+                            <p className="text-stone-200 text-sm leading-relaxed">{skill.desc}</p>
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen p-4 flex flex-col max-w-3xl mx-auto h-screen bg-stone-950 text-stone-200">
             <div className="text-center text-xs text-stone-500 mb-2 font-bold">
@@ -1625,7 +1717,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             </div>
             
             <div className={`p-4 rounded-xl mb-2 flex items-center gap-4 bg-stone-900 border-2 ${enemy.char.element.border} relative overflow-hidden shadow-lg`}>
-                <SpriteAvatar char={enemy.char} size="w-20 h-20 md:w-24 md:h-24" />
+                <div className="relative cursor-pointer select-none shrink-0" {...lpProps({ type: 'enemy' })}>
+                    <SpriteAvatar char={enemy.char} size="w-20 h-20 md:w-24 md:h-24" />
+                    <div className="absolute -bottom-1 -right-1 bg-stone-700 text-stone-300 text-[9px] font-bold px-1 py-0.5 rounded-full border border-stone-600 leading-none">長按</div>
+                </div>
                 <div className="flex-1 z-10">
                     <div className="flex justify-between font-bold text-red-400 mb-1"><span className="truncate">{enemy.char.isEmoji?enemy.char.emoji:enemy.char.icon} {enemy.char.name}</span><span className="text-[10px] bg-stone-800 px-2 rounded">HP {enemy.hp}/{enemy.maxHp}</span></div>
                     <div className="w-full h-3 bg-stone-800 rounded-full overflow-hidden relative"><div className="h-full bg-red-600 transition-all" style={{width:`${(enemy.hp/enemy.maxHp)*100}%`}}></div>{enemy.shield>0 && <div className="absolute top-0 left-0 h-full bg-blue-400/50" style={{width:`${(enemy.shield/enemy.maxHp)*100}%`}}></div>}</div>
@@ -1633,7 +1728,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     <div className="flex flex-wrap gap-1 mt-2">{renderBadges(enemy)}</div>
                 </div>
             </div>
-            
+
             <div className="flex-1 bg-stone-900 border border-stone-800 p-4 rounded-xl overflow-y-auto mb-3 text-sm space-y-2 font-mono shadow-inner">
                 {logs.length === 0 && <div className="text-stone-500 text-center mt-10">預判敵方的行動吧！</div>}
                 {logs.map((l,i) => <div key={i} className={l.type==='damage'?'text-orange-400':l.type==='heal'?'text-green-300':l.type==='shield'?'text-blue-300':'text-stone-300'}>{l.text}</div>)}
@@ -1641,7 +1736,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             </div>
             
             <div className="bg-stone-900 border-2 border-stone-700 p-4 rounded-xl relative overflow-hidden shadow-lg">
-                <div className="flex gap-4 mb-4"><SpriteAvatar char={player.char} size="w-16 h-16 md:w-20 md:h-20" />
+                <div className="flex gap-4 mb-4">
+                <div className="relative cursor-pointer select-none shrink-0" {...lpProps({ type: 'player' })}>
+                    <SpriteAvatar char={player.char} size="w-16 h-16 md:w-20 md:h-20" />
+                    <div className="absolute -bottom-1 -right-1 bg-stone-700 text-stone-300 text-[9px] font-bold px-1 py-0.5 rounded-full border border-stone-600 leading-none">長按</div>
+                </div>
                     <div className="flex-1 z-10">
                         <div className="flex justify-between font-bold text-green-400 mb-1"><span className="truncate">{player.char.isEmoji?player.char.emoji:player.char.icon} {player.char.name} (你)</span><span className="text-[10px] bg-stone-800 px-2 rounded">HP {player.hp}/{player.maxHp}</span></div>
                         <div className="w-full h-3 bg-stone-800 rounded-full overflow-hidden relative"><div className="h-full bg-green-500 transition-all" style={{width:`${(player.hp/player.maxHp)*100}%`}}></div>{player.shield>0 && <div className="absolute top-0 left-0 h-full bg-blue-400/50" style={{width:`${(player.shield/player.maxHp)*100}%`}}></div>}</div>
@@ -1651,8 +1750,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 </div>
                 <div className="grid grid-cols-5 gap-2 relative z-10">
                     <div className="col-span-2 flex flex-col gap-2">
-                        <button disabled={!canUseSkill1} onClick={()=>handlePlayerSkill(1)} className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 p-2 rounded-lg font-bold text-[11px] flex justify-between items-center shadow-md transition-colors"><span>{player.char.skill1.name}</span><span className="bg-stone-900/50 px-1.5 py-0.5 rounded text-white">{skill1Cost}E</span></button>
-                        <button disabled={!canUseSkill2} onClick={()=>handlePlayerSkill(2)} className="bg-purple-700 hover:bg-purple-600 disabled:opacity-50 p-2 rounded-lg font-bold text-[11px] flex justify-between items-center shadow-md transition-colors"><span>奧義</span><span className="bg-stone-900/50 px-1.5 py-0.5 rounded text-white">{skill2Cost}E</span></button>
+                        <button disabled={!canUseSkill1} onClick={()=>{ if(!longPressDetectedRef.current) handlePlayerSkill(1); longPressDetectedRef.current=false; }} {...lpProps({ type: 'skill1' })} className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 p-2 rounded-lg font-bold text-[11px] flex justify-between items-center shadow-md transition-colors select-none"><span>{player.char.skill1.name}</span><span className="bg-stone-900/50 px-1.5 py-0.5 rounded text-white">{skill1Cost}E</span></button>
+                        <button disabled={!canUseSkill2} onClick={()=>{ if(!longPressDetectedRef.current) handlePlayerSkill(2); longPressDetectedRef.current=false; }} {...lpProps({ type: 'skill2' })} className="bg-purple-700 hover:bg-purple-600 disabled:opacity-50 p-2 rounded-lg font-bold text-[11px] flex justify-between items-center shadow-md transition-colors select-none"><span>奧義</span><span className="bg-stone-900/50 px-1.5 py-0.5 rounded text-white">{skill2Cost}E</span></button>
                     </div>
                     <div className="col-span-3 grid grid-cols-3 gap-2">
                         {Object.values(RPS_CHOICES).map(c => {
@@ -1668,6 +1767,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     </div>
                 </div>
             </div>
+            <BattleInspectModal />
         </div>
     );
   };
