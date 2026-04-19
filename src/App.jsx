@@ -2279,7 +2279,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 <div className="flex-1 z-10">
                     <div className="flex justify-between font-bold text-red-400 mb-1"><span className="truncate">{enemy.char.isEmoji?enemy.char.emoji:enemy.char.icon} {enemy.char.name}</span><span className="text-[10px] bg-stone-800 px-2 rounded">HP {enemy.hp}/{enemy.maxHp}</span></div>
                     <div className="w-full h-3 bg-stone-800 rounded-full overflow-hidden relative"><div className="h-full bg-red-600 transition-all" style={{width:`${(enemy.hp/enemy.maxHp)*100}%`}}></div>{enemy.shield>0 && <div className="absolute top-0 left-0 h-full bg-blue-400/50" style={{width:`${(enemy.shield/enemy.maxHp)*100}%`}}></div>}</div>
-                    <div className="flex items-center gap-2 mt-1"><Zap size={12} className="text-yellow-400"/><div className="w-full h-2 bg-stone-800 rounded-full"><div className="h-full bg-yellow-400 transition-all" style={{width:`${enemy.energy}%`}}></div></div></div>
+                    <div className="flex items-center gap-2 mt-1"><Zap size={12} className="text-yellow-400"/><div className="w-full h-2 bg-stone-800 rounded-full"><div className="h-full bg-yellow-400 transition-all" style={{width:`${enemy.energy}%`}}></div></div><span className="text-[10px] text-yellow-400 font-mono shrink-0">{enemy.energy}</span></div>
                     <div className="flex flex-wrap gap-1 mt-2">{renderBadges(enemy)}</div>
                 </div>
             </div>
@@ -2299,14 +2299,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     <div className="flex-1 z-10">
                         <div className="flex justify-between font-bold text-green-400 mb-1"><span className="truncate">{player.char.isEmoji?player.char.emoji:player.char.icon} {player.char.name} (你)</span><span className="text-[10px] bg-stone-800 px-2 rounded">HP {player.hp}/{player.maxHp}</span></div>
                         <div className="w-full h-3 bg-stone-800 rounded-full overflow-hidden relative"><div className="h-full bg-green-500 transition-all" style={{width:`${(player.hp/player.maxHp)*100}%`}}></div>{player.shield>0 && <div className="absolute top-0 left-0 h-full bg-blue-400/50" style={{width:`${(player.shield/player.maxHp)*100}%`}}></div>}</div>
-                        <div className="flex items-center gap-2 mt-1"><Zap size={12} className="text-yellow-400"/><div className="w-full h-2 bg-stone-800 rounded-full"><div className="h-full bg-yellow-400 transition-all" style={{width:`${player.energy}%`}}></div></div></div>
+                        <div className="flex items-center gap-2 mt-1"><Zap size={12} className="text-yellow-400"/><div className="w-full h-2 bg-stone-800 rounded-full"><div className="h-full bg-yellow-400 transition-all" style={{width:`${player.energy}%`}}></div></div><span className="text-[10px] text-yellow-400 font-mono shrink-0">{player.energy}</span></div>
                         <div className="flex flex-wrap gap-1 mt-2">{renderBadges(player)}</div>
                     </div>
                 </div>
                 <div className="grid grid-cols-5 gap-2 relative z-10">
                     <div className={`col-span-2 flex flex-col gap-2 ${tutHL(5)}`}>
                         <button disabled={!canUseSkill1} onClick={()=>{ if(!longPressDetectedRef.current) handlePlayerSkill(1); longPressDetectedRef.current=false; }} {...lpProps({ type: 'skill1' })} className="bg-blue-700 hover:bg-blue-600 disabled:opacity-50 p-2 rounded-lg font-bold text-[11px] flex justify-between items-center shadow-md transition-colors select-none"><span>{player.char.skill1.name}</span><span className="bg-stone-900/50 px-1.5 py-0.5 rounded text-white">{skill1Cost}E</span></button>
-                        <button disabled={!canUseSkill2} onClick={()=>{ if(!longPressDetectedRef.current) handlePlayerSkill(2); longPressDetectedRef.current=false; }} {...lpProps({ type: 'skill2' })} className="bg-purple-700 hover:bg-purple-600 disabled:opacity-50 p-2 rounded-lg font-bold text-[11px] flex justify-between items-center shadow-md transition-colors select-none"><span>奧義</span><span className="bg-stone-900/50 px-1.5 py-0.5 rounded text-white">{skill2Cost}E</span></button>
+                        <button disabled={!canUseSkill2} onClick={()=>{ if(!longPressDetectedRef.current) handlePlayerSkill(2); longPressDetectedRef.current=false; }} {...lpProps({ type: 'skill2' })} className="bg-purple-700 hover:bg-purple-600 disabled:opacity-50 p-2 rounded-lg font-bold text-[11px] flex justify-between items-center shadow-md transition-colors select-none"><span>{player.char.skill2.name}</span><span className="bg-stone-900/50 px-1.5 py-0.5 rounded text-white">{skill2Cost}E</span></button>
                     </div>
                     <div className={`col-span-3 grid grid-cols-3 gap-2 ${tutHL(3)}`}>
                         {Object.values(RPS_CHOICES).map(c => {
