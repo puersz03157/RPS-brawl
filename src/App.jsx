@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Zap, Sparkles, BookOpen, Home, Gamepad2, Coffee, MessageCircle, ArrowLeft, ShoppingCart, Star, Camera, X, Moon, Heart, HelpCircle, Info, AlertTriangle, Skull, ChevronLeft, ChevronRight, Lock, Trophy, CheckCircle } from 'lucide-react';
+import { Zap, Sparkles, BookOpen, Home, Gamepad2, Coffee, MessageCircle, ArrowLeft, ShoppingCart, Star, Camera, X, Moon, Heart, HelpCircle, Info, AlertTriangle, Skull, ChevronLeft, ChevronRight, Lock, Trophy, CheckCircle, Settings, Trash2 } from 'lucide-react';
 
 // ==========================================
 // 0. 音效系統 (Web Audio API)
@@ -471,6 +471,9 @@ export default function App() {
   const [sysError, setSysError] = useState(null);
   const [sysInfo, setSysInfo] = useState(null);
   const [battleInspect, setBattleInspect] = useState(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [resetStep, setResetStep] = useState(0);
+  const [resetInput, setResetInput] = useState('');
   const [toast, setToast] = useState(null);
   const [gachaResult, setGachaResult] = useState(null);
   const [shopTab, setShopTab] = useState('crystal');
@@ -1490,7 +1493,68 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                       </div>
                   )}
               </div>
+              <button onClick={() => { setSettingsOpen(true); setResetStep(0); setResetInput(''); }} className="text-stone-600 hover:text-stone-300 transition-colors bg-stone-800 p-3 rounded-full border border-stone-700 shadow-md" title="設定"><Settings size={20}/></button>
           </div>
+
+          {settingsOpen && (
+              <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => { setSettingsOpen(false); setResetStep(0); setResetInput(''); }}>
+                  <div className="bg-stone-900 border-2 border-stone-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-between mb-5">
+                          <h2 className="text-lg font-bold text-stone-200 flex items-center gap-2"><Settings size={18}/> 設定</h2>
+                          <button className="text-stone-500 hover:text-white text-xl leading-none" onClick={() => { setSettingsOpen(false); setResetStep(0); setResetInput(''); }}>✕</button>
+                      </div>
+
+                      {resetStep === 0 && (
+                          <button onClick={() => setResetStep(1)} className="w-full bg-stone-800 hover:bg-red-950 border border-stone-700 hover:border-red-700 text-red-400 font-bold py-3 px-4 rounded-xl transition-all flex items-center gap-3">
+                              <Trash2 size={18}/> 重置遊戲進度
+                          </button>
+                      )}
+
+                      {resetStep === 1 && (
+                          <div className="space-y-4">
+                              <div className="bg-red-950/50 border border-red-800 rounded-xl p-4 text-sm text-red-300 leading-relaxed">
+                                  <p className="font-bold text-red-400 mb-2">⚠️ 警告</p>
+                                  <p>此操作將清除<span className="font-bold text-white">所有遊戲進度</span>，包含星晶、角色、解鎖內容，且<span className="font-bold text-red-400">無法還原</span>。</p>
+                                  <p className="mt-2">確定要繼續嗎？</p>
+                              </div>
+                              <div className="flex gap-3">
+                                  <button onClick={() => setResetStep(0)} className="flex-1 bg-stone-800 hover:bg-stone-700 border border-stone-600 text-stone-300 font-bold py-2 rounded-xl transition-all">取消</button>
+                                  <button onClick={() => setResetStep(2)} className="flex-1 bg-red-900 hover:bg-red-800 border border-red-700 text-red-200 font-bold py-2 rounded-xl transition-all">我確定，繼續</button>
+                              </div>
+                          </div>
+                      )}
+
+                      {resetStep === 2 && (
+                          <div className="space-y-4">
+                              <div className="bg-red-950/50 border border-red-800 rounded-xl p-4 text-sm text-red-300">
+                                  <p className="mb-3">請在下方輸入 <span className="font-mono font-bold text-white bg-stone-800 px-2 py-0.5 rounded">RESET</span> 以確認重置：</p>
+                                  <input
+                                      type="text"
+                                      value={resetInput}
+                                      onChange={e => setResetInput(e.target.value.toUpperCase())}
+                                      placeholder="輸入 RESET"
+                                      className="w-full bg-stone-900 border border-stone-600 focus:border-red-500 text-white font-mono font-bold text-center text-lg px-4 py-2 rounded-lg focus:outline-none tracking-widest"
+                                      autoFocus
+                                  />
+                              </div>
+                              <div className="flex gap-3">
+                                  <button onClick={() => { setResetStep(0); setResetInput(''); }} className="flex-1 bg-stone-800 hover:bg-stone-700 border border-stone-600 text-stone-300 font-bold py-2 rounded-xl transition-all">取消</button>
+                                  <button
+                                      disabled={resetInput !== 'RESET'}
+                                      onClick={() => {
+                                          localStorage.removeItem('starCrystalTales_V38_Stable');
+                                          window.location.reload();
+                                      }}
+                                      className="flex-1 bg-red-700 hover:bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed border border-red-600 text-white font-bold py-2 rounded-xl transition-all"
+                                  >
+                                      確認重置
+                                  </button>
+                              </div>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          )}
       </div>
     );
   };
