@@ -3127,10 +3127,24 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           <button onClick={() => setGameState('intro')} className="mb-8 flex items-center gap-2 text-stone-400 hover:text-white transition-colors">
             <ArrowLeft /> 返回首頁
           </button>
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <h2 className="text-4xl font-bold text-yellow-400 tracking-widest drop-shadow-[0_0_10px_rgba(250,204,21,0.3)]">⛏️ 星晶礦坑</h2>
             <p className="text-stone-400 text-sm mt-2">派遣夥伴自動採集星晶碎片，離線時持續產出！</p>
           </div>
+
+          <NpcDialogue
+            npcName="礦坑監工"
+            npcImage={null}
+            npcImageFallback="🐆"
+            dialogues={[
+              "歡迎來到礦坑！把你的夥伴派遣進去，他們會自動幫你挖碎片。",
+              "每個夥伴都有採集加成：熊吉爆發產量、布提婭偷偷多拿一點……嘿嘿。",
+              "礦坑有容量上限，記得定期回來收取，別讓碎片積滿浪費了！",
+              "升級礦坑等級可以提升每小時產量和容量上限，早點投資早點賺。",
+              "派遣的夥伴數量依礦坑等級決定，等級越高坑道越多。",
+              "離線也能產出！關掉遊戲去睡一覺，醒來就有碎片等你收。",
+            ]}
+          />
 
           {/* 礦坑狀態卡片 */}
           <div className="bg-stone-800 border-2 border-yellow-800 rounded-3xl p-6 mb-6 shadow-xl">
@@ -3321,10 +3335,23 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                       </div>
                   </div>
                   
-                  <div className="text-center mb-10">
-                      <h2 className="text-5xl font-bold text-purple-400 mb-4 tracking-widest drop-shadow-[0_0_15px_rgba(192,132,252,0.4)]">迷途酒館</h2>
-                      <p className="text-stone-400">「這杯算我請的！要來點特別的情報嗎？」—— 神秘酒保</p>
+                  <div className="text-center mb-6">
+                      <h2 className="text-5xl font-bold text-purple-400 mb-2 tracking-widest drop-shadow-[0_0_15px_rgba(192,132,252,0.4)]">迷途酒館</h2>
                   </div>
+
+                  <NpcDialogue
+                      npcName="神秘酒保"
+                      npcImage={null}
+                      npcImageFallback="🐰"
+                      dialogues={[
+                          "這杯算我請的！要來點特別的情報嗎？",
+                          "單抽一次 20 晶，十連抽 150 晶，十連必出至少一張 SR 以上喔！",
+                          "SSR 機率是 5%，SR 機率 25%，剩下的是碎片或 AP。運氣好的話……嘿嘿。",
+                          "抽到已有的角色？別擔心，會轉換成對應的碎片哦。",
+                          "碎片集滿 50 個能在圖鑑合成解鎖異裝型態，別小看這些邊角料。",
+                          "今晚的大獎是那位傳說中的商會會長……不過我沒辦法保證你抽得到。",
+                      ]}
+                  />
 
                   {!gachaResult ? (
                       <div className="flex flex-col items-center justify-center animate-fade-in">
