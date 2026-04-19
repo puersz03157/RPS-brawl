@@ -1198,7 +1198,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (!attackerChar || !eChar) return;
 
     const validP = ALL_TALENTS.filter(t => !t.req && !t.exclusiveTo);
-    const pTalents = getRandomTalents(3, validP);
+    const pTalents = selectedTalentIds.length > 0 ? selectedTalentIds : getRandomTalents(3, validP);
     const pMax = attackerChar.stats.maxHp + (pTalents.includes('t1') ? 100 : 0);
     const pInitE = (pTalents.includes('t3') ? 25 : 0) + (pTalents.some(t => ['t9','t10','t11'].includes(t)) ? 20 : 0);
     const pObj = {
@@ -1736,22 +1736,26 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                           <p className="text-stone-400 text-xs">跟隨故事推進，解開大星晶碎裂的真相。</p>
                       </div>
                   </div>
-                  <div className="z-10 bg-indigo-900/60 border border-indigo-700 text-indigo-400 text-xs font-bold px-3 py-1 rounded-full">即將開放</div>
+                  <div className="z-10 text-indigo-400 text-xs font-bold">{(progress.completedStoryChapters||[]).length} / {STORY_CHAPTERS.length} 章</div>
               </button>
 
               {/* 夜巡戰役 */}
-              <button onClick={() => selectMode('campaign')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-yellow-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
-                  <div className="text-3xl mb-2">🗺️</div>
-                  <h2 className="text-lg font-bold mb-1">夜巡戰役</h2>
+              {(() => { const ok = (progress.completedStoryChapters||[]).includes(5); return (
+              <button onClick={() => ok ? selectMode('campaign') : setSysError('【章節鎖定】請先完成主線夜巡第五章，解鎖夜巡戰役！')} className={`bg-stone-800 p-4 border-2 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center ${ok ? 'border-stone-700 hover:border-yellow-500' : 'border-stone-800 opacity-60 grayscale cursor-not-allowed'}`}>
+                  <div className="text-3xl mb-2">{ok ? '🗺️' : <Lock className="text-stone-500" size={32}/>}</div>
+                  <h2 className={`text-lg font-bold mb-1 ${ok ? '' : 'text-stone-500'}`}>{ok ? '夜巡戰役' : '🔒 夜巡戰役'}</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">連續討伐，挑戰深淵霸主。</p>
               </button>
+              ); })()}
 
               {/* 自訂對決 */}
-              <button onClick={() => selectMode('brawl')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-blue-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
-                  <div className="text-3xl mb-2">🤺</div>
-                  <h2 className="text-lg font-bold mb-1">自訂對決</h2>
+              {(() => { const ok = (progress.completedStoryChapters||[]).includes(5); return (
+              <button onClick={() => ok ? selectMode('brawl') : setSysError('【章節鎖定】請先完成主線夜巡第五章，解鎖自訂對決！')} className={`bg-stone-800 p-4 border-2 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center ${ok ? 'border-stone-700 hover:border-blue-500' : 'border-stone-800 opacity-60 grayscale cursor-not-allowed'}`}>
+                  <div className="text-3xl mb-2">{ok ? '🤺' : <Lock className="text-stone-500" size={32}/>}</div>
+                  <h2 className={`text-lg font-bold mb-1 ${ok ? '' : 'text-stone-500'}`}>{ok ? '自訂對決' : '🔒 自訂對決'}</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">自選對手切磋，強敵獎勵更豐厚。</p>
               </button>
+              ); })()}
 
               {/* 白晝營地 */}
               <button onClick={() => { setGameState('home'); setHomeStep('select_host'); setHomeHost(null); setHomeGuest(null); setActiveDialogue(null); }} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-green-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
@@ -1919,7 +1923,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     
     return (
         <div className="min-h-screen p-8 max-w-4xl mx-auto flex flex-col items-center bg-stone-900 text-stone-200">
-            <button onClick={()=>setGameState('select_char')} className="self-start mb-4 flex items-center gap-2 text-stone-400 hover:text-white"><ArrowLeft/> 返回選角</button>
+            <button onClick={()=>setGameState(gameMode === 'story' ? 'story_dialogue' : 'select_char')} className="self-start mb-4 flex items-center gap-2 text-stone-400 hover:text-white"><ArrowLeft/> {gameMode === 'story' ? '返回劇情' : '返回選角'}</button>
             <h2 className="text-3xl font-bold text-yellow-400 mb-2 mt-4">配置戰鬥天賦</h2>
             <div className="bg-stone-800 px-6 py-3 rounded-full font-bold text-lg mb-8 border border-stone-700 shadow-lg">
                 剩餘點數：<span className={pLeft === 0 ? 'text-red-400' : 'text-yellow-400'}>{pLeft}</span> / {max}
@@ -1938,6 +1942,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             
             {gameMode === 'brawl' ? (
                 <button onClick={() => setGameState('select_brawl_enemy')} className="bg-purple-600 text-white px-16 py-4 rounded-full font-bold text-xl hover:bg-purple-500 shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2"><Sparkles size={24}/> 選擇切磋對手</button>
+            ) : gameMode === 'story' ? (
+                <button onClick={() => startStoryBattle(storyChapterId, storyBattleStage)} className="bg-red-700 hover:bg-red-600 text-white px-16 py-4 rounded-full font-bold text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2">
+                    ⚔️ 出陣！
+                </button>
             ) : (
                 <button onClick={() => startBattleMode(player.char, selectedTalentIds)} className={`${gameMode === 'advanced_campaign' ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-yellow-600 hover:bg-yellow-500 text-stone-900'} px-16 py-4 rounded-full font-bold text-xl shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2`}>
                     {gameMode === 'advanced_campaign' ? <Skull size={24}/> : null} 踏入黑夜！
@@ -2693,8 +2701,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           <div className="flex justify-between items-center">
             <span className="text-stone-600 text-xs">{storyDialogueIdx + 1} / {chapter.dialogue.length}</span>
             {isLast ? (
-              <button onClick={() => startStoryBattle(storyChapterId, 0)} className="bg-red-700 hover:bg-red-600 text-white px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 active:scale-95 transition-all">
-                ⚔️ 進入戰鬥！
+              <button onClick={() => {
+                const ch = STORY_CHAPTERS.find(c => c.id === storyChapterId);
+                const attacker = ch ? CHARACTERS.find(c => c.id === ch.attackerCharId) : null;
+                if (attacker) { setPlayer(prev => ({ ...prev, char: attacker })); setSelectedTalentIds([]); setStoryBattleStage(0); setGameMode('story'); setGameState('select_talent'); }
+              }} className="bg-red-700 hover:bg-red-600 text-white px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 active:scale-95 transition-all">
+                ⚔️ 選擇天賦！
               </button>
             ) : (
               <button onClick={() => setStoryDialogueIdx(prev => prev + 1)} className="bg-stone-800 hover:bg-stone-700 border border-stone-600 text-stone-200 px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 active:scale-95 transition-all">
@@ -2758,19 +2770,20 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           <div className="flex flex-col gap-4">
             {STORY_CHAPTERS.map((ch) => {
               const isDone = completed.includes(ch.id);
+              const isLocked = ch.id > 1 && !completed.includes(ch.id - 1);
               const attackerChar = CHARACTERS.find(c => c.id === ch.attackerCharId);
               return (
-                <div key={ch.id} onClick={() => startStoryChapter(ch.id)}
-                  className={`relative bg-gradient-to-r ${ch.themeGrad} border-2 ${isDone ? ch.themeBorder : 'border-stone-700'} rounded-2xl overflow-hidden shadow-xl cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-2xl active:scale-[0.99]`}>
+                <div key={ch.id} onClick={() => !isLocked && startStoryChapter(ch.id)}
+                  className={`relative bg-gradient-to-r ${ch.themeGrad} border-2 ${isDone ? ch.themeBorder : isLocked ? 'border-stone-800' : 'border-stone-700'} rounded-2xl overflow-hidden shadow-xl transition-all ${isLocked ? 'opacity-50 grayscale cursor-not-allowed' : 'cursor-pointer hover:-translate-y-0.5 hover:shadow-2xl active:scale-[0.99]'}`}>
                   <div className="relative z-10 p-5 flex gap-4 items-start">
-                    <div className="text-4xl shrink-0 mt-1">{ch.elementIcon}</div>
+                    <div className="text-4xl shrink-0 mt-1">{isLocked ? '🔒' : ch.elementIcon}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-stone-500 text-xs font-bold">第 {ch.id} 章</span>
-                        <h2 className={`font-bold text-lg ${ch.themeColor}`}>{ch.name}</h2>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ch.themeBorder} ${ch.themeColor} bg-stone-900/50`}>{ch.element.name}屬性</span>
+                        <h2 className={`font-bold text-lg ${isLocked ? 'text-stone-500' : ch.themeColor}`}>{ch.name}</h2>
+                        {!isLocked && <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ch.themeBorder} ${ch.themeColor} bg-stone-900/50`}>{ch.element.name}屬性</span>}
                       </div>
-                      <div className="flex items-center gap-4 text-xs flex-wrap mt-2">
+                      {!isLocked && <div className="flex items-center gap-4 text-xs flex-wrap mt-2">
                         <div className="flex items-center gap-1 text-stone-400">
                           <span>攻略角色：</span>
                           <span className="text-stone-200 font-bold">{attackerChar?.icon} {attackerChar?.name}</span>
@@ -2779,12 +2792,15 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                           <span>通關解鎖：</span>
                           <span className="text-yellow-400 font-bold">{ch.unlockName}</span>
                         </div>
-                      </div>
+                      </div>}
+                      {isLocked && <p className="text-stone-600 text-xs mt-1">完成第 {ch.id - 1} 章後解鎖</p>}
                     </div>
                     <div className="shrink-0 flex flex-col items-center gap-1 pt-1">
                       {isDone
                         ? <><span className="text-2xl">✅</span><span className={`text-[10px] font-bold ${ch.themeColor}`}>已完成</span></>
-                        : <><span className="text-stone-400 text-sm font-bold">▶ 開始</span><span className="text-stone-500 text-[10px]">3連戰</span></>
+                        : isLocked
+                          ? <><Lock size={20} className="text-stone-600"/><span className="text-stone-600 text-[10px]">鎖定</span></>
+                          : <><span className="text-stone-400 text-sm font-bold">▶ 開始</span><span className="text-stone-500 text-[10px]">3連戰</span></>
                       }
                     </div>
                   </div>
