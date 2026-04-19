@@ -1110,12 +1110,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             const isFavored = meal.favoredBy.includes(charBaseId);
             const mult = isFavored ? COOKING_PREF_BONUS : 1;
             const b = meal.buff;
+            let mShield = 0, mEnergy = 0, mRegen = 0;
             if (b.type === 'hp')         { const bonus = Math.floor(b.value * mult); pObj.maxHp += bonus; pObj.hp += bonus; }
-            if (b.type === 'shield')     { pObj.shield += Math.floor(b.value * mult); }
-            if (b.type === 'energy')     { pObj.energy = Math.min(100, pObj.energy + Math.floor(b.value * mult)); }
-            if (b.type === 'regen')      { pObj.status.push({ type: 'REGEN', duration: 99, value: Math.floor(b.value * mult), isNew: false, isDeferred: false }); }
-            if (b.type === 'hp_energy')  { const hb = Math.floor(b.hp * mult); pObj.maxHp += hb; pObj.hp += hb; pObj.energy = Math.min(100, pObj.energy + Math.floor(b.energy * mult)); }
-            if (b.type === 'atk_shield') { pObj.atk += Math.floor(b.atk * mult); pObj.shield += Math.floor(b.shield * mult); }
+            if (b.type === 'shield')     { mShield = Math.floor(b.value * mult); pObj.shield += mShield; }
+            if (b.type === 'energy')     { mEnergy = Math.floor(b.value * mult); pObj.energy = Math.min(100, pObj.energy + mEnergy); }
+            if (b.type === 'regen')      { mRegen = Math.floor(b.value * mult); pObj.status.push({ type: 'REGEN', duration: 99, value: mRegen, isNew: false, isDeferred: false }); }
+            if (b.type === 'hp_energy')  { const hb = Math.floor(b.hp * mult); pObj.maxHp += hb; pObj.hp += hb; mEnergy = Math.floor(b.energy * mult); pObj.energy = Math.min(100, pObj.energy + mEnergy); }
+            if (b.type === 'atk_shield') { pObj.atk += Math.floor(b.atk * mult); mShield = Math.floor(b.shield * mult); pObj.shield += mShield; }
+            if (mShield || mEnergy || mRegen) pObj.permaBuffs = { ...pObj.permaBuffs, meal: { shield: mShield, energy: mEnergy, regen: mRegen } };
             mealLog = isFavored ? `🍽️ ${selectedChar.name} 享用了最愛的${meal.name}！Buff 效果提升20%！` : `🍽️ 料理「${meal.name}」的效果生效了！`;
           }
         }
@@ -1198,7 +1200,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   const startStoryBattle = (chapterId, battleStage) => {
     const chapter = STORY_CHAPTERS.find(c => c.id === chapterId);
     if (!chapter) return;
-    const attackerChar = CHARACTERS.find(c => c.id === chapter.attackerCharId);
+    const attackerChar = player.char || CHARACTERS.find(c => c.id === chapter.attackerCharId);
     const enemyId = chapter.enemyIds[battleStage];
     const eChar = [...NORMAL_MONSTERS, ...BOSS_MONSTERS].find(m => m.id === enemyId);
     if (!attackerChar || !eChar) return;
@@ -1218,6 +1220,37 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     };
     if (pTalents.includes('t_bear')) { const pool = shuffle(['ATK_UP','DEF_UP','REGEN']); pObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
 
+    // 套用料理 Buff（第1戰消耗，後續繼承）
+    let mealLog = null;
+    if (battleStage === 0 && progress.pendingMeal) {
+      const meal = RECIPES.find(r => r.id === progress.pendingMeal);
+      if (meal) {
+        const charBaseId = attackerChar.baseId || attackerChar.id;
+        const isFavored = meal.favoredBy.includes(charBaseId);
+        const mult = isFavored ? COOKING_PREF_BONUS : 1;
+        const b = meal.buff;
+        let mHp = 0, mAtk = 0, mShield = 0, mEnergy = 0, mRegen = 0;
+        if (b.type === 'hp')         { mHp = Math.floor(b.value * mult); pObj.maxHp += mHp; pObj.hp += mHp; }
+        if (b.type === 'shield')     { mShield = Math.floor(b.value * mult); pObj.shield += mShield; }
+        if (b.type === 'energy')     { mEnergy = Math.floor(b.value * mult); pObj.energy = Math.min(100, pObj.energy + mEnergy); }
+        if (b.type === 'regen')      { mRegen = Math.floor(b.value * mult); pObj.status.push({ type: 'REGEN', duration: 99, value: mRegen, isNew: false, isDeferred: false }); }
+        if (b.type === 'hp_energy')  { mHp = Math.floor(b.hp * mult); pObj.maxHp += mHp; pObj.hp += mHp; mEnergy = Math.floor(b.energy * mult); pObj.energy = Math.min(100, pObj.energy + mEnergy); }
+        if (b.type === 'atk_shield') { mAtk = Math.floor(b.atk * mult); pObj.atk += mAtk; mShield = Math.floor(b.shield * mult); pObj.shield += mShield; }
+        pObj.permaBuffs = { ...pObj.permaBuffs, meal: { hp: mHp, atk: mAtk, shield: mShield, energy: mEnergy, regen: mRegen } };
+        mealLog = isFavored ? `🍽️ ${attackerChar.name} 享用了最愛的${meal.name}！Buff 效果提升20%！` : `🍽️ 料理「${meal.name}」的效果生效了！`;
+      }
+    } else if (battleStage > 0) {
+      const m = player.permaBuffs?.meal;
+      if (m) {
+        pObj.maxHp += (m.hp || 0); pObj.hp += (m.hp || 0);
+        pObj.atk += (m.atk || 0);
+        pObj.shield += (m.shield || 0);
+        pObj.energy = Math.min(100, pObj.energy + (m.energy || 0));
+        if (m.regen) pObj.status.push({ type: 'REGEN', duration: 99, value: m.regen, isNew: false, isDeferred: false });
+        pObj.permaBuffs = { ...pObj.permaBuffs, meal: m };
+      }
+    }
+
     const validE = ALL_TALENTS.filter(t => !t.req && !t.exclusiveTo);
     const eT = getRandomTalents(getBaseTalents(eChar), validE);
     const eMax = eChar.stats.maxHp + (eT.includes('t1') ? 100 : 0);
@@ -1233,12 +1266,15 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
     let np = { ...progress };
     if (!np.encountered.includes(eChar.id)) np.encountered = [...np.encountered, eChar.id];
+    if (battleStage === 0 && np.pendingMeal) np.pendingMeal = null;
     saveProgress(np);
 
     setPlayer(pObj);
     setEnemy(eObj);
     setSelectedTalentIds(pTalents);
-    setLogs([{ text: `⚔️ 第 ${battleStage + 1}/3 戰！對手：${eChar.name}`, type: 'info' }]);
+    const initLogs = [{ text: `⚔️ 第 ${battleStage + 1}/3 戰！對手：${eChar.name}`, type: 'info' }];
+    if (mealLog) initLogs.push({ text: mealLog, type: 'info' });
+    setLogs(initLogs);
     setNewlyCaptured(null);
     setGameMode('story');
     setGameState('battle');
@@ -1335,9 +1371,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (!prog.encountered.includes(ne.id)) { prog.encountered.push(ne.id); }
     saveProgress(prog); 
     
-    np.energy = Math.min(100, (np.permaBuffs?.startEnergy || 0) + (np.talents.includes('t3') ? 25 : 0) + (np.talents.some(t=>['t9','t10','t11'].includes(t)) ? 20 : 0)); 
-    np.shield = (np.permaBuffs?.startShield || 0) + (np.talents.includes('t4') ? 80 : 0); 
-    np.status = []; 
+    np.energy = Math.min(100, (np.permaBuffs?.startEnergy || 0) + (np.permaBuffs?.meal?.energy || 0) + (np.talents.includes('t3') ? 25 : 0) + (np.talents.some(t=>['t9','t10','t11'].includes(t)) ? 20 : 0));
+    np.shield = (np.permaBuffs?.startShield || 0) + (np.talents.includes('t4') ? 80 : 0) + (np.permaBuffs?.meal?.shield || 0);
+    np.status = [];
+    if (np.permaBuffs?.meal?.regen) np.status.push({ type: 'REGEN', duration: 99, value: np.permaBuffs.meal.regen, isNew: false, isDeferred: false });
     np.buffs = { dmgMult: 1, extraDmg: 0, energyOnLoss: false };
     
     let pSeeds = np.talents.includes('t_elf') ? 2 : 0;
@@ -2181,6 +2218,36 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                     </div>
                                 </div>
                             )}
+                            {isPlayer && player.talents && player.talents.length > 0 && (
+                                <div className="bg-stone-800 rounded-xl p-3 mb-2">
+                                    <div className="text-yellow-400 font-bold text-xs mb-2">裝備天賦</div>
+                                    <div className="flex flex-col gap-1.5">
+                                        {player.talents.map(tid => {
+                                            const t = ALL_TALENTS.find(t => t.id === tid);
+                                            if (!t) return null;
+                                            return (
+                                                <div key={tid} className="flex items-center gap-2 text-xs">
+                                                    <span>{t.icon}</span>
+                                                    <span className="text-stone-200 font-bold">{t.name}</span>
+                                                    <span className="text-stone-400">{t.desc}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                            {isPlayer && player.permaBuffs?.meal && Object.values(player.permaBuffs.meal).some(v => v > 0) && (
+                                <div className="bg-stone-800 rounded-xl p-3">
+                                    <div className="text-green-400 font-bold text-xs mb-2">🍽️ 料理加成中</div>
+                                    <div className="flex flex-col gap-1 text-xs text-stone-300">
+                                        {player.permaBuffs.meal.hp > 0 && <div>❤️ 最大 HP +{player.permaBuffs.meal.hp}</div>}
+                                        {player.permaBuffs.meal.atk > 0 && <div>⚔️ 攻擊 +{player.permaBuffs.meal.atk}</div>}
+                                        {player.permaBuffs.meal.shield > 0 && <div>🛡️ 初始護盾 +{player.permaBuffs.meal.shield}</div>}
+                                        {player.permaBuffs.meal.energy > 0 && <div>⚡ 初始能量 +{player.permaBuffs.meal.energy}</div>}
+                                        {player.permaBuffs.meal.regen > 0 && <div>💚 每回合再生 +{player.permaBuffs.meal.regen}</div>}
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                     {isSkill && (
@@ -2687,9 +2754,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               const isSel = storySelectedCharId === c.id;
               return (
                 <div key={c.id} onClick={() => setStorySelectedCharId(c.id)}
-                  className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col items-center gap-2 ${isSel ? `bg-stone-900/80 ${chapter.themeBorder} shadow-xl scale-105` : 'bg-stone-900/50 border-stone-700 hover:border-stone-500 hover:scale-102'}`}>
+                  className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col items-center gap-2 ${isSel ? `bg-stone-900/80 ${chapter.themeBorder} shadow-xl scale-105` : 'bg-stone-900/50 border-stone-700 hover:border-stone-500 hover:-translate-y-0.5'}`}>
                   {isRec && <div className={`absolute -top-2 -right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${chapter.themeColor} bg-stone-900 border ${chapter.themeBorder}`}>推薦</div>}
-                  <div className="text-4xl">{c.icon}</div>
+                  <SpriteAvatar char={c} size="w-16 h-16"/>
                   <div className="font-bold text-sm text-stone-100 text-center">{c.name}</div>
                   <div className="text-[10px] text-stone-500">{c.element?.name || ''}屬性</div>
                 </div>
