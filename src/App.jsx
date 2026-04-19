@@ -174,7 +174,7 @@ const CHARACTERS = [
 ];
 
 const HIDDEN_CHARACTER = { 
-  id: 'xiangxiang', name: '庠庠', icon: '🐯', title: '慵懶的白虎', element: ELEMENTS.LIGHT, isEmoji: false, image: 'avatar_xiangxiang.png', stats: { hp: 700, maxHp: 700, atk: 60, def: 35 }, prefAction: 'snack', desc: '全圖鑑收集獎勵。擁有強大的防禦與拘束力。', lore: '傳說中負責維持大陸夜間秩序的白虎神獸。因為大星晶碎裂導致魔物橫行，被迫瘋狂加班巡夜，導致他現在極度嗜睡。被柯特的訓獸之力與特製宵夜喚醒而加入。', skill1: { name: '軟萌肚肚', cost: 40, desc: '展現充滿彈性的肚子，獲得 50 護盾，並使對手 💫[強制] 下回出拳。' }, skill2: { name: '致命擁抱', cost: 90, desc: '無視護盾造成 100 傷害。若施放時有護盾，額外加 50 傷並 ❄️[封印]。' } 
+  id: 'xiangxiang', name: '虎吉', icon: '🐯', title: '慵懶的白虎', element: ELEMENTS.LIGHT, isEmoji: false, image: 'avatar_xiangxiang.png', stats: { hp: 700, maxHp: 700, atk: 60, def: 35 }, prefAction: 'snack', desc: '全圖鑑收集獎勵。擁有強大的防禦與拘束力。', lore: '傳說中負責維持大陸夜間秩序的白虎神獸。因為大星晶碎裂導致魔物橫行，被迫瘋狂加班巡夜，導致他現在極度嗜睡。被柯特的訓獸之力與特製宵夜喚醒而加入。', skill1: { name: '軟萌肚肚', cost: 40, desc: '展現充滿彈性的肚子，獲得 50 護盾，並使對手 💫[強制] 下回出拳。' }, skill2: { name: '致命擁抱', cost: 90, desc: '無視護盾造成 100 傷害。若施放時有護盾，額外加 50 傷並 ❄️[封印]。' } 
 };
 
 const VARIANTS = [
@@ -183,7 +183,7 @@ const VARIANTS = [
   { id: 'blackflame_human', baseId: 'human', name: '黑炎暴走普爾斯', icon: '🔥', title: '終焉煉獄', element: ELEMENTS.FIRE, isEmoji: false, image: 'avatar_blackflame_human.png', stats: { hp: 500, maxHp: 500, atk: 85, def: 15 }, desc: '燃燒結算與殘血狂化的極限輸出。', lore: '被深淵魔炎侵蝕的普爾斯。理智邊緣徘徊，但換來了能將一切焚燒殆盡的終焉之力。', skill1: { name: '餘燼枷鎖', cost: 40, desc: '造成35傷，施加燃燒與易傷(3回)。' }, skill2: { name: '終焉煉獄斬', cost: 85, desc: '基礎80傷。若目標有燃燒，立即結算其傷害，每剩餘回合使奧義傷害+20%。' }, unlockHint: '收集 50 個碎片於圖鑑合成解鎖。' },
   { id: 'valentine_wolf', baseId: 'wolf', name: '情人節白澤', icon: '💝', title: '冷酷甜心', element: ELEMENTS.WATER, isEmoji: false, image: 'avatar_valentine_wolf.png', stats: { hp: 550, maxHp: 550, atk: 50, def: 35 }, desc: '靈活護盾與封印控制的防禦反擊者。', lore: '罕見地穿上正裝，嘴裡刁著巧克力棒。雖然總是一臉嫌棄，但對於收到的心意都會好好珍惜。', skill1: { name: '糖衣護盾', cost: 45, desc: '獲得60點護盾，並賦予迴避(1次)。' }, skill2: { name: '心碎冰封', cost: 75, desc: '造成65傷，60%機率施加封印(1回)。' }, unlockHint: '收集 50 個碎片於圖鑑合成解鎖。' },
   { id: 'halloween_cat', baseId: 'cat', name: '萬聖節布提婭', icon: '🎃', title: '搗蛋貓咪', element: ELEMENTS.DARK, isEmoji: false, image: 'avatar_halloween_cat.png', stats: { hp: 450, maxHp: 450, atk: 65, def: 20 }, desc: '隨機擾亂與負面狀態增傷的惡作劇大師。', lore: '萬聖夜的絕對統治者。為了討要全大陸的高級貓草罐罐，她不介意用最惡劣的咒語來「拜訪」不給糖的傢伙。', skill1: { name: '不給糖就搗蛋', cost: 30, desc: '隨機賦予敵方一種屬性下降，且自身獲得亢奮或迴避。' }, skill2: { name: '萬聖影襲', cost: 80, desc: '無視護盾基礎50傷。目標每有一種負面狀態，傷害提升 1.5 倍(連乘)。' }, unlockHint: '收集 50 個碎片於圖鑑合成解鎖。' },
-  { id: 'christmas_xiangxiang', baseId: 'xiangxiang', name: '聖誕節庠庠', icon: '🎁', title: '最棒的禮物', element: ELEMENTS.LIGHT, isEmoji: false, image: 'avatar_christmas_xiangxiang.png', stats: { hp: 850, maxHp: 850, atk: 70, def: 45 }, desc: '全圖鑑收集與異裝齊全的終極型態。', lore: '被柯特套上麋鹿裝的白虎。原本想在聖誕節好好補眠，卻因為收到太多禮物而難得精神百倍。', skill1: { name: '聖誕大禮包', cost: 40, desc: '隨機抽取三種增益狀態賦予自身(3回合)。' }, skill2: { name: '聖夜沉眠', cost: 90, desc: '造成100點光屬性傷害，並強制施加眩目/強制。' }, unlockHint: '收集齊其餘五件異裝後自動解鎖。' }
+  { id: 'christmas_xiangxiang', baseId: 'xiangxiang', name: '聖誕節虎吉', icon: '🎁', title: '最棒的禮物', element: ELEMENTS.LIGHT, isEmoji: false, image: 'avatar_christmas_xiangxiang.png', stats: { hp: 850, maxHp: 850, atk: 70, def: 45 }, desc: '全圖鑑收集與異裝齊全的終極型態。', lore: '被柯特套上麋鹿裝的白虎。原本想在聖誕節好好補眠，卻因為收到太多禮物而難得精神百倍。', skill1: { name: '聖誕大禮包', cost: 40, desc: '隨機抽取三種增益狀態賦予自身(3回合)。' }, skill2: { name: '聖夜沉眠', cost: 90, desc: '造成100點光屬性傷害，並強制施加眩目/強制。' }, unlockHint: '收集齊其餘五件異裝後自動解鎖。' }
 ];
 
 const NORMAL_MONSTERS = [
@@ -238,7 +238,7 @@ const ALL_TALENTS = [
   { id: 't_cat', name: '虐襲', cost: 3, desc: '回合結束時，對手每個負面狀態受 15 傷。(布提婭專屬)', icon: '🐾', req: 'char_talents', exclusiveTo: 'cat' },
   { id: 't_human', name: '助燃劑', cost: 3, desc: '敵人受到的燃燒傷害提升 50%。(普爾斯專屬)', icon: '🛢️', req: 'char_talents', exclusiveTo: 'human' },
   { id: 't_elf', name: '倉鼠性格', cost: 3, desc: '開場直接獲得 2 顆葵花子。(布布專屬)', icon: '🐹', req: 'char_talents', exclusiveTo: 'elf' },
-  { id: 't_xiangxiang', name: '柯特的愛心宵夜', cost: 3, desc: 'HP低於50%時每回合回覆 20 HP 並獲 10 盾。(庠庠專屬)', icon: '🍜', req: 'char_talents', exclusiveTo: 'xiangxiang' },
+  { id: 't_xiangxiang', name: '柯特的愛心宵夜', cost: 3, desc: 'HP低於50%時每回合回覆 20 HP 並獲 10 盾。(虎吉專屬)', icon: '🍜', req: 'char_talents', exclusiveTo: 'xiangxiang' },
   { id: 't9', name: '銳利', cost: 4, desc: '出剪刀獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '✂️', req: 'cost4' },
   { id: 't10', name: '堅硬', cost: 4, desc: '出石頭獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🪨', req: 'cost4' },
   { id: 't11', name: '柔和', cost: 4, desc: '出布獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🧻', req: 'cost4' },
@@ -248,7 +248,7 @@ const ALL_TALENTS = [
   { id: 't_blackflame_human', name: '狂化血脈', cost: 5, desc: 'HP低於40%時攻擊力提升30點，且無視目標15點防禦。(黑炎普爾斯專屬)', icon: '🩸', req: 'cost5', exclusiveTo: 'blackflame_human' },
   { id: 't_valentine_wolf', name: '苦甜回憶', cost: 5, desc: '護盾被破壞時，恢復20點能量並獲得攻擊提升3回合。(情人節白澤專屬)', icon: '💝', req: 'cost5', exclusiveTo: 'valentine_wolf' },
   { id: 't_halloween_cat', name: '幻夜貓蹤', cost: 5, desc: '回合結束對手每個Debuff造成15傷。對手有Debuff時減傷20%。(萬聖布提婭專屬)', icon: '🦇', req: 'cost5', exclusiveTo: 'halloween_cat' },
-  { id: 't_christmas_xiangxiang', name: '最棒的禮物', cost: 5, desc: '每 3 回合自動恢復 10% 最大生命值並獲得 20 能量。(聖誕庠庠專屬)', icon: '🎄', req: 'cost5', exclusiveTo: 'christmas_xiangxiang' }
+  { id: 't_christmas_xiangxiang', name: '最棒的禮物', cost: 5, desc: '每 3 回合自動恢復 10% 最大生命值並獲得 20 能量。(聖誕虎吉專屬)', icon: '🎄', req: 'cost5', exclusiveTo: 'christmas_xiangxiang' }
 ];
 
 const REWARD_POOL = [
@@ -284,7 +284,7 @@ const MINE_LEVELS = [
   { lv: 2, name: '開採礦坑',   baseRate: 15, capBase: 80,  slots: 2, upgradeCost: 120 },
   { lv: 3, name: '深層礦脈',   baseRate: 20, capBase: 110, slots: 3, upgradeCost: 250 },
   { lv: 4, name: '精煉礦場',   baseRate: 25, capBase: 140, slots: 3, upgradeCost: 500 },
-  { lv: 5, name: '星晶核心礦', baseRate: 30, capBase: 200, slots: 4, upgradeCost: null },
+  { lv: 5, name: '星晶核心',   baseRate: 30, capBase: 200, slots: 4, upgradeCost: null },
 ];
 
 const MINE_CHAR_BONUS = {
@@ -309,7 +309,7 @@ const INGREDIENTS = [
 
 const RECIPES = [
   {
-    id: 'grilled_fish', name: '溪魚鹽烤', grade: '普通', icon: '🍣', cost: 15,
+    id: 'grilled_fish', name: '銀流鮮握', grade: '普通', icon: '🍣', cost: 15,
     ingredients: { fish: 2 },
     buff: { type: 'hp', value: 100, desc: '戰鬥開始時 HP +100' },
     favoredBy: ['bear', 'cat'],
@@ -358,15 +358,15 @@ const GUIDE_TERMS = [
 // 【V2.6 成就系統定義】
 const ACHIEVEMENTS = [
     { id: 'a_win_10', name: '初級夜行者', desc: '戰鬥勝利 10 場', target: 10, reward: 100, getProgress: (p) => p.battlesWon || 0 },
-    { id: 'a_win_50', name: '猛漢町常客', desc: '戰鬥勝利 50 場', target: 50, reward: 300, getProgress: (p) => p.battlesWon || 0 },
+    { id: 'a_win_50', name: '傳說夜行者', desc: '戰鬥勝利 50 場', target: 50, reward: 300, getProgress: (p) => p.battlesWon || 0 },
     { id: 'a_cap_5', name: '訓獸見習生', desc: '成功收服 5 種魔物', target: 5, reward: 150, getProgress: (p) => (p.captured || []).length },
     { id: 'a_cap_all', name: '生態觀察家', desc: '收服所有一般與Boss魔物 (共10種)', target: 10, reward: 500, getProgress: (p) => (p.captured || []).length },
     { id: 'a_pull_10', name: '小試身手', desc: '在迷途酒館進行 10 次招募', target: 10, reward: 150, getProgress: (p) => p.gachaPulls || 0 },
     { id: 'a_pull_50', name: '資本的力量', desc: '在迷途酒館進行 50 次招募', target: 50, reward: 500, getProgress: (p) => p.gachaPulls || 0 },
     { id: 'a_mastery_1', name: '專精之路', desc: '將 1 名角色的專精提升至 3 星', target: 1, reward: 200, getProgress: (p) => Object.values(p.mastery || {}).filter(v => v >= 3).length },
     { id: 'a_mastery_all', name: '全職業制霸', desc: '將 5 名角色的專精提升至 3 星', target: 5, reward: 1000, getProgress: (p) => Object.values(p.mastery || {}).filter(v => v >= 3).length },
-    { id: 'a_aff_1', name: '友誼之巔', desc: '解鎖 1 張雙人羈絆滿級CG', target: 1, reward: 200, getProgress: (p) => Object.values(p.affection || {}).filter(v => v >= 20).length },
-    { id: 'a_aff_3', name: '柯特的宵夜常客', desc: '解鎖 3 張雙人羈絆滿級CG', target: 3, reward: 600, getProgress: (p) => Object.values(p.affection || {}).filter(v => v >= 20).length },
+    { id: 'a_aff_1', name: '最好的朋友', desc: '解鎖 1 張雙人羈絆滿級CG', target: 1, reward: 200, getProgress: (p) => Object.values(p.affection || {}).filter(v => v >= 20).length },
+    { id: 'a_aff_3', name: '最棒的摯友', desc: '解鎖 3 張雙人羈絆滿級CG', target: 3, reward: 600, getProgress: (p) => Object.values(p.affection || {}).filter(v => v >= 20).length },
 ];
 
 // ==========================================
@@ -1239,7 +1239,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
         if (checkChristmasUnlock(np.unlocks)) {
             np.unlocks.push('christmas_xiangxiang');
-            msg += `\n\n🎄 奇蹟發生了！集齊五件異裝，解鎖了【聖誕節庠庠】！`;
+            msg += `\n\n🎄 奇蹟發生了！集齊五件異裝，解鎖了【聖誕節虎吉】！`;
         }
         
         saveProgress(np);
@@ -1279,11 +1279,46 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const ONE_TIME_CODES = {
-      'NIGHTSHIFT2026': { desc: '夜班工程師的護肝補給 (100晶 + 5AP)', apply: (p) => { p.crystals += 100; p.ap += 5; } },
-      'XIAOBU_MEOW': { desc: '賓士貓小布的特級罐罐 (200星晶碎片)', apply: (p) => { p.fragments = (p.fragments||0) + 200; } },
-      'KERT_BENTO': { desc: '柯特的滿滿愛心宵夜 (新年熊吉碎片x20)', apply: (p) => { p.charFragments = {...p.charFragments}; p.charFragments['newyear_bear'] = (p.charFragments['newyear_bear']||0) + 20; } },
-      'MHHUNTERXXL': { desc: '猛漢町討伐物資 (300晶)', apply: (p) => { p.crystals += 300; } },
-      'FF14WARRIOR': { desc: '光之戰士的祝福 (10AP)', apply: (p) => { p.ap += 10; } }
+      'STARTBONUS': { desc: '新手禮包 (100晶 + 5AP)', apply: (p) => { p.crystals += 100; p.ap += 5; } },
+      'XIAOBU': { desc: '小布的餽贈 (200星晶碎片)', apply: (p) => { p.fragments = (p.fragments||0) + 200; } },
+      // 節慶異裝系列
+    'NEWYEAR': { 
+        desc: '新年快樂！ (新年熊吉碎片x30)', 
+        apply: (p) => { 
+            p.charFragments = {...p.charFragments}; 
+            p.charFragments['newyear_bear'] = (p.charFragments['newyear_bear'] || 0) + 30; 
+        } 
+    },
+    'VALENTINE': { 
+        desc: '濃情蜜意的餽贈 (情人節白澤碎片x30)', 
+        apply: (p) => { 
+            p.charFragments = {...p.charFragments}; 
+            p.charFragments['valentine_wolf'] = (p.charFragments['valentine_wolf'] || 0) + 30; 
+        } 
+    },
+    'HARVEST': { 
+        desc: '感恩豐收的季節 (豐收節布布碎片x30)', 
+        apply: (p) => { 
+            p.charFragments = {...p.charFragments}; 
+            p.charFragments['harvest_elf'] = (p.charFragments['harvest_elf'] || 0) + 30; 
+        } 
+    },
+    'HALLOWEEN': { 
+        desc: '不給糖就搗蛋！ (萬聖節布提婭碎片x30)', 
+        apply: (p) => { 
+            p.charFragments = {...p.charFragments}; 
+            p.charFragments['halloween_cat'] = (p.charFragments['halloween_cat'] || 0) + 30; 
+        } 
+    },
+    
+    // 特殊/隱藏形態
+    'BLACKFLAME_AWAKEN': { 
+        desc: '深淵之火已然覺醒 (黑炎普爾斯碎片x30)', 
+        apply: (p) => { 
+            p.charFragments = {...p.charFragments}; 
+            p.charFragments['blackflame_human'] = (p.charFragments['blackflame_human'] || 0) + 30; 
+        } 
+    }
   };
 
   const handleRedeemCode = () => {
@@ -2171,7 +2206,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                 return (
                                     <div key={c.id} className="relative overflow-hidden bg-stone-800 border-2 border-stone-700 opacity-80 rounded-3xl p-6 min-h-[300px] flex flex-col items-center justify-center text-center shadow-inner">
                                         <div className="w-20 h-20 rounded-full bg-stone-900 border-2 border-stone-700 flex items-center justify-center mb-4 opacity-50"><span className="text-4xl grayscale">🎁</span></div>
-                                        <h3 className="font-bold text-stone-400 text-xl">聖誕節庠庠</h3><p className="text-stone-500 text-xs mt-1">(最棒的禮物)</p>
+                                        <h3 className="font-bold text-stone-400 text-xl">聖誕節虎吉</h3><p className="text-stone-500 text-xs mt-1">(最棒的禮物)</p>
                                         <div className="mt-6 bg-stone-900/80 p-4 rounded-xl border border-stone-700 w-full">
                                             <span className="text-yellow-600 block mb-2 font-bold text-sm">🔒 解鎖預告</span>
                                             <p className="text-stone-400 text-xs">{c.unlockHint}</p>
