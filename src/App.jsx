@@ -2294,7 +2294,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     ];
 
     const fragmentItems = [
-      { id: 'f_ap', name: '柯特的愛心便當', desc: '充滿愛心的手作料理，消耗 100 碎片恢復 1 點 AP。', cost: 100, currency: 'fragment', icon: '🍱', canBuy: true, bought: false, isInfinite: true, onBuy: () => { let np={...progress, ap: progress.ap + 1, fragments: (progress.fragments || 0) - 100}; saveProgress(np); showToastMsg('享用了愛心便當，AP 恢復了！'); } },
       { id: 'f_bear', name: '熊吉碎片 x5', desc: '用於基礎角色潛能突破。', cost: 50, currency: 'fragment', icon: '🐻', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('bear', 50, 5) },
       { id: 'f_wolf', name: '白澤碎片 x5', desc: '用於基礎角色潛能突破。', cost: 50, currency: 'fragment', icon: '🐺', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('wolf', 50, 5) },
       { id: 'f_cat', name: '布提婭碎片 x5', desc: '用於基礎角色潛能突破。', cost: 50, currency: 'fragment', icon: '🐈‍⬛', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('cat', 50, 5) },
@@ -2333,16 +2332,32 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 </div>
             </div>
             
-            <NpcDialogue 
-                npcName="商會會長" 
+            <NpcDialogue
+                key={shopTab}
+                npcName="商會會長"
                 npcImage="avatar_kohaku.png"
-                npcImageFallback="🦊" 
-                dialogues={[
+                npcImageFallback="🦊"
+                dialogues={shopTab === 'crystal' ? [
                     "歡迎來到星晶商店！只要有足夠的星晶，沒有什麼是我琥珀辦不到的。",
-                    "打工可以賺星晶，按摩可以恢復 AP，合理分配資源吧！",
-                    "現在開放星晶碎片交易了，想要誰的情報，用碎片來換吧。",
-                    "成為我的 VIP 吧，保證讓你體會到什麼叫「財力就是力量」。"
-                ]} 
+                    "星晶怎麼取得？很簡單——打夜巡戰役，每場至少 1 顆，打倒深淵霸主還有額外獎勵。",
+                    "無盡亂鬥每勝一場也有 3 顆星晶，喜歡刷刷刷的可以多跑幾場。",
+                    "成就也能換大量星晶，圖鑑裡查一下自己差哪些條件，說不定快達成了。"
+                ] : shopTab === 'fragment' ? [
+                    "碎片是招募夥伴的硬通貨。集滿 50 個特定角色的碎片，就能在圖鑑解鎖他的異裝型態！",
+                    "碎片還能用來突破天賦槽位——天賦欄不夠用？花碎片就能多裝一格，戰力直接提升。",
+                    "迷途酒館每次抽卡都有機率掉碎片，是穩定累積的管道，別忘了常去報到。",
+                    "想要特定角色的碎片？直接在這裡購買最有效率，省掉抽卡的隨機成分。"
+                ] : shopTab === 'recipe' ? [
+                    "食譜是白晝營地的專屬情報。先在這裡買下食譜，再到營地的營火烹飪台製作料理。",
+                    "料理可以在戰鬥前給角色加持 Buff，像是增加血量、補充護盾、提升能量——效果相當可觀。",
+                    "每種料理都有「偏好角色」，對應角色使用效果提升 20%！先確認角色喜好再下廚。",
+                    "投資食譜是一次性的，買下之後可以反覆製作。食材充裕的話，料理帶來的優勢非常持久。"
+                ] : [
+                    "食材從哪裡來？答案是星晶礦坑！礦坑掛機採集會自動產出各種食材，隨時都在幫你備料。",
+                    "礦坑等級越高、礦工越多，產出速度和稀有食材的機率都會提升，值得持續投資。",
+                    "懶得等採集？直接在這裡用碎片購買食材，省時省力——當然，代價就是碎片消耗快一些。",
+                    "肉、魚、蔬菜各有用途，囤好各類食材，回到白晝營地就能靈活搭配不同料理！"
+                ]}
             />
 
             <div className="flex justify-center gap-4 mb-8 flex-wrap">
