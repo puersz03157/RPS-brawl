@@ -427,13 +427,15 @@ const checkChristmasUnlock = (unlocksArray) => {
 // 4. React 介面組件
 // ==========================================
 const SpriteAvatar = ({ char, size='w-16 h-16', grayscale=false }) => {
+    const [imgError, setImgError] = useState(false);
     if (!char) return null;
+    const showFallback = char.isEmoji || imgError;
     return (
         <div className={`${size} rounded-full border-2 border-stone-600 bg-stone-800 flex items-center justify-center overflow-hidden shrink-0 relative`}>
-            {char.isEmoji ? (
-                <span className={`text-3xl ${grayscale ? 'grayscale opacity-30' : ''}`}>{char.emoji}</span>
+            {showFallback ? (
+                <span className={`text-3xl ${grayscale ? 'grayscale opacity-30' : ''}`}>{char.emoji || char.icon || '?'}</span>
             ) : (
-                <img src={char.image} className={`w-full h-full object-cover ${grayscale ? 'grayscale opacity-30' : ''}`} alt={char.name} onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.innerHTML += `<span class="text-xs">?</span>`; }} />
+                <img src={char.image} className={`w-full h-full object-cover ${grayscale ? 'grayscale opacity-30' : ''}`} alt={char.name} onError={() => setImgError(true)} />
             )}
         </div>
     );
