@@ -461,6 +461,95 @@ const NpcDialogue = ({ npcName, npcImage, npcImageFallback, dialogues }) => {
     );
 };
 
+const STORY_CHAPTERS = [
+  {
+    id: 1, name: '翡翠森之徑', elementIcon: '🌿', element: ELEMENTS.WOOD,
+    themeGrad: 'from-green-950 via-stone-950 to-stone-950', themeColor: 'text-green-400', themeBorder: 'border-green-700',
+    attackerCharId: 'human',
+    unlockLabel: '角色解鎖', unlockName: '🐻 熊吉', unlockDesc: '守護翡翠森林的熊族戰士，從此踏上夜行者旅途。',
+    enemyIds: ['m1', 'm6', 'b4'],
+    dialogue: [
+      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '星晶調查報告，第七頁。翡翠森林的異變比預期嚴重得多……' },
+      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '魔物數量暴增，植被開始結晶化。能量的根源，就藏在森林深處。' },
+      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'right', text: '站住！這裡不是你能進來的地方，人類！' },
+      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '我沒有惡意。我是夜行者工會的調查員，普爾斯。你是這片森林的守護者？' },
+      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'right', text: '……哼。守護者？現在哪算什麼守護。神木快枯死了，我連那些魔物都趕不走。' },
+      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '那就讓我們合力解決。不過首先——讓我確認你的實力。' },
+      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'right', text: '你想幹什麼！？' },
+      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '放心，這是夜行者工會的例行測試。準備好了嗎？' },
+    ],
+  },
+  {
+    id: 2, name: '冰封星晶湖', elementIcon: '❄️', element: ELEMENTS.WATER,
+    themeGrad: 'from-blue-950 via-stone-950 to-stone-950', themeColor: 'text-blue-400', themeBorder: 'border-blue-700',
+    attackerCharId: 'bear',
+    unlockLabel: '角色解鎖', unlockName: '🐺 白澤', unlockDesc: '來自極寒之地的孤狼劍客，冷漠外表下藏著羈絆。',
+    enemyIds: ['m2', 'm7', 'b5'],
+    dialogue: [
+      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '呼……終於到了。這就是傳說中永不結凍的星晶湖？' },
+      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '全結冰了……而且這種冰的味道不對，帶著濃烈的星晶氣息。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'right', text: '……' },
+      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '欸？那邊有人！喂——你沒事吧！' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'right', text: '走開。' },
+      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '冰這麼厚，你一個人能解決嗎？需要幫手嗎？' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'right', text: '……不需要。' },
+      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '看你說話的樣子就知道需要！走，一起解決！但先讓我確認你的實力！' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'right', text: '……真是煩人的傢伙。' },
+    ],
+  },
+  {
+    id: 3, name: '焦熱煉獄山', elementIcon: '🔥', element: ELEMENTS.FIRE,
+    themeGrad: 'from-red-950 via-stone-950 to-stone-950', themeColor: 'text-red-400', themeBorder: 'border-red-700',
+    attackerCharId: 'wolf',
+    unlockLabel: '角色解鎖', unlockName: '🐈‍⬛ 布提婭', unlockDesc: '吞下暗星晶的夜靈貓，傲嬌地決定暫時同行。',
+    enemyIds: ['m3', 'm8', 'b3'],
+    dialogue: [
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '焦熱煉獄山……果然名不虛傳。連空氣都在燃燒。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '能量通道就在山頂，必須在岩漿蔓延前封鎖。' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'right', text: '喵嗚～這裡好熱，本大爺不喜歡。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '……貓？這種地方怎麼會有貓。' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'right', text: '你才是貓！本大爺是夜靈貓，布提婭！這裡有重要的東西，來取回的。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '你一個人對付那些魔物？' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'right', text: '哼，本大爺當然沒問題！你才需要擔心自己！' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '這樣吧，先比試一下。輸的人聽另一個人的指揮。' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'right', text: '有趣！來吧！' },
+    ],
+  },
+  {
+    id: 4, name: '曦光遺忘神殿', elementIcon: '✨', element: ELEMENTS.LIGHT,
+    themeGrad: 'from-yellow-950 via-stone-950 to-stone-950', themeColor: 'text-yellow-400', themeBorder: 'border-yellow-700',
+    attackerCharId: 'cat',
+    unlockLabel: '角色解鎖', unlockName: '🧚 布布', unlockDesc: '光之精靈重拾記憶，以嚮導之姿引領眾人前往終焉。',
+    enemyIds: ['m4', 'm9', 'b2'],
+    dialogue: [
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '喵嗚……好多光，刺眼。這就是曦光遺忘神殿？' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '裡面的魔物都是光屬性……對本大爺的暗魔法有點棘手呢。' },
+      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'right', text: '……救……救我……' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '哎？誰在說話？出來！' },
+      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'right', text: '嗚，我被困在這裡了，走不出去……我叫布布，是光之精靈，我、我忘了很多事……' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '失憶的精靈？在神殿深處被困著……這種事說出去誰信啊。' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '……算了，本大爺今天心情好，就救你一次。但先要確認你不是陷阱。' },
+      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'right', text: '咦？等、等等！我沒有在騙你！……雖然我確實不太記得怎麼戰鬥了……' },
+    ],
+  },
+  {
+    id: 5, name: '深淵星晶裂隙', elementIcon: '🌑', element: ELEMENTS.DARK,
+    themeGrad: 'from-purple-950 via-stone-950 to-stone-950', themeColor: 'text-purple-400', themeBorder: 'border-purple-700',
+    attackerCharId: 'elf',
+    unlockLabel: '解鎖遊戲模式', unlockName: '⚔️ 夜巡戰役 & 自訂對決', unlockDesc: '深淵裂隙封鎖。星晶異變的真相，在更遠的旅途等待著你們。',
+    enemyIds: ['m5', 'm10', 'b1'],
+    dialogue: [
+      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '……這裡就是大星晶碎裂的地方嗎？' },
+      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '黑暗能量好強……但我不害怕了。大家都在背後支持我。' },
+      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '普爾斯說過：「直視恐懼，才能超越它。」……熊吉說：「蜂蜜最好吃！」' },
+      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '……熊吉那個不算。不管了，往前衝！' },
+      { speaker: '???', charId: null, image: null, side: 'right', text: '……很久沒有人類踏入這裡了。你就是那些夜行者？' },
+      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '是的！我是布布，光之精靈！我要封鎖這道裂隙！' },
+      { speaker: '???', charId: null, image: null, side: 'right', text: '有趣。那就先通過我這關吧……' },
+    ],
+  },
+];
+
 export default function App() {
   const [gameState, setGameState] = useState('intro'); 
   const [gameMode, setGameMode] = useState('campaign'); 
@@ -495,9 +584,12 @@ export default function App() {
   const [gachaResult, setGachaResult] = useState(null);
   const [shopTab, setShopTab] = useState('crystal');
   const [gachaPreviewIdx, setGachaPreviewIdx] = useState(0);
+  const [storyChapterId, setStoryChapterId] = useState(null);
+  const [storyDialogueIdx, setStoryDialogueIdx] = useState(0);
+  const [storyBattleStage, setStoryBattleStage] = useState(0);
 
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
-  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false });
+  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [] });
   const [isLoaded, setIsLoaded] = useState(false);
 
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
@@ -524,7 +616,8 @@ export default function App() {
                 battlesWon: p.battlesWon || 0, gachaPulls: p.gachaPulls || 0, claimedAchievements: Array.isArray(p.claimedAchievements) ? p.claimedAchievements : [],
                 mine: p.mine || { lv: 1, workers: [], lastCollect: null, pending: 0 },
                 ingredients: p.ingredients || {}, unlockedRecipes: Array.isArray(p.unlockedRecipes) ? p.unlockedRecipes : [], pendingMeal: p.pendingMeal || null,
-                tutorialDone: p.tutorialDone || false
+                tutorialDone: p.tutorialDone || false,
+                completedStoryChapters: Array.isArray(p.completedStoryChapters) ? p.completedStoryChapters : []
             });
         }
     } catch(e) { console.warn("Save file invalid, starting fresh.", e); }
@@ -1089,6 +1182,62 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     }
   };
 
+  const startStoryChapter = (chapterId) => {
+    setStoryChapterId(chapterId);
+    setStoryDialogueIdx(0);
+    setStoryBattleStage(0);
+    setGameState('story_dialogue');
+  };
+
+  const startStoryBattle = (chapterId, battleStage) => {
+    const chapter = STORY_CHAPTERS.find(c => c.id === chapterId);
+    if (!chapter) return;
+    const attackerChar = CHARACTERS.find(c => c.id === chapter.attackerCharId);
+    const enemyId = chapter.enemyIds[battleStage];
+    const eChar = [...NORMAL_MONSTERS, ...BOSS_MONSTERS].find(m => m.id === enemyId);
+    if (!attackerChar || !eChar) return;
+
+    const validP = ALL_TALENTS.filter(t => !t.req && !t.exclusiveTo);
+    const pTalents = getRandomTalents(3, validP);
+    const pMax = attackerChar.stats.maxHp + (pTalents.includes('t1') ? 100 : 0);
+    const pInitE = (pTalents.includes('t3') ? 25 : 0) + (pTalents.some(t => ['t9','t10','t11'].includes(t)) ? 20 : 0);
+    const pObj = {
+      char: attackerChar, talents: pTalents,
+      hp: pMax, maxHp: pMax,
+      atk: attackerChar.stats.atk + (pTalents.includes('t2') ? 10 : 0),
+      def: attackerChar.stats.def, energy: pInitE,
+      shield: pTalents.includes('t4') ? 80 : 0,
+      buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false },
+      permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: []
+    };
+    if (pTalents.includes('t_bear')) { const pool = shuffle(['ATK_UP','DEF_UP','REGEN']); pObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
+
+    const validE = ALL_TALENTS.filter(t => !t.req && !t.exclusiveTo);
+    const eT = getRandomTalents(getBaseTalents(eChar), validE);
+    const eMax = eChar.stats.maxHp + (eT.includes('t1') ? 100 : 0);
+    const eInitE = eT.includes('t3') ? 25 : 0;
+    const eObj = {
+      char: eChar, talents: eT, hp: eMax, maxHp: eMax,
+      atk: eChar.stats.atk + (eT.includes('t2') ? 10 : 0),
+      def: eChar.stats.def, energy: eInitE, shield: 0,
+      buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false },
+      permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: []
+    };
+    if (eT.includes('t_bear')) { const pool = shuffle(['ATK_UP','DEF_UP','REGEN']); eObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
+
+    let np = { ...progress };
+    if (!np.encountered.includes(eChar.id)) np.encountered = [...np.encountered, eChar.id];
+    saveProgress(np);
+
+    setPlayer(pObj);
+    setEnemy(eObj);
+    setSelectedTalentIds(pTalents);
+    setLogs([{ text: `⚔️ 第 ${battleStage + 1}/3 戰！對手：${eChar.name}`, type: 'info' }]);
+    setNewlyCaptured(null);
+    setGameMode('story');
+    setGameState('battle');
+  };
+
   const getBrawlReward = (eChar) => {
     if (!eChar) return 3;
     if (ADVANCED_BOSSES.some(b => b.id === eChar.id)) return 12;
@@ -1101,6 +1250,34 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const handleDeath = (target) => {
+    if (gameMode === 'story') {
+      if (target === 'player') {
+        playSound('defeat');
+        setPlayer(prev => ({ ...prev, hp: prev.maxHp, energy: 0, shield: 0, status: [], buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { ...prev.permaBuffs, turnCount: 0 } }));
+        setEnemy(prev => ({ ...prev, hp: prev.maxHp, energy: prev.talents.includes('t3') ? 25 : 0, shield: 0, status: [], buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false }, permaBuffs: { ...prev.permaBuffs, turnCount: 0 } }));
+        setLogs([{ text: '💪 不要放棄！繼續挑戰！', type: 'info' }]);
+        return;
+      } else {
+        playSound('victory');
+        let np = { ...progress };
+        np.battlesWon = (np.battlesWon || 0) + 1;
+        np.ap = (np.ap || 0) + 1;
+        const earned = [3, 5, 10][storyBattleStage] ?? 5;
+        np.crystals += earned;
+        setRewardCrystals(earned);
+        const nextStage = storyBattleStage + 1;
+        if (nextStage < 3) {
+          saveProgress(np);
+          setStoryBattleStage(nextStage);
+          startStoryBattle(storyChapterId, nextStage);
+        } else {
+          np.completedStoryChapters = [...new Set([...(np.completedStoryChapters || []), storyChapterId])];
+          saveProgress(np);
+          setGameState('story_victory');
+        }
+        return;
+      }
+    }
     if (gameMode === 'tutorial') {
         if (target === 'player') {
             setEnemy(prev => ({ ...prev, hp: TUTORIAL_ENEMY.stats.maxHp, shield: 0, status: [], energy: 0 }));
@@ -2010,7 +2187,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     return (
         <div className="min-h-screen p-4 flex flex-col max-w-3xl mx-auto h-screen bg-stone-950 text-stone-200">
             <div className="text-center text-xs text-stone-500 mb-2 font-bold">
-                {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : '自訂對決'}
+                {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : gameMode === 'story' ? `${STORY_CHAPTERS.find(c=>c.id===storyChapterId)?.name || '主線夜巡'} · 第 ${storyBattleStage + 1}/3 戰` : '自訂對決'}
             </div>
             
             <div className={`p-4 rounded-xl mb-2 flex items-center gap-4 bg-stone-900 border-2 ${enemy.char.element.border} relative overflow-hidden shadow-lg ${tutHL(2)}`}>
@@ -2477,55 +2654,96 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
-  const renderStoryChapters = () => {
-    const chapters = [
-      {
-        num: 1, name: '翡翠森之徑', element: ELEMENTS.WOOD, elementIcon: '🌿',
-        bg: 'from-green-950 to-stone-900', border: 'border-green-800', hoverBorder: 'hover:border-green-500',
-        titleColor: 'text-green-400', tagBg: 'bg-green-900/60 border-green-700 text-green-300',
-        attacker: { name: '普爾斯', icon: '🧑‍🚒' },
-        unlocks: { name: '熊吉', icon: '🐻' },
-        desc: '星晶污染蔓延至翡翠森林，草木魔物橫行。普爾斯受命調查異變根源，卻在深處遇見了一位身陷困境的熊族戰士……',
-        image: 'chapter1_bg.png',
-      },
-      {
-        num: 2, name: '冰封星晶湖', element: ELEMENTS.WATER, elementIcon: '❄️',
-        bg: 'from-blue-950 to-stone-900', border: 'border-blue-800', hoverBorder: 'hover:border-blue-500',
-        titleColor: 'text-blue-400', tagBg: 'bg-blue-900/60 border-blue-700 text-blue-300',
-        attacker: { name: '熊吉', icon: '🐻' },
-        unlocks: { name: '白澤', icon: '🐺' },
-        desc: '傳說中永不結凍的星晶湖，如今被異常的寒氣封鎖。熊吉循著星晶波動前往，卻遭遇了徘徊湖畔、冷峻難測的孤狼劍客……',
-        image: 'chapter2_bg.png',
-      },
-      {
-        num: 3, name: '焦熱煉獄山', element: ELEMENTS.FIRE, elementIcon: '🔥',
-        bg: 'from-red-950 to-stone-900', border: 'border-red-800', hoverBorder: 'hover:border-red-500',
-        titleColor: 'text-red-400', tagBg: 'bg-red-900/60 border-red-700 text-red-300',
-        attacker: { name: '白澤', icon: '🐺' },
-        unlocks: { name: '布提婭', icon: '🐈‍⬛' },
-        desc: '熔岩與魔焰交織的煉獄之山，連接著大陸深處的能量通道。白澤奉命封鎖異變源頭，在灼熱中遇見了一隻神秘的夜靈黑貓……',
-        image: 'chapter3_bg.png',
-      },
-      {
-        num: 4, name: '曦光遺忘神殿', element: ELEMENTS.LIGHT, elementIcon: '✨',
-        bg: 'from-yellow-950 to-stone-900', border: 'border-yellow-800', hoverBorder: 'hover:border-yellow-500',
-        titleColor: 'text-yellow-400', tagBg: 'bg-yellow-900/60 border-yellow-700 text-yellow-300',
-        attacker: { name: '布提婭', icon: '🐈‍⬛' },
-        unlocks: { name: '布布', icon: '🧚' },
-        desc: '隱沒於高原的古老神殿，曾是光之星晶的守護聖地。布提婭循著貓的直覺潛入，卻發現殿中困著一位失去記憶的光之精靈……',
-        image: 'chapter4_bg.png',
-      },
-      {
-        num: 5, name: '深淵星晶裂隙', element: ELEMENTS.DARK, elementIcon: '🌑',
-        bg: 'from-purple-950 to-stone-900', border: 'border-purple-800', hoverBorder: 'hover:border-purple-500',
-        titleColor: 'text-purple-400', tagBg: 'bg-purple-900/60 border-purple-700 text-purple-300',
-        attacker: { name: '布布', icon: '🧚' },
-        unlocks: { name: '夜巡戰役 & 自訂對決', icon: '⚔️' },
-        desc: '大星晶碎裂的震源——深淵裂隙。黑暗能量持續外溢，吞噬著一切光明。布布鼓起勇氣踏入裂隙，迎接決定艾歐蘭斯命運的最終對決……',
-        image: 'chapter5_bg.png',
-      },
-    ];
+  const renderStoryDialogue = () => {
+    const chapter = STORY_CHAPTERS.find(c => c.id === storyChapterId);
+    if (!chapter) return null;
+    const line = chapter.dialogue[storyDialogueIdx];
+    const isLast = storyDialogueIdx >= chapter.dialogue.length - 1;
+    const isLeft = line.side === 'left';
+    const speakerChar = line.charId ? CHARACTERS.find(c => c.id === line.charId) : null;
 
+    return (
+      <div className={`min-h-screen bg-gradient-to-b ${chapter.themeGrad} text-stone-200 flex flex-col`}>
+        <div className="p-4 flex items-center gap-3 border-b border-stone-800/60">
+          <button onClick={() => setGameState('story_chapters')} className="text-stone-500 hover:text-white transition-colors"><ArrowLeft size={18}/></button>
+          <span className={`text-sm font-bold ${chapter.themeColor}`}>{chapter.elementIcon} 第{chapter.id}章 · {chapter.name}</span>
+          <div className="ml-auto flex gap-1.5 items-center">
+            {chapter.dialogue.map((_, i) => (
+              <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i < storyDialogueIdx ? chapter.themeColor.replace('text-','bg-') + ' opacity-50' : i === storyDialogueIdx ? chapter.themeColor.replace('text-','bg-') : 'bg-stone-700'}`}/>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-col justify-end p-4 pb-10 max-w-2xl mx-auto w-full gap-6">
+          <div className={`flex gap-4 items-end ${isLeft ? '' : 'flex-row-reverse'}`}>
+            <div className="shrink-0 flex flex-col items-center gap-2">
+              <div className={`w-20 h-20 rounded-2xl overflow-hidden bg-stone-900 border-2 ${chapter.themeBorder} shadow-xl flex items-center justify-center`}>
+                {line.image
+                  ? <img src={line.image} alt={line.speaker} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; e.target.parentElement.innerHTML = `<span class="text-3xl">${speakerChar?.icon || '❓'}</span>`; }}/>
+                  : <span className="text-3xl">{speakerChar?.icon || '❓'}</span>
+                }
+              </div>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full bg-stone-900/80 border ${chapter.themeBorder} ${chapter.themeColor}`}>{line.speaker}</span>
+            </div>
+            <div className={`flex-1 bg-stone-900/90 border-2 ${chapter.themeBorder} rounded-2xl p-4 shadow-2xl`}>
+              <p className="text-stone-100 text-base leading-relaxed">「{line.text}」</p>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center">
+            <span className="text-stone-600 text-xs">{storyDialogueIdx + 1} / {chapter.dialogue.length}</span>
+            {isLast ? (
+              <button onClick={() => startStoryBattle(storyChapterId, 0)} className="bg-red-700 hover:bg-red-600 text-white px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 active:scale-95 transition-all">
+                ⚔️ 進入戰鬥！
+              </button>
+            ) : (
+              <button onClick={() => setStoryDialogueIdx(prev => prev + 1)} className="bg-stone-800 hover:bg-stone-700 border border-stone-600 text-stone-200 px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 active:scale-95 transition-all">
+                下一句 ▶
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStoryVictory = () => {
+    const chapter = STORY_CHAPTERS.find(c => c.id === storyChapterId);
+    if (!chapter) return null;
+    const nextChapter = STORY_CHAPTERS.find(c => c.id === storyChapterId + 1);
+    return (
+      <div className={`min-h-screen bg-gradient-to-b ${chapter.themeGrad} flex items-center justify-center p-6`}>
+        <div className="bg-stone-900/95 border-2 border-stone-700 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
+          <div className="text-6xl mb-3">✨</div>
+          <div className={`text-xs font-bold ${chapter.themeColor} mb-1 tracking-widest`}>第 {chapter.id} 章 完成</div>
+          <h2 className="text-2xl font-bold text-white mb-5">{chapter.name}</h2>
+
+          <div className={`bg-stone-800 border-2 ${chapter.themeBorder} rounded-2xl p-5 mb-6`}>
+            <div className={`text-xs font-bold ${chapter.themeColor} mb-3 flex items-center justify-center gap-1`}>🔓 {chapter.unlockLabel}</div>
+            <div className="text-xl font-bold text-stone-100 mb-2">{chapter.unlockName}</div>
+            <p className="text-stone-400 text-xs leading-relaxed">{chapter.unlockDesc}</p>
+          </div>
+
+          <div className="bg-stone-800/60 rounded-xl p-3 mb-6 flex justify-center gap-6 text-sm">
+            <div className="text-center"><div className="text-blue-300 font-bold">💎 {[3,5,10].reduce((a,b)=>a+b,0)}</div><div className="text-stone-500 text-xs">獲得星晶</div></div>
+            <div className="text-center"><div className="text-green-400 font-bold">⚡ 3</div><div className="text-stone-500 text-xs">獲得 AP</div></div>
+          </div>
+
+          {nextChapter && (
+            <button onClick={() => startStoryChapter(nextChapter.id)} className="w-full bg-indigo-700 hover:bg-indigo-600 text-white py-3 rounded-xl font-bold mb-3 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2">
+              {nextChapter.elementIcon} 前往第{nextChapter.id}章 · {nextChapter.name}
+            </button>
+          )}
+          <button onClick={() => setGameState('story_chapters')} className="w-full bg-stone-700 hover:bg-stone-600 py-3 rounded-xl font-bold text-stone-300 transition-colors">
+            返回主線選單
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderStoryChapters = () => {
+    const completed = progress.completedStoryChapters || [];
     return (
       <div className="min-h-screen bg-stone-950 text-stone-200 p-6">
         <div className="max-w-3xl mx-auto">
@@ -2535,40 +2753,44 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-indigo-300 mb-2">📖 主線夜巡</h1>
             <p className="text-stone-400 text-sm">跟隨夜行者們的旅程，解開大星晶碎裂的真相。</p>
+            <div className="mt-3 text-xs text-stone-500">{completed.length} / {STORY_CHAPTERS.length} 章節完成</div>
           </div>
           <div className="flex flex-col gap-4">
-            {chapters.map((ch) => (
-              <div key={ch.num} className={`relative bg-gradient-to-r ${ch.bg} border-2 ${ch.border} rounded-2xl overflow-hidden shadow-xl opacity-60 cursor-not-allowed`}>
-                <div className="absolute inset-0 pointer-events-none">
-                  <img src={ch.image} alt="" className="w-full h-full object-cover opacity-10" onError={e => e.target.style.display='none'} />
-                </div>
-                <div className="relative z-10 p-5 flex gap-4 items-start">
-                  <div className="text-4xl shrink-0 mt-1">{ch.elementIcon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="text-stone-500 text-xs font-bold">第 {ch.num} 章</span>
-                      <h2 className={`font-bold text-lg ${ch.titleColor}`}>{ch.name}</h2>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ch.tagBg}`}>{ch.element.name}屬性</span>
+            {STORY_CHAPTERS.map((ch) => {
+              const isDone = completed.includes(ch.id);
+              const attackerChar = CHARACTERS.find(c => c.id === ch.attackerCharId);
+              return (
+                <div key={ch.id} onClick={() => startStoryChapter(ch.id)}
+                  className={`relative bg-gradient-to-r ${ch.themeGrad} border-2 ${isDone ? ch.themeBorder : 'border-stone-700'} rounded-2xl overflow-hidden shadow-xl cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-2xl active:scale-[0.99]`}>
+                  <div className="relative z-10 p-5 flex gap-4 items-start">
+                    <div className="text-4xl shrink-0 mt-1">{ch.elementIcon}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <span className="text-stone-500 text-xs font-bold">第 {ch.id} 章</span>
+                        <h2 className={`font-bold text-lg ${ch.themeColor}`}>{ch.name}</h2>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ch.themeBorder} ${ch.themeColor} bg-stone-900/50`}>{ch.element.name}屬性</span>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs flex-wrap mt-2">
+                        <div className="flex items-center gap-1 text-stone-400">
+                          <span>攻略角色：</span>
+                          <span className="text-stone-200 font-bold">{attackerChar?.icon} {attackerChar?.name}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-stone-400">
+                          <span>通關解鎖：</span>
+                          <span className="text-yellow-400 font-bold">{ch.unlockName}</span>
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-stone-400 text-xs leading-relaxed mb-3 line-clamp-2">{ch.desc}</p>
-                    <div className="flex items-center gap-4 text-xs flex-wrap">
-                      <div className="flex items-center gap-1 text-stone-400">
-                        <span>攻略角色：</span>
-                        <span className="text-stone-200 font-bold">{ch.attacker.icon} {ch.attacker.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1 text-stone-400">
-                        <span>通關解鎖：</span>
-                        <span className="text-yellow-400 font-bold">{ch.unlocks.icon} {ch.unlocks.name}</span>
-                      </div>
+                    <div className="shrink-0 flex flex-col items-center gap-1 pt-1">
+                      {isDone
+                        ? <><span className="text-2xl">✅</span><span className={`text-[10px] font-bold ${ch.themeColor}`}>已完成</span></>
+                        : <><span className="text-stone-400 text-sm font-bold">▶ 開始</span><span className="text-stone-500 text-[10px]">3連戰</span></>
+                      }
                     </div>
                   </div>
-                  <div className="shrink-0 flex flex-col items-center gap-1">
-                    <Lock size={20} className="text-stone-600" />
-                    <span className="text-stone-600 text-[10px] font-bold">即將開放</span>
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
@@ -2910,6 +3132,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   case 'gacha': return renderGacha();
                   case 'mine': return renderMine();
                   case 'story_chapters': return renderStoryChapters();
+                  case 'story_dialogue': return renderStoryDialogue();
+                  case 'story_victory': return renderStoryVictory();
                   case 'select_reward': return (
                       <div className="min-h-screen p-8 flex flex-col items-center justify-center bg-stone-900 text-stone-200">
                           <h2 className="text-4xl font-bold text-yellow-500 mb-8 animate-bounce">🎁 戰鬥勝利！</h2>
