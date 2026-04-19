@@ -465,6 +465,7 @@ const STORY_CHAPTERS = [
   {
     id: 1, name: '翡翠森之徑', elementIcon: '🌿', element: ELEMENTS.WOOD,
     themeGrad: 'from-green-950 via-stone-950 to-stone-950', themeColor: 'text-green-400', themeBorder: 'border-green-700',
+    charOptions: ['human', 'bear'], recommendedCharId: 'human',
     attackerCharId: 'human',
     unlockLabel: '角色解鎖', unlockName: '🐻 熊吉', unlockDesc: '守護翡翠森林的熊族戰士，從此踏上夜行者旅途。',
     enemyIds: ['m1', 'm6', 'b4'],
@@ -482,6 +483,7 @@ const STORY_CHAPTERS = [
   {
     id: 2, name: '冰封星晶湖', elementIcon: '❄️', element: ELEMENTS.WATER,
     themeGrad: 'from-blue-950 via-stone-950 to-stone-950', themeColor: 'text-blue-400', themeBorder: 'border-blue-700',
+    charOptions: ['human', 'bear', 'wolf'], recommendedCharId: 'bear',
     attackerCharId: 'bear',
     unlockLabel: '角色解鎖', unlockName: '🐺 白澤', unlockDesc: '來自極寒之地的孤狼劍客，冷漠外表下藏著羈絆。',
     enemyIds: ['m2', 'm7', 'b5'],
@@ -500,6 +502,7 @@ const STORY_CHAPTERS = [
   {
     id: 3, name: '焦熱煉獄山', elementIcon: '🔥', element: ELEMENTS.FIRE,
     themeGrad: 'from-red-950 via-stone-950 to-stone-950', themeColor: 'text-red-400', themeBorder: 'border-red-700',
+    charOptions: ['human', 'bear', 'wolf'], recommendedCharId: 'wolf',
     attackerCharId: 'wolf',
     unlockLabel: '角色解鎖', unlockName: '🐈‍⬛ 布提婭', unlockDesc: '吞下暗星晶的夜靈貓，傲嬌地決定暫時同行。',
     enemyIds: ['m3', 'm8', 'b3'],
@@ -518,6 +521,7 @@ const STORY_CHAPTERS = [
   {
     id: 4, name: '曦光遺忘神殿', elementIcon: '✨', element: ELEMENTS.LIGHT,
     themeGrad: 'from-yellow-950 via-stone-950 to-stone-950', themeColor: 'text-yellow-400', themeBorder: 'border-yellow-700',
+    charOptions: ['human', 'bear', 'wolf', 'cat'], recommendedCharId: 'cat',
     attackerCharId: 'cat',
     unlockLabel: '角色解鎖', unlockName: '🧚 布布', unlockDesc: '光之精靈重拾記憶，以嚮導之姿引領眾人前往終焉。',
     enemyIds: ['m4', 'm9', 'b2'],
@@ -535,6 +539,7 @@ const STORY_CHAPTERS = [
   {
     id: 5, name: '深淵星晶裂隙', elementIcon: '🌑', element: ELEMENTS.DARK,
     themeGrad: 'from-purple-950 via-stone-950 to-stone-950', themeColor: 'text-purple-400', themeBorder: 'border-purple-700',
+    charOptions: ['human', 'bear', 'wolf', 'cat', 'elf'], recommendedCharId: 'elf',
     attackerCharId: 'elf',
     unlockLabel: '解鎖遊戲模式', unlockName: '⚔️ 夜巡戰役 & 自訂對決', unlockDesc: '深淵裂隙封鎖。星晶異變的真相，在更遠的旅途等待著你們。',
     enemyIds: ['m5', 'm10', 'b1'],
@@ -587,6 +592,7 @@ export default function App() {
   const [storyChapterId, setStoryChapterId] = useState(null);
   const [storyDialogueIdx, setStoryDialogueIdx] = useState(0);
   const [storyBattleStage, setStoryBattleStage] = useState(0);
+  const [storySelectedCharId, setStorySelectedCharId] = useState(null);
 
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
   const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [] });
@@ -1923,7 +1929,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     
     return (
         <div className="min-h-screen p-8 max-w-4xl mx-auto flex flex-col items-center bg-stone-900 text-stone-200">
-            <button onClick={()=>setGameState(gameMode === 'story' ? 'story_dialogue' : 'select_char')} className="self-start mb-4 flex items-center gap-2 text-stone-400 hover:text-white"><ArrowLeft/> {gameMode === 'story' ? '返回劇情' : '返回選角'}</button>
+            <button onClick={()=>setGameState(gameMode === 'story' ? 'story_select_char' : 'select_char')} className="self-start mb-4 flex items-center gap-2 text-stone-400 hover:text-white"><ArrowLeft/> {gameMode === 'story' ? '返回角色選擇' : '返回選角'}</button>
             <h2 className="text-3xl font-bold text-yellow-400 mb-2 mt-4">配置戰鬥天賦</h2>
             <div className="bg-stone-800 px-6 py-3 rounded-full font-bold text-lg mb-8 border border-stone-700 shadow-lg">
                 剩餘點數：<span className={pLeft === 0 ? 'text-red-400' : 'text-yellow-400'}>{pLeft}</span> / {max}
@@ -2662,6 +2668,48 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
+  const renderStorySelectChar = () => {
+    const chapter = STORY_CHAPTERS.find(c => c.id === storyChapterId);
+    if (!chapter) return null;
+    const options = (chapter.charOptions || [chapter.attackerCharId]).map(id => CHARACTERS.find(c => c.id === id)).filter(Boolean);
+    return (
+      <div className={`min-h-screen bg-gradient-to-b ${chapter.themeGrad} text-stone-200 flex flex-col`}>
+        <div className="p-4 flex items-center gap-3 border-b border-stone-800/60">
+          <button onClick={() => setGameState('story_dialogue')} className="text-stone-500 hover:text-white transition-colors"><ArrowLeft size={18}/></button>
+          <span className={`text-sm font-bold ${chapter.themeColor}`}>{chapter.elementIcon} 第{chapter.id}章 · {chapter.name}</span>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center p-6 gap-6">
+          <h2 className="text-2xl font-bold text-white">選擇出陣角色</h2>
+          <p className="text-stone-400 text-sm">推薦角色不代表強制，選擇你喜歡的夥伴上場！</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full max-w-lg">
+            {options.map(c => {
+              const isRec = c.id === chapter.recommendedCharId;
+              const isSel = storySelectedCharId === c.id;
+              return (
+                <div key={c.id} onClick={() => setStorySelectedCharId(c.id)}
+                  className={`relative p-4 rounded-2xl border-2 cursor-pointer transition-all flex flex-col items-center gap-2 ${isSel ? `bg-stone-900/80 ${chapter.themeBorder} shadow-xl scale-105` : 'bg-stone-900/50 border-stone-700 hover:border-stone-500 hover:scale-102'}`}>
+                  {isRec && <div className={`absolute -top-2 -right-2 text-[10px] font-bold px-2 py-0.5 rounded-full ${chapter.themeColor} bg-stone-900 border ${chapter.themeBorder}`}>推薦</div>}
+                  <div className="text-4xl">{c.icon}</div>
+                  <div className="font-bold text-sm text-stone-100 text-center">{c.name}</div>
+                  <div className="text-[10px] text-stone-500">{c.element?.name || ''}屬性</div>
+                </div>
+              );
+            })}
+          </div>
+          <button
+            disabled={!storySelectedCharId}
+            onClick={() => {
+              const chosen = CHARACTERS.find(c => c.id === storySelectedCharId);
+              if (chosen) { setPlayer(prev => ({ ...prev, char: chosen })); setSelectedTalentIds([]); setGameState('select_talent'); }
+            }}
+            className={`mt-2 px-14 py-4 rounded-full font-bold text-xl shadow-lg transition-all ${storySelectedCharId ? 'bg-red-700 hover:bg-red-600 text-white hover:scale-105 active:scale-95' : 'bg-stone-700 text-stone-500 cursor-not-allowed'}`}>
+            ⚔️ 配置天賦！
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderStoryDialogue = () => {
     const chapter = STORY_CHAPTERS.find(c => c.id === storyChapterId);
     if (!chapter) return null;
@@ -2702,11 +2750,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             <span className="text-stone-600 text-xs">{storyDialogueIdx + 1} / {chapter.dialogue.length}</span>
             {isLast ? (
               <button onClick={() => {
-                const ch = STORY_CHAPTERS.find(c => c.id === storyChapterId);
-                const attacker = ch ? CHARACTERS.find(c => c.id === ch.attackerCharId) : null;
-                if (attacker) { setPlayer(prev => ({ ...prev, char: attacker })); setSelectedTalentIds([]); setStoryBattleStage(0); setGameMode('story'); setGameState('select_talent'); }
+                setStorySelectedCharId(null);
+                setStoryBattleStage(0);
+                setGameMode('story');
+                setGameState('story_select_char');
               }} className="bg-red-700 hover:bg-red-600 text-white px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 active:scale-95 transition-all">
-                ⚔️ 選擇天賦！
+                ⚔️ 選擇出陣角色！
               </button>
             ) : (
               <button onClick={() => setStoryDialogueIdx(prev => prev + 1)} className="bg-stone-800 hover:bg-stone-700 border border-stone-600 text-stone-200 px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 active:scale-95 transition-all">
@@ -3148,6 +3197,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   case 'gacha': return renderGacha();
                   case 'mine': return renderMine();
                   case 'story_chapters': return renderStoryChapters();
+                  case 'story_select_char': return renderStorySelectChar();
                   case 'story_dialogue': return renderStoryDialogue();
                   case 'story_victory': return renderStoryVictory();
                   case 'select_reward': return (
