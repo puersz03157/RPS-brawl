@@ -280,7 +280,7 @@ const STATUS_DOCS = [
 // 礦坑系統設定
 // ==========================================
 const MINE_LEVELS = [
-  { lv: 1, name: '廢棄礦道',   baseRate: 10, capBase: 50,  slots: 2, upgradeCost: 50  },
+  { lv: 1, name: '廢棄礦道',   baseRate: 10, capBase: 100, slots: 2, upgradeCost: 50  },
   { lv: 2, name: '開採礦坑',   baseRate: 15, capBase: 80,  slots: 2, upgradeCost: 120 },
   { lv: 3, name: '深層礦脈',   baseRate: 20, capBase: 110, slots: 3, upgradeCost: 250 },
   { lv: 4, name: '精煉礦場',   baseRate: 25, capBase: 140, slots: 3, upgradeCost: 500 },
@@ -299,12 +299,12 @@ const MINE_CHAR_BONUS = {
 // 烹飪系統設定
 // ==========================================
 const INGREDIENTS = [
-  { id: 'egg',  name: '星紋鳥蛋', icon: '🥚', cost: 20 },
-  { id: 'meat', name: '野獸魔肉', icon: '🥩', cost: 20 },
-  { id: 'fish', name: '銀流溪魚', icon: '🐟', cost: 20 },
-  { id: 'mush', name: '夜光孢菇', icon: '🍄', cost: 20 },
-  { id: 'herb', name: '翠葉靈草', icon: '🌿', cost: 20 },
-  { id: 'water',name: '元素靈水', icon: '💧', cost: 20 },
+  { id: 'egg',  name: '星紋鳥蛋', icon: '🥚', cost: 10 },
+  { id: 'meat', name: '野獸魔肉', icon: '🥩', cost: 10 },
+  { id: 'fish', name: '銀流溪魚', icon: '🐟', cost: 10 },
+  { id: 'mush', name: '夜光孢菇', icon: '🍄', cost: 10 },
+  { id: 'herb', name: '翠葉靈草', icon: '🌿', cost: 10 },
+  { id: 'water',name: '元素靈水', icon: '💧', cost: 10 },
 ];
 
 const RECIPES = [
@@ -1079,6 +1079,17 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     }
   };
 
+  const getBrawlReward = (eChar) => {
+    if (!eChar) return 3;
+    if (ADVANCED_BOSSES.some(b => b.id === eChar.id)) return 12;
+    if (ADVANCED_MONSTERS.some(m => m.id === eChar.id)) return 6;
+    if (BOSS_MONSTERS.some(b => b.id === eChar.id)) return 4;
+    if (NORMAL_MONSTERS.some(m => m.id === eChar.id)) return 3;
+    if (isT0Char(eChar)) return 8;
+    if (VARIANTS.some(v => v.id === eChar.id)) return 6;
+    return 4;
+  };
+
   const handleDeath = (target) => {
     if (gameMode === 'tutorial') {
         if (target === 'player') {
@@ -1088,7 +1099,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         }
         if (target === 'enemy') {
             playSound('victory');
-            const np2 = { ...progress, crystals: (progress.crystals || 0) + 50, tutorialDone: true };
+            const np2 = { ...progress, crystals: (progress.crystals || 0) + 50, fragments: (progress.fragments || 0) + 50, tutorialDone: true };
             saveProgress(np2);
             setTutorialStep(8);
             return;
@@ -1114,9 +1125,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         }
         
         let earned = 0;
-        if (isAdvanced) { earned = campaignStage < maxStage ? 3 : 10; }
-        else if (gameMode === 'campaign') { earned = campaignStage < maxStage ? 1 : 2; }
-        else { earned = 3; } 
+        if (isAdvanced) { earned = campaignStage < maxStage ? 8 : 20; }
+        else if (gameMode === 'campaign') { earned = campaignStage < maxStage ? 3 : 8; }
+        else { earned = getBrawlReward(enemy.char); }
         
         np.crystals += earned; saveProgress(np); setRewardCrystals(earned);
         if (gameMode.includes('campaign') && campaignStage < maxStage) { setAvailableRewards(shuffle([...REWARD_POOL]).slice(0, 3)); setGameState('select_reward'); } 
@@ -1181,7 +1192,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
   const handleHomeActivity = (topic) => {
     if (!homeHost || !homeGuest) return;
-    if (progress.ap < 1) { setSysError('AP 不足！請至夜巡或亂鬥中獲取行動點數。'); return; }
+    if (progress.ap < 1) { setSysError('AP 不足！請至夜巡或自訂對決中獲取行動點數。'); return; }
     
     let np = { ...progress, ap: progress.ap - 1 };
     const hId = homeHost.baseId || homeHost.id; const gId = homeGuest.baseId || homeGuest.id;
@@ -1551,8 +1562,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
               <button onClick={() => selectMode('brawl')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-blue-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center col-span-2 md:col-span-1">
                   <div className="text-3xl mb-2">🤺</div>
-                  <h2 className="text-lg font-bold mb-1">無盡亂鬥</h2>
-                  <p className="text-stone-400 text-[10px] hidden md:block">自由切磋，磨練戰鬥技巧。</p>
+                  <h2 className="text-lg font-bold mb-1">自訂對決</h2>
+                  <p className="text-stone-400 text-[10px] hidden md:block">自選對手切磋，強敵獎勵更豐厚。</p>
               </button>
               <button onClick={() => { setGameState('home'); setHomeStep('select_host'); setHomeHost(null); setHomeGuest(null); setActiveDialogue(null); }} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-green-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
                   <div className="text-3xl mb-2"><Home className="text-green-400" size={32}/></div>
@@ -1745,19 +1756,21 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             
             <div className="max-w-4xl mx-auto mb-10">
                 <button onClick={() => startBattleMode(player.char, selectedTalentIds, 'random')} className="w-full bg-stone-800 hover:bg-purple-900 text-purple-400 hover:text-white py-6 rounded-3xl font-bold text-2xl shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 border-2 border-stone-700 hover:border-purple-500">
-                    <Sparkles /> 隨機遭遇未知的強敵！ <Sparkles />
+                    <Sparkles /> 隨機遭遇未知的強敵！<span className="text-sm font-normal text-stone-400">（依對手類型給予 3～12 💎）</span> <Sparkles />
                 </button>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
                 {pool.map(c => {
                     const isBoss = BOSS_MONSTERS.some(b=>b.id===c.id) || ADVANCED_BOSSES.some(b=>b.id===c.id);
+                    const reward = getBrawlReward(c);
                     return (
                     <div key={c.id} onClick={() => startBattleMode(player.char, selectedTalentIds, c)} className={`bg-stone-800 p-4 rounded-xl border-2 transition-all hover:-translate-y-1 cursor-pointer flex items-center gap-4 shadow-md ${isBoss ? 'border-red-900/50 hover:border-red-500' : 'border-stone-700 hover:border-blue-500'}`}>
                         <SpriteAvatar char={c} size="w-12 h-12" />
                         <div>
                             <div className={`font-bold text-sm truncate w-24 ${isBoss ? 'text-red-400' : 'text-stone-200'}`}>{c.name}</div>
                             <div className="text-[10px] text-stone-500 font-mono">HP {c.stats.maxHp} | ATK {c.stats.atk}</div>
+                            <div className="text-[10px] text-blue-400 font-bold mt-0.5">💎 勝利 +{reward}</div>
                         </div>
                     </div>
                 )})}
@@ -1840,9 +1853,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     <div className="text-5xl mb-3">🎉</div>
                     <h2 className="text-xl font-bold text-yellow-400 mb-2">訓練完成！</h2>
                     <p className="text-stone-300 text-sm mb-4 leading-relaxed">你已掌握夜行者的基礎戰鬥技巧！<br/>以下是給你的入門獎勵：</p>
-                    <div className="bg-stone-800 border border-yellow-600 rounded-xl py-3 mb-5 flex items-center justify-center gap-2">
+                    <div className="bg-stone-800 border border-yellow-600 rounded-xl py-3 mb-3 flex items-center justify-center gap-2">
                         <span className="text-2xl">💎</span>
                         <span className="text-yellow-400 font-bold text-xl">× 50 星晶</span>
+                    </div>
+                    <div className="bg-stone-800 border border-cyan-600 rounded-xl py-3 mb-5 flex items-center justify-center gap-2">
+                        <span className="text-2xl">💠</span>
+                        <span className="text-cyan-400 font-bold text-xl">× 50 碎片</span>
                     </div>
                     <p className="text-stone-400 text-xs mb-5">現在可以前往商店購買天賦，或到酒館招募夥伴碎片！</p>
                     <div className="flex flex-col gap-2">
@@ -1926,7 +1943,25 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                     <p className="text-stone-300">{char.skill2.desc}</p>
                                 </div>
                             </div>
-                            {char.lore && <p className="text-stone-500 text-[10px] italic leading-relaxed">{char.lore}</p>}
+                            {char.lore && <p className="text-stone-500 text-[10px] italic leading-relaxed mb-3">{char.lore}</p>}
+                            {isEnemy && enemy.talents && enemy.talents.length > 0 && (
+                                <div className="bg-stone-800 rounded-xl p-3">
+                                    <div className="text-yellow-400 font-bold text-xs mb-2">裝備天賦</div>
+                                    <div className="flex flex-col gap-1.5">
+                                        {enemy.talents.map(tid => {
+                                            const t = ALL_TALENTS.find(t => t.id === tid);
+                                            if (!t) return null;
+                                            return (
+                                                <div key={tid} className="flex items-center gap-2 text-xs">
+                                                    <span>{t.icon}</span>
+                                                    <span className="text-stone-200 font-bold">{t.name}</span>
+                                                    <span className="text-stone-400">{t.desc}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
                     {isSkill && (
@@ -1947,7 +1982,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     return (
         <div className="min-h-screen p-4 flex flex-col max-w-3xl mx-auto h-screen bg-stone-950 text-stone-200">
             <div className="text-center text-xs text-stone-500 mb-2 font-bold">
-                {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : '無盡亂鬥'}
+                {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : '自訂對決'}
             </div>
             
             <div className={`p-4 rounded-xl mb-2 flex items-center gap-4 bg-stone-900 border-2 ${enemy.char.element.border} relative overflow-hidden shadow-lg ${tutHL(2)}`}>
@@ -2374,8 +2409,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 npcImageFallback="🦊"
                 dialogues={shopTab === 'crystal' ? [
                     "歡迎來到星晶商店！只要有足夠的星晶，沒有什麼是我琥珀辦不到的。",
-                    "星晶怎麼取得？很簡單——打夜巡戰役，每場至少 1 顆，打倒深淵霸主還有額外獎勵。",
-                    "無盡亂鬥每勝一場也有 3 顆星晶，喜歡刷刷刷的可以多跑幾場。",
+                    "星晶怎麼取得？很簡單——打夜巡戰役，每場至少 3 顆，通關還有 8 顆額外獎勵。",
+                    "自訂對決依對手強度給予不同獎勵：一般魔物 3 晶、魔王/基本角色 4 晶、進階魔物/SR異裝 6 晶、SSR角色 8 晶、進階魔王 12 晶！",
                     "成就也能換大量星晶，圖鑑裡查一下自己差哪些條件，說不定快達成了。"
                 ] : shopTab === 'fragment' ? [
                     "集滿 50 個特定角色的碎片，就能在圖鑑解鎖他的異裝型態！",
@@ -2534,8 +2569,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const renderGacha = () => {
-      const gachaCost = 30;
-      const gachaTenCost = 250; 
+      const gachaCost = 20;
+      const gachaTenCost = 150;
       
       const featuredPrizes = [
         { char: CHARACTERS.find(c=>c.id==='kohaku'), rarity: 'SSR' },
