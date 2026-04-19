@@ -150,11 +150,11 @@ const getStatusValueSum = (ent, type) => {
 // 2. 遊戲資料庫
 // ==========================================
 const ELEMENTS = {
-  WOOD: { id: 'wood', name: '木', color: 'text-green-500', bg: 'bg-green-100', border: 'border-green-500' },
-  WATER: { id: 'water', name: '水', color: 'text-blue-500', bg: 'bg-blue-100', border: 'border-blue-500' },
-  FIRE: { id: 'fire', name: '火', color: 'text-red-500', bg: 'bg-red-100', border: 'border-red-500' },
-  LIGHT: { id: 'light', name: '光', color: 'text-yellow-500', bg: 'bg-yellow-100', border: 'border-yellow-500' },
-  DARK: { id: 'dark', name: '暗', color: 'text-purple-500', bg: 'bg-purple-100', border: 'border-purple-500' }
+  WOOD:  { id: 'wood',  name: '木', icon: '🌿', color: 'text-green-400',  bg: 'bg-green-100',  border: 'border-green-500'  },
+  WATER: { id: 'water', name: '水', icon: '💧', color: 'text-blue-400',   bg: 'bg-blue-100',   border: 'border-blue-500'   },
+  FIRE:  { id: 'fire',  name: '火', icon: '🔥', color: 'text-red-400',    bg: 'bg-red-100',    border: 'border-red-500'    },
+  LIGHT: { id: 'light', name: '光', icon: '✨', color: 'text-yellow-400', bg: 'bg-yellow-100', border: 'border-yellow-500' },
+  DARK:  { id: 'dark',  name: '暗', icon: '🌑', color: 'text-purple-400', bg: 'bg-purple-100', border: 'border-purple-500' },
 };
 
 const RPS_CHOICES = {
@@ -2712,7 +2712,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                     {c.isUncapturable && <div className="absolute top-0 left-0 bg-stone-700 text-stone-400 text-[10px] font-bold px-3 py-1 rounded-br-xl tracking-widest z-10 shadow-md">不可馴化</div>}
                                     
                                     <div className="flex items-center justify-between mb-4 mt-2">
-                                        <div className="flex items-center gap-4"><SpriteAvatar char={c} size="w-16 h-16" /><div><div className={`text-xs mb-0.5 ${isAdvBoss || isAdvMon ? 'text-red-400' : 'text-gray-400'}`}>{c.title}</div><div className="text-xl font-bold flex items-center gap-2">{c.isEmoji ? c.emoji : c.icon} {c.name}</div></div></div>
+                                        <div className="flex items-center gap-4"><SpriteAvatar char={c} size="w-16 h-16" /><div><div className={`text-xs mb-0.5 ${isAdvBoss || isAdvMon ? 'text-red-400' : 'text-gray-400'}`}>{c.title}</div><div className="text-xl font-bold flex items-center gap-2">{c.isEmoji ? c.emoji : c.icon} {c.name}</div>{c.element && <div className={`text-[11px] font-bold mt-1 ${c.element.color}`}>{c.element.icon} {c.element.name}屬性</div>}</div></div>
                                         { (isBasic || isT0 || !!c.baseId) && (
                                             <div className="flex text-yellow-500">
                                                 {[...Array(3)].map((_, i) => {
