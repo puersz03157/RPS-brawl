@@ -1892,7 +1892,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const upgradeCharCost = (id) => {
-      if (['xiangxiang', 'kohaku', 'aldous', 'christmas_xiangxiang'].includes(id)) {
+      if (['xiangxiang', 'kohaku', 'aldous', 'christmas_xiangxiang', 'moying'].includes(id)) {
           setSysError('此角色已經登峰造極，無法進行潛能突破！');
           return;
       }
@@ -3418,7 +3418,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                             const isT0 = isT0Char(c);
                             const isUnlocked = isBasic || encountered.includes(c.id) || (isT0 && unlocks.includes(c.id)) || (!!c.baseId && unlocks.includes(c.id));
                             const isPlaceholderVariant = !!c.baseId && (!unlocks.includes(c.id) || c.isPlaceholder);
-                            const showFragUI = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat', 'kohaku', 'aldous'].includes(c.id) && !unlocks.includes(c.id);
+                            const showFragUI = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat', 'kohaku', 'aldous', 'moying'].includes(c.id) && !unlocks.includes(c.id);
                             
                             if (!isUnlocked && !showFragUI && !isPlaceholderVariant && c.id !== 'christmas_xiangxiang') return <div key={c.id} className="bg-stone-800 border-2 border-stone-700 opacity-60 rounded-3xl p-6 min-h-[300px] flex items-center justify-center text-4xl">❓</div>;
                             if (!isUnlocked && c.id === 'christmas_xiangxiang') {
