@@ -2472,7 +2472,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           <div className="w-full max-w-4xl mb-8 z-10">
               <div className="w-full h-48 md:h-72 bg-stone-900 border-2 border-stone-800 rounded-3xl overflow-hidden shadow-2xl relative flex items-center justify-center mb-6">
                   <img src="title_cg.png" alt="" className="w-full h-full object-cover absolute inset-0 opacity-80" onError={(e) => { e.target.style.display = 'none'; }} />
-                  <div className="z-10 text-stone-600 text-xs font-mono">title_cg.png</div>
               </div>
               <div className="bg-stone-800/60 p-6 rounded-2xl border border-stone-700 text-stone-300 text-sm leading-relaxed relative mt-4">
                   <div className="absolute -top-3 -left-3 bg-indigo-900 border border-indigo-500 text-indigo-200 px-3 py-1 rounded-lg text-xs font-bold transform -rotate-2 shadow-lg">PROLOGUE</div>
