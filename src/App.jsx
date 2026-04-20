@@ -138,7 +138,7 @@ const getElementMultiplier = (atkElem, defElem) => {
   return 1.0;
 };
 
-const isBuffStatus = (type) => type && ['ATK_UP', 'DEF_UP', 'REGEN', 'EVADE', 'EXCITE'].includes(type);
+const isBuffStatus = (type) => type && ['ATK_UP', 'DEF_UP', 'REGEN', 'EVADE', 'EXCITE', 'ITEM_REVERSE'].includes(type);
 const isDebuffStatus = (type) => type && ['BURN', 'PARASITE', 'FREEZE', 'DAZZLE', 'SILENCE', 'ATK_DOWN', 'DEF_DOWN', 'VULNERABLE', 'FATIGUE', 'VIP'].includes(type);
 
 const getStatusValueSum = (ent, type) => {
@@ -171,7 +171,8 @@ const CHARACTERS = [
   { id: 'elf', name: '布布', icon: '🧚', title: '光之精靈', element: ELEMENTS.LIGHT, image: 'avatar_elf.png', prefAction: 'chat', stats: { hp: 450, maxHp: 450, atk: 45, def: 25 }, desc: '運用能量反噬與葵花子戰鬥的奇兵。', lore: '誕生於光之星晶的精靈，負責引導夜行者們收集星晶。天然呆，喜歡收集發亮的東西和各種植物種子（尤其是葵花子）。', skill1: { name: '能量炸彈', cost: 50, desc: '清空雙方能量並造成各自能量傷害，自身恢復能量差值的 HP。' }, skill2: { name: '囤囤之力', cost: 35, desc: '獲得一個葵花子，每有一個葵花子給予對手 20 傷害 (不消耗)。' } },
   { id: 'kohaku', name: '琥珀', icon: '🦊', title: '商會會長', element: ELEMENTS.LIGHT, image: 'avatar_kohaku.png', prefAction: 'snack', stats: { hp: 750, maxHp: 750, atk: 55, def: 40 }, desc: '利用金幣與VIP狀態進行極致剝削。', lore: '艾歐蘭斯商會的最高負責人。看似笑瞇瞇其實精打細算，掌握著整個大陸的經濟命脈。用錢砸人是他的拿手好戲。', skill1: { name: '尊榮推銷', cost: 30, desc: '自身獲得 1 枚【商會金幣】與 50 盾，並強制對手成為 💳[VIP] 3回合。' }, skill2: { name: '資本鎮壓', cost: 80, desc: '基礎 80 傷。每消耗 1 枚金幣追加 50 真實傷害並回 30 HP。' } },
   { id: 'aldous', name: '奧爾德斯', icon: '🦉', title: '大長老', element: ELEMENTS.DARK, image: 'avatar_aldous.png', prefAction: 'chat', stats: { hp: 680, maxHp: 680, atk: 80, def: 30 }, desc: '擁有看破機制的極限單體爆發力。', lore: '黑羽公會大長老，實力深不可測的貓頭鷹獸人。雖然年事已高，但揮舞天羽斬的速度依舊無人能及。戰鬥時周身環繞睿智之風。', skill1: { name: '長老的威壓', cost: 40, desc: '施加 ❄️[封印] 1回、🤐[沉默] 2回與 📉[降防] 3回。' }, skill2: { name: '秘劍・天羽斬', cost: 60, desc: '無視護盾 80 傷。若對手處於沉默或封印，傷害變為 4 倍(320)並吸血 50%。' } },
-  { id: 'moying', name: '墨影', icon: '🌑', title: '影の劍客', element: ELEMENTS.DARK, image: 'avatar_moying.png', prefAction: 'chat', stats: { hp: 560, maxHp: 560, atk: 65, def: 20 }, desc: '藉由武裝協同，以自適應奧義制敵的影系劍客。', lore: '來自極寒之地的老練劍客，白澤昔日的前輩。行蹤飄忽，雲遊各大陸。看似隨意卻洞悉全局，每次出手都恰到好處，令人猜不透他的真正目的。', skill1: { name: '影切', cost: 35, desc: '造成 45 傷害，施加降防 2 回合。裝備消耗武裝時增強：65 傷 + 自身獲迴避 1 次。' }, skill2: { name: '墨影絕斬', cost: 75, desc: '依敵方狀態自適應。有降防→無視護盾 130 真實傷；有封印/沉默→90 傷+竊取增益；二者皆有→150 真實傷+竊取；否則 80 傷並施沉默 2 回。' } }
+  { id: 'moying', name: '墨影', icon: '🌑', title: '影の劍客', element: ELEMENTS.DARK, image: 'avatar_moying.png', prefAction: 'chat', stats: { hp: 560, maxHp: 560, atk: 65, def: 20 }, desc: '藉由武裝協同，以自適應奧義制敵的影系劍客。', lore: '來自極寒之地的老練劍客，白澤昔日的前輩。行蹤飄忽，雲遊各大陸。看似隨意卻洞悉全局，每次出手都恰到好處，令人猜不透他的真正目的。', skill1: { name: '影切', cost: 35, desc: '造成 45 傷害，施加降防 2 回合。裝備消耗武裝時增強：65 傷 + 自身獲迴避 1 次。' }, skill2: { name: '墨影絕斬', cost: 75, desc: '依敵方狀態自適應。有降防→無視護盾 130 真實傷；有封印/沉默→90 傷+竊取增益；二者皆有→150 真實傷+竊取；否則 80 傷並施沉默 2 回。' } },
+  { id: 'jack', name: '傑克', icon: '🃏', title: '幻影怪盜', element: ELEMENTS.DARK, image: 'avatar_jack.png', prefAction: 'gaming', stats: { hp: 480, maxHp: 480, atk: 65, def: 15 }, desc: '施加道具反轉使敵方道具效果翻轉，以怪盜手法反客為主。', lore: '布提婭的哥哥，行蹤神出鬼沒的幻影怪盜。不留姓名、只留傳說，每次出現必帶走目標，又在瞬間消失無蹤。對妹妹的關心從不言明，只以各種隱晦的方式暗中守護。', skill1: { name: '盜影疾走', cost: 35, desc: '造成 30 傷害，自身獲得 🔄[道具反轉] 3 回合——持有期間使用道具時效果翻轉，反作用於對手。' }, skill2: { name: '怪盜絕技', cost: 70, desc: '造成 80 傷害；自身持有 [道具反轉] 時，改為無視護盾並追加 60 真實傷害，同時延長 [道具反轉] 2 回合。' } }
 ];
 
 const HIDDEN_CHARACTER = { 
@@ -246,6 +247,7 @@ const ALL_TALENTS = [
   { id: 't_elf', name: '倉鼠性格', cost: 3, desc: '開場直接獲得 2 顆葵花子。(布布專屬)', icon: '🐹', req: 'char_talents', exclusiveTo: 'elf' },
   { id: 't_xiangxiang', name: '柯特的愛心宵夜', cost: 3, desc: 'HP低於50%時每回合回覆 20 HP 並獲 10 盾。(虎吉專屬)', icon: '🍜', req: 'char_talents', exclusiveTo: 'xiangxiang' },
   { id: 't_moying', name: '影術之道', cost: 3, desc: '武裝機率觸發效果必定觸發，腐蝕刃固定施加降防。(墨影專屬)', icon: '🌑', req: 'char_talents', exclusiveTo: 'moying' },
+  { id: 't_jack', name: '贓物大師', cost: 3, desc: '己方使用道具時，若對手持有道具反轉，額外造成 30 點真實傷害。(傑克專屬)', icon: '🎭', req: 'char_talents', exclusiveTo: 'jack' },
   { id: 't9', name: '銳利', cost: 4, desc: '出剪刀獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '✂️', req: 'cost4' },
   { id: 't10', name: '堅硬', cost: 4, desc: '出石頭獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🪨', req: 'cost4' },
   { id: 't11', name: '柔和', cost: 4, desc: '出布獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🧻', req: 'cost4' },
@@ -440,7 +442,34 @@ const ENCOUNTER_EVENTS = [
       { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '（沉默，再次舉杯）……也許。' },
     ],
   },
-  { id: 'enc_002', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
+  {
+    id: 'enc_002',
+    title: '蜂蜜怪盜來襲',
+    subtitle: '布提婭 × 傑克',
+    themeGrad: 'from-amber-950 via-stone-950 to-stone-950',
+    themeColor: 'text-amber-300',
+    themeBorder: 'border-amber-700',
+    icon: '🍯',
+    desc: '一封狂妄的怪盜預告信，一場深夜迷煙奇襲，以及幽暗樹林中，兩道身影的悄然對話……',
+    reward: { charFragments: { jack: 50 }, rewardDesc: '🃏 傑克碎片 ×50' },
+    dialogue: [
+      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '某日，日晝營地的帳篷內赫然出現了一張怪盜預告信，上面狂妄地寫著：「今日深夜零時，我將取走熊吉的特製蜂蜜。」' },
+      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '禁不住熊吉的苦苦哀求與堅持，營地裡的夜行者們決定在午夜時分全員戒備。' },
+      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '然而，當時鐘敲響零時，一道身披斗篷的黑影如鬼魅般掠過。剎那間，濃烈的迷煙席捲了整個營地，所有全神貫注警戒著的夜行者接連陷入昏厥。' },
+      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '待眾人悠悠轉醒時，只見原先存放蜂蜜的罐子已空空如也。' },
+      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '趁著混亂，布提婭悄悄脫隊，獨自走進了營地旁的幽暗樹林。她停下腳步，目光鎖定在一棵粗壯的樹幹後，語氣平靜地開口。' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left',  text: '是你吧，哥哥。' },
+      { speaker: '傑克', icon: '🃏', image: null, side: 'right', text: '不愧是妳啊，竟然在遭到襲擊的瞬間，就精準地對我下好了追蹤術式。' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left',  text: '這次就算是哥哥，我也不能輕易放過了。把蜂蜜留下然後走吧，不然接下來的任務裡，我們所有人大概都得在熊吉無休止的哭鬧聲中度過了。' },
+      { speaker: '傑克', icon: '🃏', image: null, side: 'right', text: '這種「扮家家酒」的遊戲，妳到底還打算玩到什麼時候？' },
+      { speaker: '傑克', icon: '🃏', image: null, side: 'right', text: '罷了，看來這次還是只能放棄這罐蜂蜜了。' },
+      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '話音剛落，黑影將蜂蜜罐穩穩放在原地，隨即以肉眼難以捕捉的極快速度，瞬間撤出了布提婭的術式感知範圍。' },
+      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left',  text: '逃得還真快啊……' },
+      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '布提婭輕嘆一聲，上前抱起蜂蜜罐，轉身朝著營地的方向走去。' },
+      { speaker: '傑克', icon: '🃏', image: null, side: 'right', text: '（看來，即使選擇了融入群體，妳的實力也絲毫沒有退步。能確認這點，這趟就足夠了。）' },
+      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '他在心裡暗自想著，隨即徹底融入了夜色之中。' },
+    ],
+  },
   { id: 'enc_003', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
   { id: 'enc_004', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
   { id: 'enc_005', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
@@ -511,7 +540,7 @@ const ACHIEVEMENTS = [
 // 3. 遊戲機制輔助函數
 // ==========================================
 const isBasicChar = (c) => ['bear', 'wolf', 'cat', 'human', 'elf'].includes(c?.id);
-const isT0Char = (c) => ['xiangxiang', 'kohaku', 'aldous', 'christmas_xiangxiang', 'moying'].includes(c?.id);
+const isT0Char = (c) => ['xiangxiang', 'kohaku', 'aldous', 'christmas_xiangxiang', 'moying', 'jack'].includes(c?.id);
 const isMonsterChar = (c) => NORMAL_MONSTERS.some(m => m.id === c?.id) || BOSS_MONSTERS.some(b => b.id === c?.id) || ADVANCED_MONSTERS.some(m => m.id === c?.id) || ADVANCED_BOSSES.some(b => b.id === c?.id);
 const isVariantChar = (c) => VARIANTS.some(v => v.id === c?.id);
 const isFullGallery = (capturedArr) => (capturedArr || []).length >= (NORMAL_MONSTERS.length + BOSS_MONSTERS.length);
@@ -526,7 +555,7 @@ const getBaseTalents = (char) => {
 };
 
 const getStatusName = (type) => {
-    const map = { 'BURN': '燃燒', 'PARASITE': '寄生', 'FREEZE': '封印', 'DAZZLE': '強制', 'SILENCE': '沉默', 'ATK_UP': '攻擊提升', 'DEF_UP': '防禦提升', 'REGEN': '再生', 'ATK_DOWN': '攻擊下降', 'DEF_DOWN': '防禦下降', 'VULNERABLE': '易傷', 'EVADE': '迴避', 'FATIGUE': '疲憊', 'EXCITE': '亢奮', 'VIP': 'VIP' };
+    const map = { 'BURN': '燃燒', 'PARASITE': '寄生', 'FREEZE': '封印', 'DAZZLE': '強制', 'SILENCE': '沉默', 'ATK_UP': '攻擊提升', 'DEF_UP': '防禦提升', 'REGEN': '再生', 'ATK_DOWN': '攻擊下降', 'DEF_DOWN': '防禦下降', 'VULNERABLE': '易傷', 'EVADE': '迴避', 'FATIGUE': '疲憊', 'EXCITE': '亢奮', 'VIP': 'VIP', 'ITEM_REVERSE': '道具反轉' };
     return map[type] || type;
 };
 const getStatusIcon = (type) => {
@@ -1165,6 +1194,23 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     } else if (id === 'ab2') {
         if (num === 1) { atk.shield += 150; applyStatus(atk, 'REGEN', 3, 30, null, buf, atkDeferred); }
         else { dealDirectDmg(250, atk, def, buf, true); }
+    } else if (id === 'jack') {
+        if (num === 1) {
+            dealDirectDmg(30, atk, def, buf);
+            applyStatus(atk, 'ITEM_REVERSE', 3, 0, null, buf, atkDeferred);
+            buf.push({ text: `🃏 [盜影疾走] 30 傷害，自身獲得 🔄[道具反轉] 3 回合！`, type: 'info' });
+        } else {
+            const hasReverse = (atk.status || []).some(s => s && !s.isDeferred && s.type === 'ITEM_REVERSE');
+            if (hasReverse) {
+                dealDirectDmg(80 + 60, atk, def, buf, true);
+                const rIdx = (atk.status || []).findIndex(s => s && s.type === 'ITEM_REVERSE');
+                if (rIdx >= 0) atk.status[rIdx].duration += 2;
+                buf.push({ text: `🃏 [怪盜絕技·反轉強化] 無視護盾 140 真實傷！道具反轉延長 2 回合！`, type: 'damage' });
+            } else {
+                dealDirectDmg(80, atk, def, buf);
+                buf.push({ text: `🃏 [怪盜絕技] 造成 80 傷害。`, type: 'damage' });
+            }
+        }
     } else if (id === 'moying') {
         if (num === 1) {
             const hasConsumable = !!(atk.permaBuffs?.consumableArmor);
@@ -1644,29 +1690,65 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (battleItemUses <= 0) { setSysError('本場戰鬥道具使用次數已達上限（3次）！'); return; }
     if ((progress.items?.[itemId] || 0) <= 0) { setSysError('道具數量不足！'); return; }
     let newPlayer = { ...player, status: [...(player.status||[])] };
+    let newEnemy = { ...enemy, status: [...(enemy.status||[])] };
     let logText = '';
-    switch (itemId) {
-      case 'stardust':
-        newPlayer.hp = Math.min(newPlayer.maxHp, newPlayer.hp + 100);
-        logText = '✨ 使用星晶砂粉！恢復 100 HP！'; break;
-      case 'excite_potion':
-        newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'EXCITE'), { type: 'EXCITE', duration: 3, value: 0, isNew: true, isDeferred: false }];
-        logText = '🧪 使用亢奮藥劑！獲得 ⚡[亢奮] 3回合！'; break;
-      case 'smoke_bomb':
-        newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'EVADE'), { type: 'EVADE', duration: 1, value: 0, isNew: true, isDeferred: false }];
-        logText = '💨 使用煙霧彈！獲得 💨[迴避] 1次！'; break;
-      case 'antidote':
-        newPlayer.status = newPlayer.status.filter(s => !NEGATIVE_STATUSES.includes(s.type));
-        logText = '💊 使用萬能解藥！清除所有負面狀態！'; break;
-      default: return;
+    const enemyHasReverse = (newPlayer.status || []).some(s => s && !s.isDeferred && s.type === 'ITEM_REVERSE');
+    const hasJackTalent = (newPlayer.talents || []).includes('t_jack');
+    const extraLogs = [];
+
+    if (enemyHasReverse) {
+      const buf = [];
+      switch (itemId) {
+        case 'stardust':
+          newEnemy.shield > 0
+            ? (newEnemy.shield = Math.max(0, newEnemy.shield - 100), buf.push({ text: `🔄 [道具反轉] 星晶砂粉翻轉！100 傷害作用於對手護盾！`, type: 'damage' }))
+            : (newEnemy.hp = Math.max(0, newEnemy.hp - 100), buf.push({ text: `🔄 [道具反轉] 星晶砂粉翻轉！對手受到 100 傷害！`, type: 'damage' }));
+          break;
+        case 'excite_potion':
+          newEnemy.status = [...newEnemy.status.filter(s => s.type !== 'FATIGUE'), { type: 'FATIGUE', duration: 3, value: 0, isNew: true, isDeferred: false }];
+          buf.push({ text: `🔄 [道具反轉] 亢奮藥劑翻轉！對手陷入 😩[疲憊] 3回合！`, type: 'damage' }); break;
+        case 'smoke_bomb':
+          newEnemy.status = [...newEnemy.status.filter(s => s.type !== 'DAZZLE'), { type: 'DAZZLE', duration: 1, value: 0, hand: ['ROCK','PAPER','SCISSORS'][Math.floor(Math.random()*3)], isNew: true, isDeferred: false }];
+          buf.push({ text: `🔄 [道具反轉] 煙霧彈翻轉！對手被 💫[強制] 1回合！`, type: 'damage' }); break;
+        case 'antidote':
+          newEnemy.status = newEnemy.status.filter(s => !isBuffStatus(s.type));
+          buf.push({ text: `🔄 [道具反轉] 萬能解藥翻轉！對手所有增益被清除！`, type: 'damage' }); break;
+        default: break;
+      }
+      if (hasJackTalent) {
+        newEnemy.hp = Math.max(0, newEnemy.hp - 30);
+        buf.push({ text: `🎭 [贓物大師] 反轉加乘！對手再受 30 點真實傷害！`, type: 'damage' });
+      }
+      extraLogs.push(...buf);
+      logText = `🃏 道具效果遭到反轉！`;
+      playSound('hit');
+    } else {
+      switch (itemId) {
+        case 'stardust':
+          newPlayer.hp = Math.min(newPlayer.maxHp, newPlayer.hp + 100);
+          logText = '✨ 使用星晶砂粉！恢復 100 HP！'; break;
+        case 'excite_potion':
+          newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'EXCITE'), { type: 'EXCITE', duration: 3, value: 0, isNew: true, isDeferred: false }];
+          logText = '🧪 使用亢奮藥劑！獲得 ⚡[亢奮] 3回合！'; break;
+        case 'smoke_bomb':
+          newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'EVADE'), { type: 'EVADE', duration: 1, value: 0, isNew: true, isDeferred: false }];
+          logText = '💨 使用煙霧彈！獲得 💨[迴避] 1次！'; break;
+        case 'antidote':
+          newPlayer.status = newPlayer.status.filter(s => !NEGATIVE_STATUSES.includes(s.type));
+          logText = '💊 使用萬能解藥！清除所有負面狀態！'; break;
+        default: return;
+      }
+      playSound('heal');
     }
+
     setPlayer(newPlayer);
+    setEnemy(newEnemy);
     setBattleItemUses(prev => prev - 1);
-    setLogs(prev => [...prev, { text: logText, type: 'heal' }]);
+    setLogs(prev => [...prev, { text: logText, type: enemyHasReverse ? 'damage' : 'heal' }, ...extraLogs]);
     let np = { ...progress, items: { ...progress.items, [itemId]: Math.max(0, (progress.items?.[itemId] || 0) - 1) } };
     saveProgress(np);
     setShowItemPanel(false);
-    playSound('heal');
+    if (newEnemy.hp <= 0) handleDeath('enemy');
   };
 
   const getBrawlReward = (eChar) => {
