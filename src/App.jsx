@@ -3302,15 +3302,29 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const renderHome = () => {
-    let hosts = CHARACTERS.filter(c => !isT0Char(c) || unlocks.includes(c.id));
-    if(unlocks.includes('xiangxiang')) hosts.push(HIDDEN_CHARACTER);
-    VARIANTS.forEach(v => { if(unlocks.includes(v.id) && !v.isPlaceholder) hosts.push(v); });
+    // 可當 Host 的角色：基本五人 + 已解鎖的虎吉/琥珀/奧爾德斯，排除墨影、傑克、所有異裝
+    const HOST_BLOCKED = ['moying', 'jack'];
+    const hostPool = CHARACTERS.filter(c => {
+      if (HOST_BLOCKED.includes(c.id)) return false;
+      return !isT0Char(c) || unlocks.includes(c.id);
+    });
+    if (unlocks.includes('xiangxiang')) hostPool.push(HIDDEN_CHARACTER);
 
-    const BASIC_FIVE = ['bear', 'wolf', 'cat', 'human', 'elf'];
+    // 可當 Guest 的角色：hostPool + 墨影/傑克（已解鎖）+ 異裝（已解鎖）
+    const guestPool = [...hostPool];
+    HOST_BLOCKED.forEach(id => {
+      const c = CHARACTERS.find(x => x.id === id);
+      if (c && unlocks.includes(id)) guestPool.push(c);
+    });
+    VARIANTS.forEach(v => { if (unlocks.includes(v.id) && !v.isPlaceholder) guestPool.push(v); });
+
     const canInvite = (hostBaseId, guestBaseId) => {
       if (guestBaseId === 'moying') return hostBaseId === 'wolf';
       if (guestBaseId === 'jack')   return hostBaseId === 'cat';
-      if (['kohaku', 'aldous'].includes(guestBaseId) && BASIC_FIVE.includes(hostBaseId)) return false;
+      if (guestBaseId === 'kohaku') return hostBaseId === 'aldous';
+      if (guestBaseId === 'aldous') return hostBaseId === 'kohaku';
+      if (hostBaseId === 'aldous')  return guestBaseId === 'kohaku';
+      if (hostBaseId === 'kohaku')  return guestBaseId === 'aldous';
       return true;
     };
 
@@ -3319,10 +3333,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             <div className="max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-8"><button onClick={()=>setGameState('intro')} className="flex items-center gap-2 text-stone-400 hover:text-white"><ArrowLeft/> 返回</button><div className="bg-stone-800 px-4 py-1.5 rounded-full border border-stone-700 text-green-400 font-bold shadow-lg">⚡ AP: {progress.ap}</div></div>
                 {homeStep === 'select_host' && (
-                    <div className="text-center animate-fade-in"><h2 className="text-3xl font-bold mb-8 text-green-400">選擇營地代表</h2><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{hosts.map(c=>(<div key={c.id} onClick={()=>{setHomeHost(c); setHomeStep('select_guest');}} className="bg-stone-800 p-4 rounded-xl cursor-pointer border-2 border-stone-700 hover:border-green-500 transition-all shadow-md hover:-translate-y-1"><SpriteAvatar char={c} size="w-16 h-16 mx-auto"/><p className="mt-2 text-sm font-bold">{c.name}</p></div>))}</div></div>
+                    <div className="text-center animate-fade-in"><h2 className="text-3xl font-bold mb-8 text-green-400">選擇營地代表</h2><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{hostPool.map(c=>(<div key={c.id} onClick={()=>{setHomeHost(c); setHomeStep('select_guest');}} className="bg-stone-800 p-4 rounded-xl cursor-pointer border-2 border-stone-700 hover:border-green-500 transition-all shadow-md hover:-translate-y-1"><SpriteAvatar char={c} size="w-16 h-16 mx-auto"/><p className="mt-2 text-sm font-bold">{c.name}</p></div>))}</div></div>
                 )}
                 {homeStep === 'select_guest' && (
-                    <div className="text-center animate-fade-in"><h2 className="text-3xl font-bold mb-8 text-yellow-400">邀請巡夜夥伴</h2><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{hosts.map(c=>{ const hostBaseId = homeHost.baseId||homeHost.id; const guestBaseId = c.baseId||c.id; const isH = hostBaseId === guestBaseId; const allowed = !isH && canInvite(hostBaseId, guestBaseId); return (<div key={c.id} onClick={()=>{ if(allowed) {setHomeGuest(c); setHomeStep('room');} }} title={!allowed && !isH ? '與此夥伴尚無足夠的羈絆前往營地……' : undefined} className={`bg-stone-800 p-4 rounded-xl border-2 border-stone-700 transition-all relative ${allowed ? 'hover:border-yellow-500 cursor-pointer shadow-md hover:-translate-y-1' : 'opacity-25 cursor-not-allowed'}`}><SpriteAvatar char={c} size="w-16 h-16 mx-auto"/><p className="mt-2 text-sm font-bold">{c.name}</p>{!allowed && !isH && <span className="absolute top-1 right-1 text-[9px] text-stone-500">🔒</span>}</div>) })}</div></div>
+                    <div className="text-center animate-fade-in"><h2 className="text-3xl font-bold mb-8 text-yellow-400">邀請巡夜夥伴</h2><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{guestPool.map(c=>{ const hostBaseId = homeHost.baseId||homeHost.id; const guestBaseId = c.baseId||c.id; const isH = hostBaseId === guestBaseId; const allowed = !isH && canInvite(hostBaseId, guestBaseId); return (<div key={c.id} onClick={()=>{ if(allowed) {setHomeGuest(c); setHomeStep('room');} }} title={!allowed && !isH ? '與此夥伴尚無足夠的羈絆前往營地……' : undefined} className={`bg-stone-800 p-4 rounded-xl border-2 border-stone-700 transition-all relative ${allowed ? 'hover:border-yellow-500 cursor-pointer shadow-md hover:-translate-y-1' : 'opacity-25 cursor-not-allowed'}`}><SpriteAvatar char={c} size="w-16 h-16 mx-auto"/><p className="mt-2 text-sm font-bold">{c.name}</p>{!allowed && !isH && <span className="absolute top-1 right-1 text-[9px] text-stone-500">🔒</span>}</div>) })}</div></div>
                 )}
                 {homeStep === 'room' && (
                     <div className="bg-stone-800 p-8 rounded-3xl border-4 border-stone-700 text-center shadow-2xl relative animate-fade-in">
