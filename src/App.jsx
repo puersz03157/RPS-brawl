@@ -172,7 +172,7 @@ const CHARACTERS = [
   { id: 'kohaku', name: '琥珀', icon: '🦊', title: '商會會長', element: ELEMENTS.LIGHT, image: 'avatar_kohaku.png', prefAction: 'snack', stats: { hp: 750, maxHp: 750, atk: 55, def: 40 }, desc: '利用金幣與VIP狀態進行極致剝削。', lore: '艾歐蘭斯商會的最高負責人。看似笑瞇瞇其實精打細算，掌握著整個大陸的經濟命脈。用錢砸人是他的拿手好戲。', skill1: { name: '尊榮推銷', cost: 30, desc: '自身獲得 1 枚【商會金幣】與 50 盾，並強制對手成為 💳[VIP] 3回合。' }, skill2: { name: '資本鎮壓', cost: 80, desc: '基礎 80 傷。每消耗 1 枚金幣追加 50 真實傷害並回 30 HP。' } },
   { id: 'aldous', name: '奧爾德斯', icon: '🦉', title: '大長老', element: ELEMENTS.DARK, image: 'avatar_aldous.png', prefAction: 'chat', stats: { hp: 680, maxHp: 680, atk: 80, def: 30 }, desc: '擁有看破機制的極限單體爆發力。', lore: '黑羽公會大長老，實力深不可測的貓頭鷹獸人。雖然年事已高，但揮舞天羽斬的速度依舊無人能及。戰鬥時周身環繞睿智之風。', skill1: { name: '長老的威壓', cost: 40, desc: '施加 ❄️[封印] 1回、🤐[沉默] 2回與 📉[降防] 3回。' }, skill2: { name: '秘劍・天羽斬', cost: 60, desc: '無視護盾 80 傷。若對手處於沉默或封印，傷害變為 4 倍(320)並吸血 50%。' } },
   { id: 'moying', name: '墨影', icon: '🌑', title: '影の劍客', element: ELEMENTS.DARK, image: 'avatar_moying.png', prefAction: 'chat', stats: { hp: 560, maxHp: 560, atk: 65, def: 20 }, desc: '藉由武裝協同，以自適應奧義制敵的影系劍客。', lore: '來自極寒之地的老練劍客，白澤昔日的前輩。行蹤飄忽，雲遊各大陸。看似隨意卻洞悉全局，每次出手都恰到好處，令人猜不透他的真正目的。', skill1: { name: '影切', cost: 35, desc: '造成 45 傷害，施加降防 2 回合。裝備消耗武裝時增強：65 傷 + 自身獲迴避 1 次。' }, skill2: { name: '墨影絕斬', cost: 75, desc: '依敵方狀態自適應。有降防→無視護盾 130 真實傷；有封印/沉默→90 傷+竊取增益；二者皆有→150 真實傷+竊取；否則 80 傷並施沉默 2 回。' } },
-  { id: 'jack', name: '傑克', icon: '🃏', title: '幻影怪盜', element: ELEMENTS.DARK, image: 'avatar_jack.png', prefAction: 'gaming', stats: { hp: 480, maxHp: 480, atk: 65, def: 15 }, desc: '施加道具反轉使敵方道具效果翻轉，以怪盜手法反客為主。', lore: '布提婭的哥哥，行蹤神出鬼沒的幻影怪盜。不留姓名、只留傳說，每次出現必帶走目標，又在瞬間消失無蹤。對妹妹的關心從不言明，只以各種隱晦的方式暗中守護。', skill1: { name: '盜影疾走', cost: 35, desc: '造成 30 傷害，自身獲得 🔄[道具反轉] 3 回合——持有期間使用道具時效果翻轉，反作用於對手。' }, skill2: { name: '怪盜絕技', cost: 70, desc: '造成 80 傷害；自身持有 [道具反轉] 時，改為無視護盾並追加 60 真實傷害，同時延長 [道具反轉] 2 回合。' } }
+  { id: 'jack', name: '傑克', icon: '🃏', title: '幻影怪盜', element: ELEMENTS.DARK, image: 'avatar_jack.png', prefAction: 'gaming', stats: { hp: 480, maxHp: 480, atk: 65, def: 15 }, desc: '施加道具反轉使敵方道具效果翻轉，以怪盜手法反客為主。', lore: '布提婭的哥哥，行蹤神出鬼沒的幻影怪盜。不留姓名、只留傳說，每次出現必帶走目標，又在瞬間消失無蹤。對妹妹的關心從不言明，只以各種隱晦的方式暗中守護。', skill1: { name: '盜影疾走', cost: 35, desc: '自身獲得 🔄[道具反轉] 3 回合（道具效果翻轉打向對手），並恢復 1 次道具使用次數。每場最多恢復 2 次。' }, skill2: { name: '怪盜絕技', cost: 70, desc: '造成 80 傷害；自身持有 [道具反轉] 時，改為無視護盾並追加 60 真實傷害，同時延長 [道具反轉] 2 回合。' } }
 ];
 
 const HIDDEN_CHARACTER = { 
@@ -1196,9 +1196,15 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         else { dealDirectDmg(250, atk, def, buf, true); }
     } else if (id === 'jack') {
         if (num === 1) {
-            dealDirectDmg(30, atk, def, buf);
             applyStatus(atk, 'ITEM_REVERSE', 3, 0, null, buf, atkDeferred);
-            buf.push({ text: `🃏 [盜影疾走] 30 傷害，自身獲得 🔄[道具反轉] 3 回合！`, type: 'info' });
+            const restoreCount = atk.permaBuffs?.itemRestoreCount || 0;
+            if (isPlayer && restoreCount < 2) {
+                atk.permaBuffs = { ...atk.permaBuffs, itemRestoreCount: restoreCount + 1 };
+                setBattleItemUses(prev => Math.min(3, prev + 1));
+                buf.push({ text: `🃏 [盜影疾走] 自身獲得 🔄[道具反轉] 3 回合！道具使用次數 +1！`, type: 'info' });
+            } else {
+                buf.push({ text: `🃏 [盜影疾走] 自身獲得 🔄[道具反轉] 3 回合！${restoreCount >= 2 ? '（本場道具恢復已達上限）' : ''}`, type: 'info' });
+            }
         } else {
             const hasReverse = (atk.status || []).some(s => s && !s.isDeferred && s.type === 'ITEM_REVERSE');
             if (hasReverse) {
@@ -3296,9 +3302,18 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const renderHome = () => {
-    let hosts = CHARACTERS.filter(c => !isT0Char(c) || unlocks.includes(c.id)); 
+    let hosts = CHARACTERS.filter(c => !isT0Char(c) || unlocks.includes(c.id));
     if(unlocks.includes('xiangxiang')) hosts.push(HIDDEN_CHARACTER);
     VARIANTS.forEach(v => { if(unlocks.includes(v.id) && !v.isPlaceholder) hosts.push(v); });
+
+    const BASIC_FIVE = ['bear', 'wolf', 'cat', 'human', 'elf'];
+    const canInvite = (hostBaseId, guestBaseId) => {
+      if (guestBaseId === 'moying') return hostBaseId === 'wolf';
+      if (guestBaseId === 'jack')   return hostBaseId === 'cat';
+      if (['kohaku', 'aldous'].includes(guestBaseId) && BASIC_FIVE.includes(hostBaseId)) return false;
+      return true;
+    };
+
     return (
         <div className="min-h-screen p-8 bg-stone-950 text-stone-200">
             <div className="max-w-4xl mx-auto">
@@ -3307,7 +3322,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     <div className="text-center animate-fade-in"><h2 className="text-3xl font-bold mb-8 text-green-400">選擇營地代表</h2><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{hosts.map(c=>(<div key={c.id} onClick={()=>{setHomeHost(c); setHomeStep('select_guest');}} className="bg-stone-800 p-4 rounded-xl cursor-pointer border-2 border-stone-700 hover:border-green-500 transition-all shadow-md hover:-translate-y-1"><SpriteAvatar char={c} size="w-16 h-16 mx-auto"/><p className="mt-2 text-sm font-bold">{c.name}</p></div>))}</div></div>
                 )}
                 {homeStep === 'select_guest' && (
-                    <div className="text-center animate-fade-in"><h2 className="text-3xl font-bold mb-8 text-yellow-400">邀請巡夜夥伴</h2><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{hosts.map(c=>{ const isH = (homeHost.baseId||homeHost.id) === (c.baseId||c.id); return (<div key={c.id} onClick={()=>{ if(!isH) {setHomeGuest(c); setHomeStep('room');} }} className={`bg-stone-800 p-4 rounded-xl border-2 border-stone-700 transition-all ${isH ? 'opacity-20 cursor-not-allowed' : 'hover:border-yellow-500 cursor-pointer shadow-md hover:-translate-y-1'}`}><SpriteAvatar char={c} size="w-16 h-16 mx-auto"/><p className="mt-2 text-sm font-bold">{c.name}</p></div>) })}</div></div>
+                    <div className="text-center animate-fade-in"><h2 className="text-3xl font-bold mb-8 text-yellow-400">邀請巡夜夥伴</h2><div className="grid grid-cols-2 md:grid-cols-5 gap-4">{hosts.map(c=>{ const hostBaseId = homeHost.baseId||homeHost.id; const guestBaseId = c.baseId||c.id; const isH = hostBaseId === guestBaseId; const allowed = !isH && canInvite(hostBaseId, guestBaseId); return (<div key={c.id} onClick={()=>{ if(allowed) {setHomeGuest(c); setHomeStep('room');} }} title={!allowed && !isH ? '與此夥伴尚無足夠的羈絆前往營地……' : undefined} className={`bg-stone-800 p-4 rounded-xl border-2 border-stone-700 transition-all relative ${allowed ? 'hover:border-yellow-500 cursor-pointer shadow-md hover:-translate-y-1' : 'opacity-25 cursor-not-allowed'}`}><SpriteAvatar char={c} size="w-16 h-16 mx-auto"/><p className="mt-2 text-sm font-bold">{c.name}</p>{!allowed && !isH && <span className="absolute top-1 right-1 text-[9px] text-stone-500">🔒</span>}</div>) })}</div></div>
                 )}
                 {homeStep === 'room' && (
                     <div className="bg-stone-800 p-8 rounded-3xl border-4 border-stone-700 text-center shadow-2xl relative animate-fade-in">
@@ -3500,7 +3515,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                             const isT0 = isT0Char(c);
                             const isUnlocked = isBasic || encountered.includes(c.id) || (isT0 && unlocks.includes(c.id)) || (!!c.baseId && unlocks.includes(c.id));
                             const isPlaceholderVariant = !!c.baseId && (!unlocks.includes(c.id) || c.isPlaceholder);
-                            const showFragUI = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat', 'kohaku', 'aldous', 'moying'].includes(c.id) && !unlocks.includes(c.id);
+                            const showFragUI = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat', 'kohaku', 'aldous', 'moying', 'jack'].includes(c.id) && !unlocks.includes(c.id);
                             
                             if (!isUnlocked && !showFragUI && !isPlaceholderVariant && c.id !== 'christmas_xiangxiang') return <div key={c.id} className="bg-stone-800 border-2 border-stone-700 opacity-60 rounded-3xl p-6 min-h-[300px] flex items-center justify-center text-4xl">❓</div>;
                             if (!isUnlocked && c.id === 'christmas_xiangxiang') {
