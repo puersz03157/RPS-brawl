@@ -406,6 +406,44 @@ const DAILY_QUEST_POOL = {
 const DAILY_QUEST_FULL_CLEAR = { reward: { crystals: 50 }, rewardDesc: '💎 星晶 ×50' };
 const ALL_DAILY_QUESTS = [...DAILY_QUEST_POOL.easy, ...DAILY_QUEST_POOL.medium, ...DAILY_QUEST_POOL.hard];
 
+const ENCOUNTER_EVENTS = [
+  {
+    id: 'enc_001',
+    title: '舊友的身影',
+    subtitle: '白澤 × 墨影',
+    themeGrad: 'from-slate-950 via-stone-950 to-stone-950',
+    themeColor: 'text-slate-300',
+    themeBorder: 'border-slate-600',
+    icon: '🍶',
+    desc: '夜深酒靜，一個熟悉的背影出現在迷途酒館的角落……',
+    dialogue: [
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……（環顧酒館）今晚客人還真多。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '（角落那個背影——不，不可能。在這種地方？）' },
+      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '哈。真是稀奇，在這種地方碰見你，白澤。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……墨影前輩。你在艾歐蘭斯做什麼？' },
+      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '還不是跟你一樣？四處漂泊，碰巧路過了。' },
+      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '坐吧。難得遇見老鄉，今晚喝一杯。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……（沉默片刻，拉開了椅子）' },
+      { speaker: '酒保', icon: '🐰',    image: null,               side: 'right', text: '兩位，今晚的特調——「孤星夜行」，請慢用。' },
+      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '好名字。（舉起酒杯）——為了故鄉的那片雪。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……（輕輕碰杯）——為了還沒走完的路。' },
+      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '聽說你現在在夜行者工會做事？不太像你的作風。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '有件事得查清楚。' },
+      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '……跟星晶有關？（眼神銳利了一瞬）' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '前輩，你知道些什麼？' },
+      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '（放下酒杯，低笑）我只是個過路人。不過，有緣的話……也許能幫上你。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……你變了，前輩。' },
+      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '是嗎。（轉頭看向窗外夜空）——好好喝吧，今晚只是喝酒。' },
+      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '（沉默，再次舉杯）……也許。' },
+    ],
+  },
+  { id: 'enc_002', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
+  { id: 'enc_003', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
+  { id: 'enc_004', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
+  { id: 'enc_005', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
+  { id: 'enc_006', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
+];
+
 const getDailyQuestIds = (dateStr) => {
   let seed = 0;
   for (let i = 0; i < dateStr.length; i++) seed = (seed * 31 + dateStr.charCodeAt(i)) >>> 0;
@@ -716,6 +754,8 @@ export default function App() {
   const [storyBattleStage, setStoryBattleStage] = useState(0);
   const [storySelectedCharId, setStorySelectedCharId] = useState(null);
   const [gachaTab, setGachaTab] = useState('gacha');
+  const [encounterEventId, setEncounterEventId] = useState(null);
+  const [encounterDialogueIdx, setEncounterDialogueIdx] = useState(0);
 
   // 悠活莊園 mini-game states
   const [gardenTab, setGardenTab] = useState('farm');
@@ -4018,6 +4058,61 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     );
   };
 
+  const renderEncounterDialogue = () => {
+    const ev = ENCOUNTER_EVENTS.find(e => e.id === encounterEventId);
+    if (!ev || ev.locked) return null;
+    const safeIdx = Math.min(encounterDialogueIdx, ev.dialogue.length - 1);
+    const line = ev.dialogue[safeIdx];
+    if (!line) return null;
+    const isLast = safeIdx >= ev.dialogue.length - 1;
+    const isLeft = line.side === 'left';
+    const speakerChar = line.charId ? CHARACTERS.find(c => c.id === line.charId) : null;
+    const speakerIcon = line.icon || speakerChar?.icon || '❓';
+    return (
+      <div className={`min-h-screen bg-gradient-to-b ${ev.themeGrad} text-stone-200 flex flex-col`}>
+        <div className="p-4 flex items-center gap-3 border-b border-stone-800/60">
+          <button onClick={() => { setGameState('gacha'); setGachaTab('encounters'); }} className="text-stone-500 hover:text-white transition-colors"><ArrowLeft size={18}/></button>
+          <span className={`text-sm font-bold ${ev.themeColor}`}>{ev.icon} {ev.title}</span>
+          {ev.subtitle && <span className="text-xs text-stone-600">{ev.subtitle}</span>}
+          <div className="ml-auto flex gap-1.5 items-center">
+            {ev.dialogue.map((_, i) => (
+              <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i < safeIdx ? 'bg-slate-500 opacity-50' : i === safeIdx ? 'bg-slate-300' : 'bg-stone-700'}`}/>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 flex flex-col justify-end p-4 pb-10 max-w-2xl mx-auto w-full gap-6">
+          <div className={`flex gap-4 items-end ${isLeft ? '' : 'flex-row-reverse'}`}>
+            <div className="shrink-0 flex flex-col items-center gap-2">
+              <div className={`w-20 h-20 rounded-2xl overflow-hidden bg-stone-900 border-2 ${ev.themeBorder} shadow-xl flex items-center justify-center`}>
+                {line.image
+                  ? <DialogueAvatar src={line.image} fallback={speakerIcon} />
+                  : <span className="text-3xl">{speakerIcon}</span>}
+              </div>
+              <span className={`text-xs font-bold px-3 py-1 rounded-full bg-stone-900/80 border ${ev.themeBorder} ${ev.themeColor}`}>{line.speaker}</span>
+            </div>
+            <div className={`flex-1 bg-stone-900/90 border-2 ${ev.themeBorder} rounded-2xl p-4 shadow-2xl`}>
+              <p className="text-stone-100 text-base leading-relaxed">「{line.text}」</p>
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-stone-600 text-xs">{safeIdx + 1} / {ev.dialogue.length}</span>
+            {isLast ? (
+              <button onClick={() => { setGameState('gacha'); setGachaTab('encounters'); }}
+                className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 active:scale-95 transition-all">
+                ✦ 故事結束
+              </button>
+            ) : (
+              <button onClick={() => setEncounterDialogueIdx(prev => prev + 1)}
+                className="bg-stone-800 hover:bg-stone-700 border border-stone-600 text-stone-200 px-8 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 active:scale-95 transition-all">
+                下一句 ▶
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderGacha = () => {
       const gachaCost = 20;
       const gachaTenCost = 150;
@@ -4146,7 +4241,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
                   {/* Tab bar */}
                   <div className="flex gap-3 mb-6">
-                    {[{ id: 'gacha', label: '🍻 招募', }, { id: 'quests', label: '📋 每日任務', badge: activeQuestIds.some(id => { const q = ALL_DAILY_QUESTS.find(x=>x.id===id); return q&&(dqProgress[id]||0)>=q.target&&!dqClaimed.includes(id); }) }].map(t => (
+                    {[{ id: 'gacha', label: '🍻 招募', }, { id: 'quests', label: '📋 每日任務', badge: activeQuestIds.some(id => { const q = ALL_DAILY_QUESTS.find(x=>x.id===id); return q&&(dqProgress[id]||0)>=q.target&&!dqClaimed.includes(id); }) }, { id: 'encounters', label: '✨ 奇遇邂逅' }].map(t => (
                       <button key={t.id} onClick={() => setGachaTab(t.id)}
                         className={`relative px-5 py-2 rounded-full font-bold transition-all ${gachaTab === t.id ? 'bg-purple-700 text-white shadow-lg' : 'bg-stone-800 text-stone-400 hover:bg-stone-700'}`}>
                         {t.label}
@@ -4200,6 +4295,28 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                         </div>
                       </div>
                       <p className="text-center text-stone-600 text-xs">每日 00:00 更新任務</p>
+                    </div>
+                  )}
+
+                  {gachaTab === 'encounters' && (
+                    <div className="animate-fade-in">
+                      <p className="text-stone-500 text-xs mb-4 text-center">在這裡欣賞角色們在旅途中的特別邂逅故事。</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {ENCOUNTER_EVENTS.map(ev => (
+                          <div key={ev.id} className={`rounded-2xl border p-4 flex flex-col gap-2 transition-all ${ev.locked ? 'border-stone-800 bg-stone-900/40 opacity-50' : 'border-slate-700 bg-stone-900/70 hover:border-purple-500 cursor-pointer active:scale-95'}`}
+                            onClick={() => { if (!ev.locked) { setEncounterEventId(ev.id); setEncounterDialogueIdx(0); setGameState('encounter_dialogue'); } }}>
+                            <div className="flex items-center gap-3">
+                              <span className="text-3xl">{ev.icon}</span>
+                              <div>
+                                <div className={`font-bold text-sm ${ev.locked ? 'text-stone-600' : 'text-white'}`}>{ev.title}</div>
+                                {ev.subtitle && <div className="text-xs text-stone-500">{ev.subtitle}</div>}
+                              </div>
+                            </div>
+                            <p className="text-xs text-stone-500 leading-relaxed">{ev.desc}</p>
+                            {!ev.locked && <div className="text-xs text-purple-400 font-bold mt-1">▶ 點擊閱讀</div>}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -4314,6 +4431,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   case 'gallery': return renderGallery();
                   case 'shop': return renderShop();
                   case 'gacha': return renderGacha();
+                  case 'encounter_dialogue': return renderEncounterDialogue();
                   case 'mine': return renderMine();
                   case 'forge': return renderForge();
                   case 'garden': return renderGarden();
