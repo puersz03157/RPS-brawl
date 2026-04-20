@@ -170,7 +170,8 @@ const CHARACTERS = [
   { id: 'human', name: '普爾斯', icon: '🧑‍🚒', title: '烈焰鬥士', element: ELEMENTS.FIRE, image: 'avatar_human.png', prefAction: 'gaming', stats: { hp: 550, maxHp: 550, atk: 50, def: 20 }, desc: '能引爆燃燒造成毀滅性爆發與回復。', lore: '熱血的工會討伐者，以一把燃燒的大劍聞名。總是衝在最前線享受狩獵魔物的快感，不管遇到什麼困難都覺得「烤個肉吃就能解決」。', skill1: { name: '燃燒之劍', cost: 40, desc: '給予對方 30 傷害，施加 🔥[燃燒] 3回合。目標已燃燒時，改為延長 3 回合。' }, skill2: { name: '黑炎爆發', cost: 80, desc: '給予 70 傷害，立即結算對手燃燒，每結算一回合自身恢復 30 HP。' } },
   { id: 'elf', name: '布布', icon: '🧚', title: '光之精靈', element: ELEMENTS.LIGHT, image: 'avatar_elf.png', prefAction: 'chat', stats: { hp: 450, maxHp: 450, atk: 45, def: 25 }, desc: '運用能量反噬與葵花子戰鬥的奇兵。', lore: '誕生於光之星晶的精靈，負責引導夜行者們收集星晶。天然呆，喜歡收集發亮的東西和各種植物種子（尤其是葵花子）。', skill1: { name: '能量炸彈', cost: 50, desc: '清空雙方能量並造成各自能量傷害，自身恢復能量差值的 HP。' }, skill2: { name: '囤囤之力', cost: 35, desc: '獲得一個葵花子，每有一個葵花子給予對手 20 傷害 (不消耗)。' } },
   { id: 'kohaku', name: '琥珀', icon: '🦊', title: '商會會長', element: ELEMENTS.LIGHT, image: 'avatar_kohaku.png', prefAction: 'snack', stats: { hp: 750, maxHp: 750, atk: 55, def: 40 }, desc: '利用金幣與VIP狀態進行極致剝削。', lore: '艾歐蘭斯商會的最高負責人。看似笑瞇瞇其實精打細算，掌握著整個大陸的經濟命脈。用錢砸人是他的拿手好戲。', skill1: { name: '尊榮推銷', cost: 30, desc: '自身獲得 1 枚【商會金幣】與 50 盾，並強制對手成為 💳[VIP] 3回合。' }, skill2: { name: '資本鎮壓', cost: 80, desc: '基礎 80 傷。每消耗 1 枚金幣追加 50 真實傷害並回 30 HP。' } },
-  { id: 'aldous', name: '奧爾德斯', icon: '🦉', title: '大長老', element: ELEMENTS.DARK, image: 'avatar_aldous.png', prefAction: 'chat', stats: { hp: 680, maxHp: 680, atk: 80, def: 30 }, desc: '擁有看破機制的極限單體爆發力。', lore: '黑羽公會大長老，實力深不可測的貓頭鷹獸人。雖然年事已高，但揮舞天羽斬的速度依舊無人能及。戰鬥時周身環繞睿智之風。', skill1: { name: '長老的威壓', cost: 40, desc: '施加 ❄️[封印] 1回、🤐[沉默] 2回與 📉[降防] 3回。' }, skill2: { name: '秘劍・天羽斬', cost: 60, desc: '無視護盾 80 傷。若對手處於沉默或封印，傷害變為 4 倍(320)並吸血 50%。' } }
+  { id: 'aldous', name: '奧爾德斯', icon: '🦉', title: '大長老', element: ELEMENTS.DARK, image: 'avatar_aldous.png', prefAction: 'chat', stats: { hp: 680, maxHp: 680, atk: 80, def: 30 }, desc: '擁有看破機制的極限單體爆發力。', lore: '黑羽公會大長老，實力深不可測的貓頭鷹獸人。雖然年事已高，但揮舞天羽斬的速度依舊無人能及。戰鬥時周身環繞睿智之風。', skill1: { name: '長老的威壓', cost: 40, desc: '施加 ❄️[封印] 1回、🤐[沉默] 2回與 📉[降防] 3回。' }, skill2: { name: '秘劍・天羽斬', cost: 60, desc: '無視護盾 80 傷。若對手處於沉默或封印，傷害變為 4 倍(320)並吸血 50%。' } },
+  { id: 'moying', name: '墨影', icon: '🌑', title: '影の劍客', element: ELEMENTS.DARK, image: 'avatar_moying.png', prefAction: 'chat', stats: { hp: 560, maxHp: 560, atk: 65, def: 20 }, desc: '藉由武裝協同，以自適應奧義制敵的影系劍客。', lore: '來自極寒之地的老練劍客，白澤昔日的前輩。行蹤飄忽，雲遊各大陸。看似隨意卻洞悉全局，每次出手都恰到好處，令人猜不透他的真正目的。', skill1: { name: '影切', cost: 35, desc: '造成 45 傷害，施加降防 2 回合。裝備消耗武裝時增強：65 傷 + 自身獲迴避 1 次。' }, skill2: { name: '墨影絕斬', cost: 75, desc: '依敵方狀態自適應。有降防→無視護盾 130 真實傷；有封印/沉默→90 傷+竊取增益；二者皆有→150 真實傷+竊取；否則 80 傷並施沉默 2 回。' } }
 ];
 
 const HIDDEN_CHARACTER = { 
@@ -244,6 +245,7 @@ const ALL_TALENTS = [
   { id: 't_human', name: '助燃劑', cost: 3, desc: '敵人受到的燃燒傷害提升 50%。(普爾斯專屬)', icon: '🛢️', req: 'char_talents', exclusiveTo: 'human' },
   { id: 't_elf', name: '倉鼠性格', cost: 3, desc: '開場直接獲得 2 顆葵花子。(布布專屬)', icon: '🐹', req: 'char_talents', exclusiveTo: 'elf' },
   { id: 't_xiangxiang', name: '柯特的愛心宵夜', cost: 3, desc: 'HP低於50%時每回合回覆 20 HP 並獲 10 盾。(虎吉專屬)', icon: '🍜', req: 'char_talents', exclusiveTo: 'xiangxiang' },
+  { id: 't_moying', name: '影術之道', cost: 3, desc: '武裝機率觸發效果必定觸發，腐蝕刃固定施加降防。(墨影專屬)', icon: '🌑', req: 'char_talents', exclusiveTo: 'moying' },
   { id: 't9', name: '銳利', cost: 4, desc: '出剪刀獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '✂️', req: 'cost4' },
   { id: 't10', name: '堅硬', cost: 4, desc: '出石頭獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🪨', req: 'cost4' },
   { id: 't11', name: '柔和', cost: 4, desc: '出布獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🧻', req: 'cost4' },
@@ -416,7 +418,7 @@ const ENCOUNTER_EVENTS = [
     themeBorder: 'border-slate-600',
     icon: '🍶',
     desc: '夜深酒靜，一個熟悉的背影出現在迷途酒館的角落……',
-    reward: { charFragments: { valentine_wolf: 20 }, rewardDesc: '💝 情人節白澤碎片 ×20' },
+    reward: { charFragments: { moying: 50 }, rewardDesc: '🌑 墨影碎片 ×50' },
     dialogue: [
       { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……（環顧酒館）今晚客人還真多。' },
       { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '（角落那個背影——不，不可能。在這種地方？）' },
@@ -509,7 +511,7 @@ const ACHIEVEMENTS = [
 // 3. 遊戲機制輔助函數
 // ==========================================
 const isBasicChar = (c) => ['bear', 'wolf', 'cat', 'human', 'elf'].includes(c?.id);
-const isT0Char = (c) => ['xiangxiang', 'kohaku', 'aldous', 'christmas_xiangxiang'].includes(c?.id);
+const isT0Char = (c) => ['xiangxiang', 'kohaku', 'aldous', 'christmas_xiangxiang', 'moying'].includes(c?.id);
 const isMonsterChar = (c) => NORMAL_MONSTERS.some(m => m.id === c?.id) || BOSS_MONSTERS.some(b => b.id === c?.id) || ADVANCED_MONSTERS.some(m => m.id === c?.id) || ADVANCED_BOSSES.some(b => b.id === c?.id);
 const isVariantChar = (c) => VARIANTS.some(v => v.id === c?.id);
 const isFullGallery = (capturedArr) => (capturedArr || []).length >= (NORMAL_MONSTERS.length + BOSS_MONSTERS.length);
@@ -1160,9 +1162,54 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     } else if (id === 'ab1') { 
         if (num === 1) { dealDirectDmg(40, atk, def, buf); applyStatus(def, 'PARASITE', 3, 20, null, buf, defDeferred); applyStatus(def, 'BURN', 3, 20, null, buf, defDeferred); }
         else { dealDirectDmg(200, atk, def, buf); applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); }
-    } else if (id === 'ab2') { 
+    } else if (id === 'ab2') {
         if (num === 1) { atk.shield += 150; applyStatus(atk, 'REGEN', 3, 30, null, buf, atkDeferred); }
         else { dealDirectDmg(250, atk, def, buf, true); }
+    } else if (id === 'moying') {
+        if (num === 1) {
+            const hasConsumable = !!(atk.permaBuffs?.consumableArmor);
+            if (hasConsumable) {
+                dealDirectDmg(65, atk, def, buf);
+                applyStatus(def, 'DEF_DOWN', 2, 15, null, buf, defDeferred);
+                applyStatus(atk, 'EVADE', 1, 0, null, buf, atkDeferred);
+                buf.push({ text: `🌑 [影切·強化] 消耗武裝加持，65 傷 + 降防 + 迴避！`, type: 'info' });
+            } else {
+                dealDirectDmg(45, atk, def, buf);
+                applyStatus(def, 'DEF_DOWN', 2, 15, null, buf, defDeferred);
+                buf.push({ text: `🌑 [影切] 45 傷 + 施加降防 2 回合。`, type: 'info' });
+            }
+        } else {
+            const hasDefDown = (def.status || []).some(s => s && !s.isDeferred && s.type === 'DEF_DOWN');
+            const hasCC = (def.status || []).some(s => s && !s.isDeferred && ['FREEZE', 'SILENCE'].includes(s.type));
+            const buffTypes = ['ATK_UP', 'DEF_UP', 'REGEN', 'EXCITE', 'EVADE'];
+            const stealBuff = () => {
+                const stolenIdx = (def.status || []).findIndex(s => s && !s.isDeferred && buffTypes.includes(s.type));
+                if (stolenIdx >= 0) {
+                    const stolen = def.status[stolenIdx];
+                    def.status.splice(stolenIdx, 1);
+                    atk.status = [...(atk.status || []), { ...stolen, isNew: false, isDeferred: false }];
+                    buf.push({ text: `🌑 [影奪] 竊取對手的${getStatusName(stolen.type)}！`, type: 'info' });
+                } else {
+                    buf.push({ text: `🌑 [影奪] 對手無增益可竊取。`, type: 'info' });
+                }
+            };
+            if (hasDefDown && hasCC) {
+                dealDirectDmg(150, atk, def, buf, true);
+                stealBuff();
+                buf.push({ text: `🌑 [墨影絕斬·終極] 無視護盾 150 真實傷害！`, type: 'damage' });
+            } else if (hasDefDown) {
+                dealDirectDmg(130, atk, def, buf, true);
+                buf.push({ text: `🌑 [墨影絕斬·破防] 無視護盾 130 真實傷害！`, type: 'damage' });
+            } else if (hasCC) {
+                dealDirectDmg(90, atk, def, buf);
+                stealBuff();
+                buf.push({ text: `🌑 [墨影絕斬·影奪] 90 傷害並竊取增益！`, type: 'damage' });
+            } else {
+                dealDirectDmg(80, atk, def, buf);
+                applyStatus(def, 'SILENCE', 2, 0, null, buf, defDeferred);
+                buf.push({ text: `🌑 [墨影絕斬] 80 傷害，施加沉默 2 回合。`, type: 'damage' });
+            }
+        }
     } else {
         if (id === 'm1') { if (num === 1) { dealDirectDmg(10, atk, def, buf); applyStatus(def, 'PARASITE', 2, 10, null, buf, defDeferred); } else atk.hp = Math.min(atk.maxHp, atk.hp + 60); }
         else if (id === 'm2') { if (num === 1) atk.shield += 50; else { dealDirectDmg(40, atk, def, buf); applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); } }
@@ -1224,7 +1271,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         }
     }
 
-    if (ent.permaBuffs?.armor === 'armor_chaos' && Math.random() < 0.3) {
+    const hasMoyingTalent = (ent.talents || []).includes('t_moying');
+    if (ent.permaBuffs?.armor === 'armor_chaos' && (hasMoyingTalent || Math.random() < 0.3)) {
         const debuffPool = ['BURN', 'PARASITE', 'SILENCE', 'ATK_DOWN', 'DEF_DOWN', 'FATIGUE'];
         const chosen = debuffPool[Math.floor(Math.random() * debuffPool.length)];
         applyStatus(other, chosen, 1, chosen === 'BURN' ? 20 : 0, null, buf);
@@ -1335,7 +1383,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 dealDirectDmg(30, p, e, buf, true);
                 buf.push({ text: `💠 [爆裂星晶] 追加 30 點真實傷害！`, type: 'damage' });
             } else if (aId === 'armor_corrosion') {
-                const dtype = Math.random() < 0.5 ? 'ATK_DOWN' : 'DEF_DOWN';
+                const hasMT = (p.talents || []).includes('t_moying');
+                const dtype = hasMT ? 'DEF_DOWN' : (Math.random() < 0.5 ? 'ATK_DOWN' : 'DEF_DOWN');
                 applyStatus(e, dtype, 2, 15, null, buf);
                 buf.push({ text: `🗡️ [腐蝕刃] 施加${dtype === 'ATK_DOWN' ? '降攻' : '降防'} 2 回合！`, type: 'info' });
             }
@@ -1788,9 +1837,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     saveProgress(np);
     
     const dialogs = {
-      'gaming': { hostText: `深淵魔物開始躁動了，準備好去巡夜了嗎？`, guestReplies: { 'bear': '好啊！我來幫你們擋下襲擊！', 'wolf': '我負責觀察魔物弱點，你們專心斬殺。', 'cat': '喵... 沒有星晶貓條本小姐不幹！', 'human': '看我燃燒的大劍一刀斬斷深淵！', 'elf': '我會用聖光在後方護佑你們的～', 'xiangxiang': '吼... 剛輪完白班... 讓我再睡五分鐘...', 'kohaku': '看在金幣的面子上，我就陪你們活動一下筋骨吧。', 'aldous': '嗯...今夜的風，似乎透著一絲不尋常的氣息。', 'default': '(拿起了武器準備出發)' } },
-      'snack': { hostText: `剛結束夜間討伐肚子好餓，火爐旁有留宵夜喔！`, guestReplies: { 'bear': '有蜂蜜嗎？加一點進去絕對好吃！', 'wolf': '清淡點的熱湯比較好消化。', 'cat': '喵嗚？不要想自己獨吞星晶碎屑！', 'human': '交給我！我用燃燒之刃幫你烤到七分熟！', 'elf': '我來為大家泡一杯安神花茶吧。', 'xiangxiang': '柯特的愛心宵夜... 吃飽才有力氣... 呼嚕...', 'kohaku': '哦？這食材的進貨管道是哪裡？說不定能做筆大生意。', 'aldous': '年輕人多吃點，老夫喝杯清茶足矣。', 'default': '(開心地接過分享的食物)' } },
-      'chat': { hostText: `最近連續激戰有點累，星晶的干擾也讓人喘不過氣...`, guestReplies: { 'bear': '靠著我休息吧，我的毛皮很溫暖。', 'wolf': '如果你們累了，今晚我不介意守夜。', 'cat': '呼嚕呼嚕... 這個溫暖的位子歸我了！', 'human': '覺得寒氣重嗎？我放個火魔法取暖吧！', 'elf': '讓我施放治癒，緩解你身上的疲勞。', 'xiangxiang': '來抱抱吧，白虎的肚子很好抱的喔...', 'kohaku': '世上沒有什麼煩惱是星晶解決不了的，有的話，就是星晶不夠多。', 'aldous': '放下武器，凝神靜氣。黑夜終會過去，黎明必將到來。', 'default': '(靜靜地聆聽，陪伴在你身邊)' } }
+      'gaming': { hostText: `深淵魔物開始躁動了，準備好去巡夜了嗎？`, guestReplies: { 'bear': '好啊！我來幫你們擋下襲擊！', 'wolf': '我負責觀察魔物弱點，你們專心斬殺。', 'cat': '喵... 沒有星晶貓條本小姐不幹！', 'human': '看我燃燒的大劍一刀斬斷深淵！', 'elf': '我會用聖光在後方護佑你們的～', 'xiangxiang': '吼... 剛輪完白班... 讓我再睡五分鐘...', 'kohaku': '看在金幣的面子上，我就陪你們活動一下筋骨吧。', 'aldous': '嗯...今夜的風，似乎透著一絲不尋常的氣息。', 'moying': '先觀察再動手。急著出劍的人，死得最快。', 'default': '(拿起了武器準備出發)' } },
+      'snack': { hostText: `剛結束夜間討伐肚子好餓，火爐旁有留宵夜喔！`, guestReplies: { 'bear': '有蜂蜜嗎？加一點進去絕對好吃！', 'wolf': '清淡點的熱湯比較好消化。', 'cat': '喵嗚？不要想自己獨吞星晶碎屑！', 'human': '交給我！我用燃燒之刃幫你烤到七分熟！', 'elf': '我來為大家泡一杯安神花茶吧。', 'xiangxiang': '柯特的愛心宵夜... 吃飽才有力氣... 呼嚕...', 'kohaku': '哦？這食材的進貨管道是哪裡？說不定能做筆大生意。', 'aldous': '年輕人多吃點，老夫喝杯清茶足矣。', 'moying': '……（默默接過碗，喝了一口）不錯。', 'default': '(開心地接過分享的食物)' } },
+      'chat': { hostText: `最近連續激戰有點累，星晶的干擾也讓人喘不過氣...`, guestReplies: { 'bear': '靠著我休息吧，我的毛皮很溫暖。', 'wolf': '如果你們累了，今晚我不介意守夜。', 'cat': '呼嚕呼嚕... 這個溫暖的位子歸我了！', 'human': '覺得寒氣重嗎？我放個火魔法取暖吧！', 'elf': '讓我施放治癒，緩解你身上的疲勞。', 'xiangxiang': '來抱抱吧，白虎的肚子很好抱的喔...', 'kohaku': '世上沒有什麼煩惱是星晶解決不了的，有的話，就是星晶不夠多。', 'aldous': '放下武器，凝神靜氣。黑夜終會過去，黎明必將到來。', 'moying': '累了就放下。劍放下了，腦子反而轉得快。', 'default': '(靜靜地聆聽，陪伴在你身邊)' } }
     };
     setActiveDialogue({ host: dialogs[topic].hostText, guest: dialogs[topic].guestReplies[gId] || dialogs[topic].guestReplies['default'] });
   };
