@@ -416,6 +416,7 @@ const ENCOUNTER_EVENTS = [
     themeBorder: 'border-slate-600',
     icon: '🍶',
     desc: '夜深酒靜，一個熟悉的背影出現在迷途酒館的角落……',
+    reward: { charFragments: { valentine_wolf: 20 }, rewardDesc: '💝 情人節白澤碎片 ×20' },
     dialogue: [
       { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……（環顧酒館）今晚客人還真多。' },
       { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '（角落那個背影——不，不可能。在這種地方？）' },
@@ -778,7 +779,7 @@ export default function App() {
   const [memTime, setMemTime] = useState(60);
 
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
-  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 }, dailyQuestState: null });
+  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 }, dailyQuestState: null, viewedEncounters: [] });
   const [isLoaded, setIsLoaded] = useState(false);
 
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
@@ -884,6 +885,7 @@ export default function App() {
                 gardenDate: p.gardenDate || '',
                 gardenPlays: p.gardenPlays || { farm: 0, fishing: 0, hunting: 0, memory: 0 },
                 dailyQuestState: p.dailyQuestState || null,
+                viewedEncounters: Array.isArray(p.viewedEncounters) ? p.viewedEncounters : [],
             });
         }
     } catch(e) { console.warn("Save file invalid, starting fresh.", e); }
@@ -4097,8 +4099,22 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           <div className="flex justify-between items-center">
             <span className="text-stone-600 text-xs">{safeIdx + 1} / {ev.dialogue.length}</span>
             {isLast ? (
-              <button onClick={() => { setGameState('gacha'); setGachaTab('encounters'); }}
-                className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 active:scale-95 transition-all">
+              <button onClick={() => {
+                const alreadySeen = (progress.viewedEncounters || []).includes(ev.id);
+                if (!alreadySeen) {
+                  let np = { ...progress };
+                  np.viewedEncounters = [...(np.viewedEncounters || []), ev.id];
+                  if (ev.reward?.charFragments) {
+                    np.charFragments = { ...np.charFragments };
+                    Object.entries(ev.reward.charFragments).forEach(([cid, qty]) => {
+                      np.charFragments[cid] = (np.charFragments[cid] || 0) + qty;
+                    });
+                  }
+                  saveProgress(np);
+                  showToast(`✦ 故事結束！獲得 ${ev.reward?.rewardDesc || ''}`);
+                }
+                setGameState('gacha'); setGachaTab('encounters');
+              }} className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 active:scale-95 transition-all">
                 ✦ 故事結束
               </button>
             ) : (
@@ -4302,9 +4318,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     <div className="animate-fade-in">
                       <p className="text-stone-500 text-xs mb-4 text-center">在這裡欣賞角色們在旅途中的特別邂逅故事。</p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {ENCOUNTER_EVENTS.map(ev => (
-                          <div key={ev.id} className={`rounded-2xl border p-4 flex flex-col gap-2 transition-all ${ev.locked ? 'border-stone-800 bg-stone-900/40 opacity-50' : 'border-slate-700 bg-stone-900/70 hover:border-purple-500 cursor-pointer active:scale-95'}`}
+                        {ENCOUNTER_EVENTS.map(ev => {
+                          const viewed = (progress.viewedEncounters || []).includes(ev.id);
+                          return (
+                          <div key={ev.id} className={`rounded-2xl border p-4 flex flex-col gap-2 transition-all relative ${ev.locked ? 'border-stone-800 bg-stone-900/40 opacity-50' : 'border-slate-700 bg-stone-900/70 hover:border-purple-500 cursor-pointer active:scale-95'}`}
                             onClick={() => { if (!ev.locked) { setEncounterEventId(ev.id); setEncounterDialogueIdx(0); setGameState('encounter_dialogue'); } }}>
+                            {viewed && <span className="absolute top-3 right-3 text-[10px] bg-green-800 text-green-300 border border-green-700 px-2 py-0.5 rounded-full font-bold">✓ 已看過</span>}
                             <div className="flex items-center gap-3">
                               <span className="text-3xl">{ev.icon}</span>
                               <div>
@@ -4313,9 +4332,15 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                               </div>
                             </div>
                             <p className="text-xs text-stone-500 leading-relaxed">{ev.desc}</p>
-                            {!ev.locked && <div className="text-xs text-purple-400 font-bold mt-1">▶ 點擊閱讀</div>}
+                            {!ev.locked && (
+                              <div className="flex items-center justify-between mt-1">
+                                <span className="text-xs text-purple-400 font-bold">▶ 點擊閱讀</span>
+                                {ev.reward && <span className={`text-[10px] ${viewed ? 'text-stone-600 line-through' : 'text-yellow-500'}`}>{ev.reward.rewardDesc}</span>}
+                              </div>
+                            )}
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
