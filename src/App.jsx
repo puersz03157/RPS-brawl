@@ -381,6 +381,53 @@ const GARDEN_INGREDIENTS = [
 ];
 const ALL_INGREDIENTS = [...INGREDIENTS, ...GARDEN_INGREDIENTS];
 
+// ==========================================
+// 每日任務系統
+// ==========================================
+const DAILY_QUEST_POOL = {
+  easy: [
+    { id: 'dq_login',        name: '每日登入',           desc: '每天登入遊戲',                    target: 1, reward: { fragments: 20 }, rewardDesc: '💠 碎片 ×20', trigger: 'login'        },
+    { id: 'dq_battle_any',   name: '踏上征途',           desc: '進行任意 1 場戰鬥（不限勝負）',    target: 1, reward: { fragments: 30 }, rewardDesc: '💠 碎片 ×30', trigger: 'battle_any'   },
+    { id: 'dq_visit_garden', name: '莊園探訪',           desc: '訪問悠活莊園',                    target: 1, reward: { crystals: 10  }, rewardDesc: '💎 星晶 ×10',  trigger: 'visit_garden' },
+    { id: 'dq_shop_work',    name: '勤勞工人',           desc: '在商店打工或製作任意道具 1 次',    target: 1, reward: { ap: 1          }, rewardDesc: '⚡ AP ×1',     trigger: 'shop_work'    },
+  ],
+  medium: [
+    { id: 'dq_win_3',        name: '連戰連勝',           desc: '贏得 3 場戰鬥',                   target: 3, reward: { crystals: 30  }, rewardDesc: '💎 星晶 ×30',  trigger: 'battle_win'   },
+    { id: 'dq_cook',         name: '篝火廚師',           desc: '在白晝營地完成 1 道料理',          target: 1, reward: { fragments: 50 }, rewardDesc: '💠 碎片 ×50',  trigger: 'cook'         },
+    { id: 'dq_mine_collect', name: '礦脈採集',           desc: '在星晶礦坑收集碎片 1 次',          target: 1, reward: { crystals: 20  }, rewardDesc: '💎 星晶 ×20',  trigger: 'mine_collect' },
+    { id: 'dq_garden_game',  name: '莊園玩家',           desc: '完成悠活莊園任意小遊戲 1 次',      target: 1, reward: { fragments: 40 }, rewardDesc: '💠 碎片 ×40',  trigger: 'garden_game'  },
+  ],
+  hard: [
+    { id: 'dq_campaign',     name: '戰役征服者',         desc: '完成 1 場夜巡戰役（全3場通關）',   target: 1, reward: { crystals: 100 }, rewardDesc: '💎 星晶 ×100', trigger: 'campaign_clear'},
+    { id: 'dq_gacha',        name: '酒館常客',           desc: '在迷途酒館進行 1 次招募',          target: 1, reward: { fragments: 60 }, rewardDesc: '💠 碎片 ×60',  trigger: 'gacha_pull'   },
+    { id: 'dq_forge',        name: '鍛造師傅',           desc: '使用鍛造工坊製作任意武裝 1 次',    target: 1, reward: { crystals: 50  }, rewardDesc: '💎 星晶 ×50',  trigger: 'forge'        },
+  ],
+};
+const DAILY_QUEST_FULL_CLEAR = { reward: { crystals: 50 }, rewardDesc: '💎 星晶 ×50' };
+const ALL_DAILY_QUESTS = [...DAILY_QUEST_POOL.easy, ...DAILY_QUEST_POOL.medium, ...DAILY_QUEST_POOL.hard];
+
+const getDailyQuestIds = (dateStr) => {
+  let seed = 0;
+  for (let i = 0; i < dateStr.length; i++) seed = (seed * 31 + dateStr.charCodeAt(i)) >>> 0;
+  const rng = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+  const seededShuffle = (arr) => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    return a;
+  };
+  const easy   = seededShuffle(DAILY_QUEST_POOL.easy.map(q => q.id));
+  const medium = seededShuffle(DAILY_QUEST_POOL.medium.map(q => q.id));
+  const hard   = seededShuffle(DAILY_QUEST_POOL.hard.map(q => q.id));
+  let selEasy = easy.slice(0, 2);
+  let selMedium = medium.slice(0, 2);
+  // 防止 battle_any 與 win_3 同時出現
+  if (selEasy.includes('dq_battle_any') && selMedium.includes('dq_win_3')) {
+    const alt = medium.find(id => id !== 'dq_win_3' && !selMedium.includes(id));
+    if (alt) selMedium = selMedium.map(id => id === 'dq_win_3' ? alt : id);
+  }
+  return [...selEasy, ...selMedium, hard[0]];
+};
+
 const GUIDE_TERMS = [
     { term: '星晶 (Star Crystal)', desc: '核心貨幣，可在星晶商店購買天賦、特殊型態，或透過公會打工與成就獎勵取得。' },
     { term: 'AP (行動點數)', desc: '戰鬥勝利後獲得，用於日晝營地提升角色羈絆，也可在商店「打工專區」製作戰鬥道具。' },
@@ -668,6 +715,7 @@ export default function App() {
   const [storyDialogueIdx, setStoryDialogueIdx] = useState(0);
   const [storyBattleStage, setStoryBattleStage] = useState(0);
   const [storySelectedCharId, setStorySelectedCharId] = useState(null);
+  const [gachaTab, setGachaTab] = useState('gacha');
 
   // 悠活莊園 mini-game states
   const [gardenTab, setGardenTab] = useState('farm');
@@ -690,7 +738,7 @@ export default function App() {
   const [memTime, setMemTime] = useState(60);
 
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
-  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 } });
+  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 }, dailyQuestState: null });
   const [isLoaded, setIsLoaded] = useState(false);
 
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
@@ -759,6 +807,18 @@ export default function App() {
     }
   }, [memFlipped]);
 
+  // 每日任務：登入初始化
+  useEffect(() => {
+    if (!isLoaded) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const dqs = progress.dailyQuestState;
+    if (!dqs || dqs.date !== today) {
+      saveProgress({ ...progress, dailyQuestState: { date: today, progress: { dq_login: 1 }, claimed: [], fullClearClaimed: false } });
+    } else if ((dqs.progress.dq_login || 0) < 1 && !dqs.claimed.includes('dq_login')) {
+      saveProgress({ ...progress, dailyQuestState: { ...dqs, progress: { ...dqs.progress, dq_login: 1 } } });
+    }
+  }, [isLoaded]);
+
   useEffect(() => {
     try {
         const saved = localStorage.getItem('starCrystalTales_V38_Stable');
@@ -783,6 +843,7 @@ export default function App() {
                 pendingConsumableArmor: p.pendingConsumableArmor || null,
                 gardenDate: p.gardenDate || '',
                 gardenPlays: p.gardenPlays || { farm: 0, fishing: 0, hunting: 0, memory: 0 },
+                dailyQuestState: p.dailyQuestState || null,
             });
         }
     } catch(e) { console.warn("Save file invalid, starting fresh.", e); }
@@ -1575,7 +1636,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const isAdvanced = gameMode === 'advanced_campaign';
     const maxStage = isAdvanced ? 4 : 2;
 
-    if (target === 'player') { playSound('defeat'); saveProgress(np); setGameState('game_over'); setWinner('enemy'); }
+    if (target === 'player') { playSound('defeat'); saveProgress(updateDailyQuestProgress('battle_any', np)); setGameState('game_over'); setWinner('enemy'); }
     else { playSound('victory');
         if (!enemy.char.isUncapturable && unlocks.includes('tamer_kert') && !captured.includes(enemy.char.id) && !enemy.char.baseId && !isT0Char(enemy.char)) { 
             np.captured = [...captured, enemy.char.id]; setNewlyCaptured(enemy.char); 
@@ -1603,6 +1664,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             np.consumableArmors = { ...np.consumableArmors, [cId]: Math.max(0, (np.consumableArmors[cId] || 1) - 1) };
             np.pendingConsumableArmor = null;
         }
+        np = updateDailyQuestProgress('battle_any', np);
+        np = updateDailyQuestProgress('battle_win', np);
+        if (isFinalWin && gameMode === 'campaign') np = updateDailyQuestProgress('campaign_clear', np);
         saveProgress(np); setRewardCrystals(earned);
         if (gameMode.includes('campaign') && campaignStage < maxStage) { setAvailableRewards(shuffle([...REWARD_POOL]).slice(0, 3)); setGameState('select_reward'); }
         else { setGameState('game_over'); setWinner('player'); }
@@ -1930,7 +1994,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       showToastMsg(`布提婭悄悄多摸了 ${catBonus} 顆碎片！`);
     }
     const gained = total + catBonus;
-    const np = { ...progress, fragments: (progress.fragments || 0) + gained, mine: { ...mine, pending: 0, lastCollect: new Date().toISOString() } };
+    let np = { ...progress, fragments: (progress.fragments || 0) + gained, mine: { ...mine, pending: 0, lastCollect: new Date().toISOString() } };
+    np = updateDailyQuestProgress('mine_collect', np);
     saveProgress(np);
     showToastMsg(`⛏️ 領取了 ${gained} 顆星晶碎片！`);
   };
@@ -1978,7 +2043,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     for (const [ingId, qty] of Object.entries(recipe.ingredients)) {
       newIngredients[ingId] = (newIngredients[ingId] || 0) - qty;
     }
-    const np = { ...progress, ingredients: newIngredients, pendingMeal: recipe.id };
+    let np = { ...progress, ingredients: newIngredients, pendingMeal: recipe.id };
+    np = updateDailyQuestProgress('cook', np);
     saveProgress(np);
     showToastMsg(`🍳 烹飪完成：${recipe.name}！下次戰鬥生效。`);
   };
@@ -1987,6 +2053,48 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const np = { ...progress, pendingMeal: null };
     saveProgress(np);
     showToastMsg('料理已丟棄。');
+  };
+
+  // ========================== 每日任務 Helper ==========================
+
+  const updateDailyQuestProgress = (trigger, np) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const dqs = np.dailyQuestState;
+    if (!dqs || dqs.date !== today) return np;
+    const activeIds = getDailyQuestIds(today);
+    const newProg = { ...dqs.progress };
+    let changed = false;
+    activeIds.forEach(id => {
+      if (dqs.claimed.includes(id)) return;
+      const quest = ALL_DAILY_QUESTS.find(q => q.id === id);
+      if (!quest || quest.trigger !== trigger) return;
+      if ((newProg[id] || 0) >= quest.target) return;
+      newProg[id] = (newProg[id] || 0) + 1;
+      changed = true;
+    });
+    return changed ? { ...np, dailyQuestState: { ...dqs, progress: newProg } } : np;
+  };
+
+  const claimDailyQuest = (questId) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const dqs = progress.dailyQuestState;
+    if (!dqs || dqs.date !== today) return;
+    const quest = ALL_DAILY_QUESTS.find(q => q.id === questId);
+    if (!quest || dqs.claimed.includes(questId)) return;
+    if ((dqs.progress[questId] || 0) < quest.target) return;
+    let np = { ...progress };
+    if (quest.reward.crystals) np.crystals = (np.crystals || 0) + quest.reward.crystals;
+    if (quest.reward.fragments) np.fragments = (np.fragments || 0) + quest.reward.fragments;
+    if (quest.reward.ap) np.ap = (np.ap || 0) + quest.reward.ap;
+    const newClaimed = [...dqs.claimed, questId];
+    const activeIds = getDailyQuestIds(today);
+    const allDone = activeIds.every(id => newClaimed.includes(id));
+    const fcBonus = allDone && !dqs.fullClearClaimed;
+    if (fcBonus) np.crystals += DAILY_QUEST_FULL_CLEAR.reward.crystals;
+    np.dailyQuestState = { ...dqs, claimed: newClaimed, fullClearClaimed: dqs.fullClearClaimed || fcBonus };
+    saveProgress(np);
+    showToastMsg(`✅ ${quest.name}完成！獲得 ${quest.rewardDesc}`);
+    if (fcBonus) setTimeout(() => showToastMsg('🎉 全勤達成！額外獲得 💎 50 星晶！'), 1500);
   };
 
   // ========================== 渲染函數區 ==========================
@@ -2000,7 +2108,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
     const consumePlay = (tab, extraChanges = {}) => {
       const newPlays = { ...plays, [tab]: (plays[tab] || 0) + 1 };
-      saveProgress({ ...progress, gardenDate: today, gardenPlays: newPlays, ...extraChanges });
+      let np = { ...progress, gardenDate: today, gardenPlays: newPlays, ...extraChanges };
+      np = updateDailyQuestProgress('garden_game', np);
+      saveProgress(np);
     };
 
     const startFarm = () => { setFarmPhase('growing'); setFarmWaters(0); };
@@ -2426,11 +2536,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   <h2 className="text-lg font-bold mb-1">星晶商店</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">購買物資情報與碎片。</p>
               </button>
-              <button onClick={() => { setGameState('gacha'); setGachaResult(null); }} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-purple-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
+              <div className="relative">
+              <button onClick={() => { setGameState('gacha'); setGachaResult(null); }} className="w-full bg-stone-800 p-4 border-2 border-stone-700 hover:border-purple-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
                   <div className="text-3xl mb-2">🍻</div>
                   <h2 className="text-lg font-bold mb-1">迷途酒館</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">花費星晶招募夥伴碎片。</p>
               </button>
+              {(() => { const today=new Date().toISOString().slice(0,10); const dqs=progress.dailyQuestState; if(!dqs||dqs.date!==today) return null; const ids=getDailyQuestIds(today); const hasClaimable=ids.some(id=>{const q=ALL_DAILY_QUESTS.find(x=>x.id===id);return q&&(dqs.progress[id]||0)>=q.target&&!dqs.claimed.includes(id);}); return hasClaimable?<span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping pointer-events-none"></span>:null; })()}
+              </div>
               <button onClick={() => setGameState('mine')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-yellow-600 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
                   <div className="text-3xl mb-2">⛏️</div>
                   <h2 className="text-lg font-bold mb-1">星晶礦坑</h2>
@@ -2441,7 +2554,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   <h2 className="text-lg font-bold mb-1">鍛造工坊</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">用碎片打造戰鬥武裝。</p>
               </button>
-              <button onClick={() => setGameState('garden')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-emerald-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
+              <button onClick={() => { let np = updateDailyQuestProgress('visit_garden', { ...progress }); if (np !== progress) saveProgress(np); setGameState('garden'); }} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-emerald-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
                   <div className="text-3xl mb-2">🌿</div>
                   <h2 className="text-lg font-bold mb-1">悠活莊園</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">種植釣魚狩獵，取得高級食材。</p>
@@ -3336,12 +3449,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const craftItem = (id, name, icon) => () => {
       let np = { ...progress, ap: progress.ap - workItems.find(w => w.id === id)?.cost };
       np.items = { ...np.items, [id]: (np.items?.[id] || 0) + 1 };
+      np = updateDailyQuestProgress('shop_work', np);
       saveProgress(np);
       showToastMsg(`✅ 製作完成：${icon} ${name}！`);
     };
 
     const workItems = [
-      { id: 'guild_work', name: '公會打工', desc: '消耗 1 點 AP 協助公會處理雜務，獲得 5 顆星晶。', cost: 1, currency: 'ap', icon: '💼', canBuy: progress.ap >= 1, bought: false, isInfinite: true, onBuy: () => { let np={...progress, ap: progress.ap - 1, crystals: progress.crystals + 5}; saveProgress(np); showToastMsg('打工成功！獲得 5 💎'); } },
+      { id: 'guild_work', name: '公會打工', desc: '消耗 1 點 AP 協助公會處理雜務，獲得 5 顆星晶。', cost: 1, currency: 'ap', icon: '💼', canBuy: progress.ap >= 1, bought: false, isInfinite: true, onBuy: () => { let np={...progress, ap: progress.ap - 1, crystals: progress.crystals + 5}; np = updateDailyQuestProgress('shop_work', np); saveProgress(np); showToastMsg('打工成功！獲得 5 💎'); } },
       { id: 'stardust',      name: '道具製作：星晶砂粉', desc: `戰鬥中使用，立即回復 100 HP。持有：${progress.items?.stardust||0} 個`,      cost: 1, currency: 'ap', icon: '✨', canBuy: progress.ap >= 1, bought: false, isInfinite: true, onBuy: craftItem('stardust',      '星晶砂粉', '✨') },
       { id: 'excite_potion', name: '道具製作：亢奮藥劑', desc: `戰鬥中使用，獲得亢奮狀態 3 回合。持有：${progress.items?.excite_potion||0} 個`, cost: 2, currency: 'ap', icon: '🧪', canBuy: progress.ap >= 2, bought: false, isInfinite: true, onBuy: craftItem('excite_potion', '亢奮藥劑', '🧪') },
       { id: 'smoke_bomb',    name: '道具製作：煙霧彈',   desc: `戰鬥中使用，獲得迴避效果 1 次。持有：${progress.items?.smoke_bomb||0} 個`,    cost: 3, currency: 'ap', icon: '💨', canBuy: progress.ap >= 3, bought: false, isInfinite: true, onBuy: craftItem('smoke_bomb',    '煙霧彈',   '💨') },
@@ -3787,12 +3901,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const forgeCraft = (armor, isConsumable) => {
         if (progress.fragments < armor.cost) { setSysError('碎片不足！'); return; }
         if (!isConsumable && progress.unlockedArmors.includes(armor.id)) { setSysError('已製作過此永久武裝！'); return; }
-        const np = { ...progress, fragments: progress.fragments - armor.cost };
+        let np = { ...progress, fragments: progress.fragments - armor.cost };
         if (isConsumable) {
             np.consumableArmors = { ...progress.consumableArmors, [armor.id]: (progress.consumableArmors[armor.id] || 0) + 1 };
         } else {
             np.unlockedArmors = [...progress.unlockedArmors, armor.id];
         }
+        np = updateDailyQuestProgress('forge', np);
         saveProgress(np);
         showToastMsg(`✅ 製作完成：${armor.name}！`);
     };
@@ -3984,12 +4099,22 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               }
               results.push(res);
           }
+          np = updateDailyQuestProgress('gacha_pull', np);
           saveProgress(np);
           setGachaResult(results);
           playSound('gacha_pull');
           const hasSSR = results.some(r => r.rarity === 'SSR');
           setTimeout(() => playSound(hasSSR ? 'gacha_ssr' : 'gacha_normal'), 400);
       };
+
+      const today = new Date().toISOString().slice(0, 10);
+      const dqs = progress.dailyQuestState;
+      const isToday = dqs && dqs.date === today;
+      const activeQuestIds = isToday ? getDailyQuestIds(today) : [];
+      const dqProgress = isToday ? (dqs.progress || {}) : {};
+      const dqClaimed  = isToday ? (dqs.claimed  || []) : [];
+      const claimedCount = activeQuestIds.filter(id => dqClaimed.includes(id)).length;
+      const difficultyLabel = { easy: '🟢 簡單', medium: '🟡 中等', hard: '🔴 困難' };
 
       return (
           <div className="min-h-screen p-8 bg-stone-950 text-stone-200 relative overflow-hidden">
@@ -4020,7 +4145,66 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                       ]}
                   />
 
-                  {!gachaResult ? (
+                  {/* Tab bar */}
+                  <div className="flex gap-3 mb-6">
+                    {[{ id: 'gacha', label: '🍻 招募', }, { id: 'quests', label: '📋 每日任務', badge: activeQuestIds.some(id => { const q = ALL_DAILY_QUESTS.find(x=>x.id===id); return q&&(dqProgress[id]||0)>=q.target&&!dqClaimed.includes(id); }) }].map(t => (
+                      <button key={t.id} onClick={() => setGachaTab(t.id)}
+                        className={`relative px-5 py-2 rounded-full font-bold transition-all ${gachaTab === t.id ? 'bg-purple-700 text-white shadow-lg' : 'bg-stone-800 text-stone-400 hover:bg-stone-700'}`}>
+                        {t.label}
+                        {t.badge && <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-ping pointer-events-none"></span>}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Daily Quests Panel */}
+                  {gachaTab === 'quests' && (
+                    <div className="animate-fade-in">
+                      <div className="bg-stone-800/60 rounded-2xl border border-stone-700 p-5 mb-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-bold text-yellow-400 text-lg">📋 每日任務</h3>
+                          <div className="text-sm text-stone-400">完成 <span className="text-white font-bold">{claimedCount}</span>/5　全勤獎：💎 50星晶 {dqs?.fullClearClaimed ? <span className="text-green-400 text-xs">（已領）</span> : ''}</div>
+                        </div>
+                        <div className="space-y-3">
+                          {activeQuestIds.map(id => {
+                            const quest = ALL_DAILY_QUESTS.find(q => q.id === id);
+                            if (!quest) return null;
+                            const prog = dqProgress[id] || 0;
+                            const done = prog >= quest.target;
+                            const claimed = dqClaimed.includes(id);
+                            const tier = DAILY_QUEST_POOL.easy.some(q=>q.id===id) ? 'easy' : DAILY_QUEST_POOL.medium.some(q=>q.id===id) ? 'medium' : 'hard';
+                            return (
+                              <div key={id} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${claimed ? 'border-stone-700 bg-stone-900/30 opacity-60' : done ? 'border-yellow-600/50 bg-yellow-900/10' : 'border-stone-700 bg-stone-900/50'}`}>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-0.5">
+                                    <span className="text-xs font-bold opacity-60">{difficultyLabel[tier]}</span>
+                                    <span className="font-bold text-sm text-white">{quest.name}</span>
+                                    {claimed && <span className="text-xs text-green-400">✓ 已領取</span>}
+                                  </div>
+                                  <p className="text-xs text-stone-400 mb-1">{quest.desc}</p>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-stone-700 rounded-full h-1.5 max-w-[120px]">
+                                      <div className="bg-yellow-500 h-1.5 rounded-full transition-all" style={{ width: `${Math.min(100, (prog / quest.target) * 100)}%` }}></div>
+                                    </div>
+                                    <span className="text-xs text-stone-400">{Math.min(prog, quest.target)}/{quest.target}</span>
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <div className="text-xs text-stone-400 mb-1">{quest.rewardDesc}</div>
+                                  <button onClick={() => claimDailyQuest(id)} disabled={!done || claimed}
+                                    className={`text-xs px-3 py-1.5 rounded-lg font-bold transition-all ${done && !claimed ? 'bg-yellow-600 hover:bg-yellow-500 text-stone-900 active:scale-95' : 'bg-stone-700 text-stone-500 cursor-not-allowed'}`}>
+                                    {claimed ? '已領取' : done ? '領取！' : '進行中'}
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <p className="text-center text-stone-600 text-xs">每日 00:00 更新任務</p>
+                    </div>
+                  )}
+
+                  {gachaTab === 'gacha' && (!gachaResult ? (
                       <div className="flex flex-col items-center justify-center animate-fade-in">
                           <div className="bg-stone-900 border-4 border-stone-800 p-8 rounded-3xl shadow-2xl mb-8 flex flex-col items-center max-w-md w-full relative overflow-hidden">
                               <div className="text-6xl mb-6 drop-shadow-xl animate-pulse">🍻</div>
@@ -4081,7 +4265,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                           </div>
                           <button onClick={() => setGachaResult(null)} className="bg-stone-700 hover:bg-stone-600 px-8 py-3 rounded-full font-bold text-white transition-colors shadow-lg">繼續招募</button>
                       </div>
-                  )}
+                  ) )}
               </div>
           </div>
       );
