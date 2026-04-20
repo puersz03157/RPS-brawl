@@ -349,9 +349,37 @@ const RECIPES = [
     buff: { type: 'atk_shield', atk: 15, shield: 50, desc: '戰鬥開始時攻擊 +15 且護盾 +50' },
     favoredBy: ['wolf', 'human'],
   },
+  {
+    id: 'veggie_mush_stew', name: '晨菇靈燉湯', grade: '絕品', icon: '🥣', cost: 80,
+    ingredients: { veggie: 1, rare_mush: 1 },
+    buff: { type: 'hp_regen', hp: 200, regen: 15, desc: '戰鬥開始時 HP +200 且每回合再生 +15' },
+    favoredBy: ['bear', 'elf', 'cat'],
+  },
+  {
+    id: 'deep_fish_sashimi', name: '深淵幻魚刺身', grade: '絕品', icon: '🍱', cost: 80,
+    ingredients: { rare_fish: 2 },
+    buff: { type: 'hp_energy', hp: 150, energy: 60, desc: '戰鬥開始時 HP +150 且能量 +60' },
+    favoredBy: ['cat', 'human', 'wolf'],
+  },
+  {
+    id: 'beast_supreme_roast', name: '魔獸至尊燒', grade: '絕品', icon: '🍢', cost: 80,
+    ingredients: { prime_meat: 1, golden_egg: 1 },
+    buff: { type: 'atk_shield', atk: 30, shield: 150, desc: '戰鬥開始時攻擊 +30 且護盾 +150' },
+    favoredBy: ['wolf', 'bear', 'human'],
+  },
 ];
 
 const COOKING_PREF_BONUS = 1.2; // 偏好料理效果 +20%
+
+// 悠活莊園高級食材（僅可從莊園小遊戲取得，不在商店販售）
+const GARDEN_INGREDIENTS = [
+  { id: 'veggie',     name: '晨露嫩蔬', icon: '🥬', source: '種植園' },
+  { id: 'rare_mush',  name: '星晶靈菇', icon: '🍄', source: '種植園' },
+  { id: 'rare_fish',  name: '深淵幻魚', icon: '🐡', source: '釣魚池' },
+  { id: 'prime_meat', name: '魔獸精肉', icon: '🍗', source: '魔物狩獵' },
+  { id: 'golden_egg', name: '金晶巨卵', icon: '🪺', source: '魔物狩獵' },
+];
+const ALL_INGREDIENTS = [...INGREDIENTS, ...GARDEN_INGREDIENTS];
 
 const GUIDE_TERMS = [
     { term: '星晶 (Star Crystal)', desc: '核心貨幣，可在星晶商店購買天賦、特殊型態，或透過公會打工與成就獎勵取得。' },
@@ -641,8 +669,28 @@ export default function App() {
   const [storyBattleStage, setStoryBattleStage] = useState(0);
   const [storySelectedCharId, setStorySelectedCharId] = useState(null);
 
+  // 悠活莊園 mini-game states
+  const [gardenTab, setGardenTab] = useState('farm');
+  const [farmPhase, setFarmPhase] = useState('idle');
+  const [farmSeed, setFarmSeed] = useState('veggie');
+  const [farmWaters, setFarmWaters] = useState(0);
+  const [fishPhase, setFishPhase] = useState('idle');
+  const [fishBarPos, setFishBarPos] = useState(0);
+  const [fishResult, setFishResult] = useState(null);
+  const fishDirRef = useRef(1);
+  const [huntPhase, setHuntPhase] = useState('idle');
+  const [huntTargets, setHuntTargets] = useState([]);
+  const [huntScore, setHuntScore] = useState(0);
+  const [huntTime, setHuntTime] = useState(20);
+  const [memPhase, setMemPhase] = useState('idle');
+  const [memCards, setMemCards] = useState([]);
+  const [memFlipped, setMemFlipped] = useState([]);
+  const [memMatched, setMemMatched] = useState([]);
+  const [memMoves, setMemMoves] = useState(0);
+  const [memTime, setMemTime] = useState(60);
+
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
-  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null });
+  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 } });
   const [isLoaded, setIsLoaded] = useState(false);
 
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
@@ -653,6 +701,63 @@ export default function App() {
     document.addEventListener('click', onBtnClick);
     return () => document.removeEventListener('click', onBtnClick);
   }, []);
+
+  // 釣魚池 bar animation
+  useEffect(() => {
+    if (fishPhase !== 'casting') return;
+    const interval = setInterval(() => {
+      setFishBarPos(pos => {
+        let n = pos + fishDirRef.current * 3;
+        if (n >= 100) { fishDirRef.current = -1; return 100; }
+        if (n <= 0)   { fishDirRef.current = 1;  return 0;   }
+        return n;
+      });
+    }, 50);
+    return () => clearInterval(interval);
+  }, [fishPhase]);
+
+  // 魔物狩獵 countdown
+  useEffect(() => {
+    if (huntPhase !== 'hunting') return;
+    const timer = setInterval(() => {
+      setHuntTime(t => { if (t <= 1) { setHuntPhase('result'); return 0; } return t - 1; });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [huntPhase]);
+
+  // 魔物狩獵 target spawning
+  useEffect(() => {
+    if (huntPhase !== 'hunting') return;
+    const MONSTERS = ['🐺','🐻','🐊','🦂','🕷️','🐗','🦁','🐉'];
+    const spawn = () => ({ id: Math.random(), x: 5 + Math.random() * 80, y: 8 + Math.random() * 72, emoji: MONSTERS[Math.floor(Math.random() * MONSTERS.length)] });
+    setHuntTargets(Array.from({ length: 4 }, spawn));
+    const spawner = setInterval(() => setHuntTargets(prev => prev.length < 7 ? [...prev, spawn()] : prev), 2000);
+    return () => { clearInterval(spawner); setHuntTargets([]); };
+  }, [huntPhase]);
+
+  // 記憶翻牌 countdown
+  useEffect(() => {
+    if (memPhase !== 'playing') return;
+    const timer = setInterval(() => {
+      setMemTime(t => { if (t <= 1) { setMemPhase('result'); return 0; } return t - 1; });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [memPhase]);
+
+  // 記憶翻牌 match check
+  useEffect(() => {
+    if (memFlipped.length !== 2) return;
+    const [a, b] = memFlipped;
+    if (memCards[a]?.pairId === memCards[b]?.pairId) {
+      const nm = [...memMatched, memCards[a].pairId];
+      setMemMatched(nm);
+      setMemFlipped([]);
+      if (nm.length === 8) setMemPhase('result');
+    } else {
+      const t = setTimeout(() => setMemFlipped([]), 900);
+      return () => clearTimeout(t);
+    }
+  }, [memFlipped]);
 
   useEffect(() => {
     try {
@@ -676,6 +781,8 @@ export default function App() {
                 equippedArmor: p.equippedArmor || null,
                 consumableArmors: p.consumableArmors || {},
                 pendingConsumableArmor: p.pendingConsumableArmor || null,
+                gardenDate: p.gardenDate || '',
+                gardenPlays: p.gardenPlays || { farm: 0, fishing: 0, hunting: 0, memory: 0 },
             });
         }
     } catch(e) { console.warn("Save file invalid, starting fresh.", e); }
@@ -1202,6 +1309,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             if (b.type === 'regen')      { mRegen = Math.floor(b.value * mult); pObj.status.push({ type: 'REGEN', duration: 99, value: mRegen, isNew: false, isDeferred: false }); }
             if (b.type === 'hp_energy')  { const hb = Math.floor(b.hp * mult); pObj.maxHp += hb; pObj.hp += hb; mEnergy = Math.floor(b.energy * mult); pObj.energy = Math.min(100, pObj.energy + mEnergy); }
             if (b.type === 'atk_shield') { pObj.atk += Math.floor(b.atk * mult); mShield = Math.floor(b.shield * mult); pObj.shield += mShield; }
+            if (b.type === 'hp_regen')   { const hb = Math.floor(b.hp * mult); pObj.maxHp += hb; pObj.hp += hb; mRegen = Math.floor(b.regen * mult); pObj.status.push({ type: 'REGEN', duration: 99, value: mRegen, isNew: false, isDeferred: false }); }
             if (mShield || mEnergy || mRegen) pObj.permaBuffs = { ...pObj.permaBuffs, meal: { shield: mShield, energy: mEnergy, regen: mRegen } };
             mealLog = isFavored ? `🍽️ ${selectedChar.name} 享用了最愛的${meal.name}！Buff 效果提升20%！` : `🍽️ 料理「${meal.name}」的效果生效了！`;
           }
@@ -1861,7 +1969,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (progress.pendingMeal) { setSysError('你已有一道料理待生效，請先出戰使用！'); return; }
     for (const [ingId, qty] of Object.entries(recipe.ingredients)) {
       if ((progress.ingredients[ingId] || 0) < qty) {
-        const ing = INGREDIENTS.find(i => i.id === ingId);
+        const ing = ALL_INGREDIENTS.find(i => i.id === ingId);
         setSysError(`食材不足！缺少 ${ing?.icon} ${ing?.name} x${qty - (progress.ingredients[ingId] || 0)}`);
         return;
       }
@@ -1882,6 +1990,368 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   // ========================== 渲染函數區 ==========================
+
+  const renderGarden = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const isNewDay = progress.gardenDate !== today;
+    const plays = isNewDay ? { farm: 0, fishing: 0, hunting: 0, memory: 0 } : (progress.gardenPlays || { farm: 0, fishing: 0, hunting: 0, memory: 0 });
+    const MAX = 3;
+    const FISH_ZONE = { min: 35, max: 55 };
+
+    const consumePlay = (tab, extraChanges = {}) => {
+      const newPlays = { ...plays, [tab]: (plays[tab] || 0) + 1 };
+      saveProgress({ ...progress, gardenDate: today, gardenPlays: newPlays, ...extraChanges });
+    };
+
+    const startFarm = () => { setFarmPhase('growing'); setFarmWaters(0); };
+    const waterFarm = () => { const w = farmWaters + 1; setFarmWaters(w); if (w >= 3) setFarmPhase('ready'); };
+    const harvestFarm = () => {
+      const newIngredients = { ...progress.ingredients, [farmSeed]: (progress.ingredients[farmSeed] || 0) + 1 };
+      consumePlay('farm', { ingredients: newIngredients });
+      setFarmPhase('idle'); setFarmWaters(0);
+      const ing = GARDEN_INGREDIENTS.find(i => i.id === farmSeed);
+      showToastMsg(`✅ 收成了 ${ing.icon} ${ing.name} ×1！`);
+    };
+
+    const startFishing = () => { setFishPhase('casting'); setFishBarPos(0); setFishResult(null); fishDirRef.current = 1; };
+    const castRod = () => {
+      if (fishPhase !== 'casting') return;
+      const success = fishBarPos >= FISH_ZONE.min && fishBarPos <= FISH_ZONE.max;
+      setFishResult(success ? 'success' : 'miss');
+      setFishPhase('result');
+      if (success) {
+        const newIngredients = { ...progress.ingredients, rare_fish: (progress.ingredients.rare_fish || 0) + 1 };
+        consumePlay('fishing', { ingredients: newIngredients });
+        showToastMsg('✅ 釣到了 🐡 深淵幻魚 ×1！');
+      } else {
+        consumePlay('fishing');
+      }
+    };
+
+    const startHunt = () => { setHuntPhase('hunting'); setHuntScore(0); setHuntTime(20); };
+    const hitTarget = (id) => { setHuntTargets(prev => prev.filter(t => t.id !== id)); setHuntScore(prev => prev + 1); };
+    const claimHuntReward = () => {
+      const newIng = { ...progress.ingredients };
+      if (huntScore >= 5) { newIng.prime_meat = (newIng.prime_meat || 0) + 1; newIng.golden_egg = (newIng.golden_egg || 0) + 1; }
+      else if (huntScore >= 3) { newIng.prime_meat = (newIng.prime_meat || 0) + 1; }
+      consumePlay('hunting', { ingredients: newIng });
+      setHuntPhase('idle');
+    };
+
+    const MEM_PAIRS = [
+      { pairId: 0, icon: '🐻' }, { pairId: 1, icon: '🐺' }, { pairId: 2, icon: '🐱' }, { pairId: 3, icon: '🧑‍🚒' },
+      { pairId: 4, icon: '🧚' }, { pairId: 5, icon: '🦊' }, { pairId: 6, icon: '🦉' }, { pairId: 7, icon: '🐊' },
+    ];
+    const startMemory = () => {
+      const shuffled = shuffle([...MEM_PAIRS, ...MEM_PAIRS].map((c, i) => ({ ...c, cardIdx: i })));
+      setMemCards(shuffled); setMemFlipped([]); setMemMatched([]); setMemMoves(0); setMemTime(60); setMemPhase('playing');
+    };
+    const flipCard = (idx) => {
+      if (memFlipped.length >= 2 || memFlipped.includes(idx) || memMatched.includes(memCards[idx].pairId)) return;
+      setMemFlipped(prev => [...prev, idx]);
+      setMemMoves(prev => prev + 1);
+    };
+    const claimMemReward = () => {
+      if (memMatched.length === 8) {
+        const bonus = memMoves <= 12 ? 30 : memMoves <= 20 ? 20 : 10;
+        const newPlays = { ...plays, memory: (plays.memory || 0) + 1 };
+        saveProgress({ ...progress, crystals: progress.crystals + bonus, gardenDate: today, gardenPlays: newPlays });
+        showToastMsg(`🎉 配對成功！獲得 💎 ${bonus} 星晶！`);
+      } else {
+        consumePlay('memory');
+      }
+      setMemPhase('idle');
+    };
+
+    const tabs = [
+      { id: 'farm',    label: '種植園',   icon: '🌱', color: 'green'  },
+      { id: 'fishing', label: '釣魚池',   icon: '🎣', color: 'blue'   },
+      { id: 'hunting', label: '魔物狩獵', icon: '⚔️', color: 'red'    },
+      { id: 'memory',  label: '記憶翻牌', icon: '🃏', color: 'purple' },
+    ];
+    const tabColor = { green: 'bg-green-700', blue: 'bg-blue-700', red: 'bg-red-700', purple: 'bg-purple-700' };
+    const tabBorder = { green: 'border-green-600', blue: 'border-blue-600', red: 'border-red-600', purple: 'border-purple-600' };
+
+    return (
+      <div className="min-h-screen p-6 bg-stone-950 text-stone-200">
+        <div className="max-w-3xl mx-auto">
+          <button onClick={() => setGameState('intro')} className="mb-6 flex items-center gap-2 text-stone-400 hover:text-white transition-colors"><ArrowLeft /> 返回首頁</button>
+
+          <NpcDialogue
+            npcName="莊園管理員 · 莉莉"
+            npcImage={null}
+            npcImageFallback="🌻"
+            dialogues={[
+              "歡迎來到悠活莊園！在這裡可以種菜、釣魚、狩獵、翻牌，每日各 3 次哦！",
+              "高級食材只有莊園才能取得，料理效果比普通食材強大許多！",
+              "種植園：澆三次水就能收成蔬菜或靈菇。",
+              "釣魚池：把握時機按下收竿，綠色區域才算命中！",
+              "魔物狩獵：20秒內點擊魔物擊倒牠們，三隻以上有獎勵！",
+              "記憶翻牌：找出所有配對，步數越少星晶越多！",
+            ]}
+          />
+
+          {/* 高級食材庫存 */}
+          <div className="bg-stone-800/50 rounded-2xl border border-stone-700 p-4 mb-5">
+            <div className="text-xs font-bold text-yellow-400 mb-2">📦 高級食材庫存</div>
+            <div className="flex flex-wrap gap-2">
+              {GARDEN_INGREDIENTS.map(ing => (
+                <div key={ing.id} className="flex items-center gap-1.5 bg-stone-900 px-3 py-1.5 rounded-xl border border-stone-700 text-sm">
+                  <span>{ing.icon}</span>
+                  <span className="text-stone-300 text-xs">{ing.name}</span>
+                  <span className="text-yellow-300 font-bold">×{progress.ingredients[ing.id] || 0}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Tab bar */}
+          <div className="grid grid-cols-4 gap-2 mb-5">
+            {tabs.map(tab => (
+              <button key={tab.id} onClick={() => setGardenTab(tab.id)}
+                className={`py-2.5 rounded-xl font-bold text-xs transition-all flex flex-col items-center gap-0.5 border-2 ${gardenTab === tab.id ? `${tabColor[tab.color]} text-white border-transparent shadow-lg` : `bg-stone-800 text-stone-400 hover:bg-stone-700 ${plays[tab.id] >= MAX ? 'opacity-50' : ''} border-stone-700`}`}>
+                <span className="text-lg">{tab.icon}</span>
+                <span>{tab.label}</span>
+                <span className="text-[10px] opacity-70">{plays[tab.id] || 0}/{MAX}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ---- 種植園 ---- */}
+          {gardenTab === 'farm' && (
+            <div className="bg-stone-800 rounded-3xl border border-stone-700 p-6 shadow-xl">
+              <h3 className="text-xl font-bold text-green-400 mb-1">🌱 種植園</h3>
+              <p className="text-stone-400 text-xs mb-5">選擇作物 → 澆水3次 → 收成，獲得高級食材。每日 {MAX} 次。</p>
+              {plays.farm >= MAX ? (
+                <div className="text-center py-10 text-stone-500">今日種植次數已用完，明天再來吧！🌙</div>
+              ) : farmPhase === 'idle' ? (
+                <div>
+                  <p className="text-sm text-stone-300 mb-4">選擇想種植的作物：</p>
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    {[{ id: 'veggie', name: '晨露嫩蔬', icon: '🥬', desc: '富含清晨靈氣的嫩蔬' }, { id: 'rare_mush', name: '星晶靈菇', icon: '🍄', desc: '吸收星晶能量的珍稀菇' }].map(s => (
+                      <button key={s.id} onClick={() => setFarmSeed(s.id)}
+                        className={`p-4 rounded-2xl border-2 transition-all text-left ${farmSeed === s.id ? 'border-green-500 bg-green-900/20' : 'border-stone-700 bg-stone-900 hover:border-stone-500'}`}>
+                        <div className="text-3xl mb-2">{s.icon}</div>
+                        <div className="font-bold text-sm text-white">{s.name}</div>
+                        <div className="text-xs text-stone-400 mt-1">{s.desc}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={startFarm} className="w-full bg-green-700 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition-all active:scale-95">
+                    🌱 開始種植
+                  </button>
+                </div>
+              ) : farmPhase === 'growing' ? (
+                <div className="text-center">
+                  <div className="text-6xl mb-4 animate-bounce">{farmSeed === 'veggie' ? '🥬' : '🍄'}</div>
+                  <p className="text-stone-300 font-bold mb-5">作物正在生長，請澆水 3 次！</p>
+                  <div className="flex justify-center gap-3 mb-6">
+                    {[0, 1, 2].map(i => (
+                      <div key={i} className={`w-12 h-12 rounded-full border-2 flex items-center justify-center text-xl ${i < farmWaters ? 'border-blue-500 bg-blue-900/40 text-white' : 'border-stone-600 bg-stone-900 text-stone-600'}`}>
+                        {i < farmWaters ? '✓' : '💧'}
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={waterFarm} className="bg-blue-700 hover:bg-blue-600 text-white font-bold px-10 py-3 rounded-xl transition-all active:scale-95 text-lg">
+                    💧 澆水 ({farmWaters}/3)
+                  </button>
+                </div>
+              ) : farmPhase === 'ready' ? (
+                <div className="text-center">
+                  <div className="text-7xl mb-4 animate-bounce">{farmSeed === 'veggie' ? '🥬' : '🍄'}</div>
+                  <p className="text-green-400 font-bold text-xl mb-2">✨ 作物成熟了！</p>
+                  <p className="text-stone-400 text-sm mb-6">可以收成囉！</p>
+                  <button onClick={harvestFarm} className="bg-yellow-600 hover:bg-yellow-500 text-stone-900 font-bold px-10 py-3 rounded-xl text-lg transition-all active:scale-95">
+                    🌾 收成！
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* ---- 釣魚池 ---- */}
+          {gardenTab === 'fishing' && (
+            <div className="bg-stone-800 rounded-3xl border border-stone-700 p-6 shadow-xl">
+              <h3 className="text-xl font-bold text-blue-400 mb-1">🎣 釣魚池</h3>
+              <p className="text-stone-400 text-xs mb-5">指針進入🟩綠色區域時按下收竿，釣起深淵幻魚！每日 {MAX} 次。</p>
+              {plays.fishing >= MAX ? (
+                <div className="text-center py-10 text-stone-500">今日釣魚次數已用完，明天見！🌙</div>
+              ) : fishPhase === 'idle' ? (
+                <div className="text-center">
+                  <div className="text-6xl mb-6">🎣</div>
+                  <p className="text-stone-400 text-sm mb-4">觀察移動指針，在綠色區域時按下收竿！</p>
+                  <button onClick={startFishing} className="bg-blue-700 hover:bg-blue-600 text-white font-bold px-8 py-3 rounded-xl text-lg transition-all active:scale-95">
+                    🎣 拋竿！
+                  </button>
+                </div>
+              ) : fishPhase === 'casting' ? (
+                <div>
+                  <p className="text-center text-stone-300 font-bold mb-4">指針進入🟩區域時，按下收竿！</p>
+                  <div className="relative w-full h-14 bg-stone-900 rounded-xl overflow-hidden border border-stone-700 mb-6 select-none">
+                    <div className="absolute top-0 bottom-0 bg-green-700/50 border-x-2 border-green-500" style={{ left: `${FISH_ZONE.min}%`, width: `${FISH_ZONE.max - FISH_ZONE.min}%` }}></div>
+                    <div className="absolute inset-0 flex items-center justify-center text-xs text-stone-600 pointer-events-none">← →</div>
+                    <div className="absolute top-2 bottom-2 w-3 rounded-full bg-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.9)]"
+                      style={{ left: `calc(${fishBarPos}% - 6px)`, transition: 'none' }}></div>
+                  </div>
+                  <button onClick={castRod} className="w-full bg-blue-600 hover:bg-blue-500 active:bg-blue-800 text-white font-bold py-4 rounded-xl text-xl transition-colors">
+                    🎣 收竿！
+                  </button>
+                </div>
+              ) : fishPhase === 'result' ? (
+                <div className="text-center">
+                  <div className={`text-6xl mb-4 ${fishResult === 'success' ? 'animate-bounce' : ''}`}>{fishResult === 'success' ? '🐡' : '💦'}</div>
+                  <p className={`text-xl font-bold mb-2 ${fishResult === 'success' ? 'text-green-400' : 'text-red-400'}`}>
+                    {fishResult === 'success' ? '✅ 釣到深淵幻魚了！' : '❌ 落空了…'}
+                  </p>
+                  <p className="text-stone-400 text-sm mb-6">
+                    {fishResult === 'success' ? '獲得 🐡 深淵幻魚 ×1！' : '下次要準確一點！'}
+                    {plays.fishing + 1 < MAX && ` (剩餘 ${MAX - plays.fishing - 1} 次)`}
+                  </p>
+                  <button onClick={() => { setFishPhase('idle'); setFishResult(null); }} className="bg-blue-700 hover:bg-blue-600 text-white font-bold px-8 py-3 rounded-xl transition-all active:scale-95">
+                    {plays.fishing + 1 < MAX ? '再試一次' : '結束釣魚'}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* ---- 魔物狩獵 ---- */}
+          {gardenTab === 'hunting' && (
+            <div className="bg-stone-800 rounded-3xl border border-stone-700 p-6 shadow-xl">
+              <h3 className="text-xl font-bold text-red-400 mb-1">⚔️ 魔物狩獵</h3>
+              <p className="text-stone-400 text-xs mb-5">20秒內點擊魔物將其擊倒，3隻獲精肉，5隻以上再加金卵！每日 {MAX} 次。</p>
+              {plays.hunting >= MAX ? (
+                <div className="text-center py-10 text-stone-500">今日狩獵次數已用完，明天見！🌙</div>
+              ) : huntPhase === 'idle' ? (
+                <div className="text-center">
+                  <div className="text-5xl mb-4">⚔️</div>
+                  <div className="bg-stone-900 rounded-xl p-4 text-sm mb-6 text-left inline-block">
+                    <div className="text-stone-300 mb-1">🏅 <span className="text-green-400 font-bold">3 隻以上</span>：🍗 魔獸精肉 ×1</div>
+                    <div className="text-stone-300">🏆 <span className="text-yellow-400 font-bold">5 隻以上</span>：🍗 ×1 + 🪺 金晶巨卵 ×1</div>
+                  </div>
+                  <br />
+                  <button onClick={startHunt} className="bg-red-700 hover:bg-red-600 text-white font-bold px-8 py-3 rounded-xl text-lg transition-all active:scale-95">
+                    ⚔️ 開始狩獵！
+                  </button>
+                </div>
+              ) : huntPhase === 'hunting' ? (
+                <div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-stone-300 font-bold text-sm">擊倒：<span className="text-yellow-400">{huntScore}</span> 隻</span>
+                    <span className={`font-bold text-lg ${huntTime <= 5 ? 'text-red-400 animate-pulse' : 'text-yellow-400'}`}>⏱ {huntTime}s</span>
+                  </div>
+                  <div className="relative w-full bg-stone-900 rounded-2xl border border-stone-700 overflow-hidden" style={{ height: '260px' }}>
+                    {huntTargets.map(t => (
+                      <button key={t.id} onClick={() => hitTarget(t.id)}
+                        className="absolute text-3xl hover:scale-125 active:scale-75 transition-transform cursor-pointer select-none leading-none"
+                        style={{ left: `${t.x}%`, top: `${t.y}%`, transform: 'translate(-50%,-50%)' }}>
+                        {t.emoji}
+                      </button>
+                    ))}
+                    {huntTargets.length === 0 && <div className="absolute inset-0 flex items-center justify-center text-stone-600 text-sm">等待魔物出現...</div>}
+                  </div>
+                </div>
+              ) : huntPhase === 'result' ? (
+                <div className="text-center">
+                  <div className="text-6xl mb-4">{huntScore >= 5 ? '🏆' : huntScore >= 3 ? '✅' : '😔'}</div>
+                  <p className="text-xl font-bold text-yellow-400 mb-2">狩獵結束！擊倒 {huntScore} 隻</p>
+                  <div className="bg-stone-900 rounded-xl p-4 mb-6 text-sm">
+                    {huntScore >= 5 && <p className="text-green-400">🍗 魔獸精肉 ×1 + 🪺 金晶巨卵 ×1 獲得！</p>}
+                    {huntScore >= 3 && huntScore < 5 && <p className="text-green-400">🍗 魔獸精肉 ×1 獲得！</p>}
+                    {huntScore < 3 && <p className="text-stone-500">未達獎勵（需擊倒 3 隻以上）</p>}
+                  </div>
+                  <button onClick={claimHuntReward} className="bg-red-700 hover:bg-red-600 text-white font-bold px-8 py-3 rounded-xl transition-all active:scale-95">領取獎勵</button>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* ---- 記憶翻牌 ---- */}
+          {gardenTab === 'memory' && (
+            <div className="bg-stone-800 rounded-3xl border border-stone-700 p-6 shadow-xl">
+              <h3 className="text-xl font-bold text-purple-400 mb-1">🃏 記憶翻牌</h3>
+              <p className="text-stone-400 text-xs mb-5">翻開全部8組配對，60秒內完成可獲得星晶獎勵！每日 {MAX} 次。</p>
+              {plays.memory >= MAX ? (
+                <div className="text-center py-10 text-stone-500">今日翻牌次數已用完，明天見！🌙</div>
+              ) : memPhase === 'idle' ? (
+                <div className="text-center">
+                  <div className="text-5xl mb-4">🃏</div>
+                  <div className="bg-stone-900 rounded-xl p-4 text-sm mb-6 text-left inline-block">
+                    <div className="text-stone-300 mb-1">≤ 12步：<span className="text-yellow-400 font-bold">💎 30 星晶</span></div>
+                    <div className="text-stone-300 mb-1">≤ 20步：<span className="text-yellow-400 font-bold">💎 20 星晶</span></div>
+                    <div className="text-stone-300">21步以上：<span className="text-yellow-400 font-bold">💎 10 星晶</span></div>
+                  </div>
+                  <br />
+                  <button onClick={startMemory} className="bg-purple-700 hover:bg-purple-600 text-white font-bold px-8 py-3 rounded-xl text-lg transition-all active:scale-95">
+                    🃏 開始翻牌！
+                  </button>
+                </div>
+              ) : memPhase === 'playing' ? (
+                <div>
+                  <div className="flex justify-between items-center mb-4 text-sm">
+                    <span className="text-stone-300 font-bold">步數：<span className="text-white">{memMoves}</span></span>
+                    <span className="text-stone-300 font-bold">配對：<span className="text-green-400">{memMatched.length}</span>/8</span>
+                    <span className={`font-bold ${memTime <= 10 ? 'text-red-400 animate-pulse' : 'text-yellow-400'}`}>⏱ {memTime}s</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {memCards.map((card, idx) => {
+                      const isFlipped = memFlipped.includes(idx);
+                      const isMatched = memMatched.includes(card.pairId);
+                      return (
+                        <button key={idx} onClick={() => flipCard(idx)}
+                          className={`aspect-square rounded-xl border-2 text-2xl flex items-center justify-center transition-all select-none ${isMatched ? 'border-green-500 bg-green-900/40 cursor-default' : isFlipped ? 'border-purple-500 bg-purple-900/40' : 'border-stone-600 bg-stone-900 hover:border-stone-400 active:scale-95'}`}>
+                          {isFlipped || isMatched ? card.icon : '❓'}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : memPhase === 'result' ? (
+                <div className="text-center">
+                  <div className="text-6xl mb-4">{memMatched.length === 8 ? '🎉' : '⏰'}</div>
+                  <p className={`text-xl font-bold mb-2 ${memMatched.length === 8 ? 'text-green-400' : 'text-red-400'}`}>
+                    {memMatched.length === 8 ? '全部配對成功！' : '時間到了！'}
+                  </p>
+                  {memMatched.length === 8 && (
+                    <p className="text-yellow-400 font-bold text-lg mb-2">💎 {memMoves <= 12 ? 30 : memMoves <= 20 ? 20 : 10} 星晶 獲得！</p>
+                  )}
+                  <p className="text-stone-400 text-sm mb-6">使用了 {memMoves} 步，配對 {memMatched.length}/8 組</p>
+                  <button onClick={claimMemReward} className="bg-purple-700 hover:bg-purple-600 text-white font-bold px-8 py-3 rounded-xl transition-all active:scale-95">
+                    {memMatched.length === 8 ? '領取星晶！' : '確認'}
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* 高級食譜提示 */}
+          <div className="mt-5 bg-stone-900/60 rounded-2xl border border-stone-700 p-4">
+            <p className="text-xs font-bold text-yellow-400 mb-3">🍽️ 絕品食譜（前往星晶商店 → 食譜商店解鎖）</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {RECIPES.filter(r => r.grade === '絕品').map(r => (
+                <div key={r.id} className="bg-stone-800 rounded-xl p-3 border border-yellow-900/50">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">{r.icon}</span>
+                    <span className="font-bold text-sm text-white">{r.name}</span>
+                    <span className="text-[9px] bg-yellow-700 text-yellow-100 px-1.5 py-0.5 rounded-full font-bold ml-auto">{r.grade}</span>
+                  </div>
+                  <div className="text-xs text-stone-400 mb-1">
+                    {Object.entries(r.ingredients).map(([id, qty]) => {
+                      const ing = GARDEN_INGREDIENTS.find(i => i.id === id);
+                      return ing ? <span key={id} className="mr-2">{ing.icon}{ing.name}×{qty}</span> : null;
+                    })}
+                  </div>
+                  <div className="text-xs text-green-400">{r.buff.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  };
+
   const renderIntro = () => {
     const isAdvancedUnlocked = Object.values(progress.mastery || {}).some(lvl => lvl >= 3);
 
@@ -1970,6 +2440,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   <div className="text-3xl mb-2">🔨</div>
                   <h2 className="text-lg font-bold mb-1">鍛造工坊</h2>
                   <p className="text-stone-400 text-[10px] hidden md:block">用碎片打造戰鬥武裝。</p>
+              </button>
+              <button onClick={() => setGameState('garden')} className="bg-stone-800 p-4 border-2 border-stone-700 hover:border-emerald-500 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center">
+                  <div className="text-3xl mb-2">🌿</div>
+                  <h2 className="text-lg font-bold mb-1">悠活莊園</h2>
+                  <p className="text-stone-400 text-[10px] hidden md:block">種植釣魚狩獵，取得高級食材。</p>
               </button>
 
               {/* 征戰夜巡 - 最後 */}
@@ -2619,7 +3094,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                             </div>
                                             <div className="text-[10px] text-stone-400 mt-0.5">
                                               {Object.entries(r.ingredients).map(([id, qty]) => {
-                                                const ing = INGREDIENTS.find(i => i.id === id);
+                                                const ing = ALL_INGREDIENTS.find(i => i.id === id);
                                                 const have = progress.ingredients[id] || 0;
                                                 return <span key={id} className={`mr-2 ${have >= qty ? 'text-green-400' : 'text-red-400'}`}>{ing?.icon}{ing?.name} {have}/{qty}</span>;
                                               })}
@@ -3658,6 +4133,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   case 'gacha': return renderGacha();
                   case 'mine': return renderMine();
                   case 'forge': return renderForge();
+                  case 'garden': return renderGarden();
                   case 'story_chapters': return renderStoryChapters();
                   case 'story_select_char': return renderStorySelectChar();
                   case 'story_dialogue': return renderStoryDialogue();
