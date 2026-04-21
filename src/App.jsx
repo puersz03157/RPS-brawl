@@ -738,11 +738,71 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
   if ((atk.talents || []).includes('t7') && actualHpDamage > 0) {
     const healAmt = Math.max(1, Math.floor(actualHpDamage * 0.20));
-    atk.hp = Math.min(atk.maxHp, atk.hp + healAmt);
-    logBuffer.push({ text: `[嗜血] ${atk.char?.name || '攻擊方'} 吸收了 ${healAmt} 點生命！`, type: 'heal' });
+    applyHeal(atk, healAmt, logBuffer, `[嗜血] ${atk.char?.name || '攻擊方'} 吸收`);
   }
 
   return dmg;
+};
+
+// 提供戰鬥其他區塊使用：溢補/寄生相關治療統一入口
+const applyHeal = (ent, amt, buf, label = '治療') => {
+  if (!ent || !amt || amt <= 0) return { healed: 0, overheal: 0, shieldGained: 0 };
+  const beforeShield = ent.shield || 0;
+  const beforeHp = ent.hp;
+  const maxHp = ent.maxHp || 0;
+  const afterHpRaw = beforeHp + amt;
+  const healed = Math.max(0, Math.min(maxHp, afterHpRaw) - beforeHp);
+  const overheal = Math.max(0, afterHpRaw - maxHp);
+  ent.hp = Math.min(maxHp, afterHpRaw);
+
+  const baseId = ent.char?.baseId || ent.char?.id;
+  const hasManorTalent = baseId === 'manor' && (ent.talents || []).includes('t_manor');
+  let shieldGained = 0;
+
+  if (hasManorTalent && overheal > 0) {
+    if (!ent.permaBuffs) ent.permaBuffs = {};
+    const used = ent.permaBuffs.manorOverhealShield || 0;
+    const capLeft = Math.max(0, 200 - used);
+    const add = Math.min(overheal, capLeft);
+    if (add > 0) {
+      ent.shield = (ent.shield || 0) + add;
+      ent.permaBuffs.manorOverhealShield = used + add;
+      shieldGained += add;
+      buf.push({ text: `🪴 [溢補栽培] 溢出 ${overheal} 治療，轉為 ${add} 護盾！（上限200）`, type: 'shield' });
+    }
+  }
+
+  if (hasManorTalent) {
+    const newShield = Math.max(0, (ent.shield || 0) - beforeShield);
+    if (newShield > 0) {
+      if (!ent.permaBuffs) ent.permaBuffs = {};
+      ent.permaBuffs.manorShieldAcc = (ent.permaBuffs.manorShieldAcc || 0) + newShield;
+      const parasiteBonus = ent.permaBuffs.manorParasiteBonus || 0;
+      const canAdd = Math.max(0, 20 - parasiteBonus);
+      const triggers = Math.min(Math.floor(ent.permaBuffs.manorShieldAcc / 40), Math.floor(canAdd / 5));
+      if (triggers > 0) {
+        ent.permaBuffs.manorShieldAcc -= triggers * 40;
+        ent.permaBuffs.manorParasiteBonus = parasiteBonus + triggers * 5;
+        ent.permaBuffs.manorParasitePending = (ent.permaBuffs.manorParasitePending || 0) + triggers * 5;
+        buf.push({ text: `🪴 [溢補栽培] 新護盾累積，寄生吸取值 +${triggers * 5}！（上限+20）`, type: 'info' });
+      }
+    }
+  }
+
+  if (label && healed > 0) buf.push({ text: `${label} 恢復 ${healed} HP！`, type: 'heal' });
+  return { healed, overheal, shieldGained };
+};
+
+// 🪴 園藝家：把「新護盾累積」轉成寄生吸取強化（需要知道對象）
+const flushManorParasitePending = (owner, target, buf) => {
+  if (!owner?.permaBuffs?.manorParasitePending) return;
+  const pending = owner.permaBuffs.manorParasitePending || 0;
+  if (pending <= 0) return;
+  const p = (target?.status || []).find(s => s && !s.isDeferred && s.type === 'PARASITE');
+  if (!p) return;
+  p.value = (p.value || 25) + pending;
+  owner.permaBuffs.manorParasitePending = 0;
+  buf.push({ text: `🪴 [溢補栽培] 寄生蔓延！🌿吸取值提升 +${pending}。`, type: 'info' });
 };
 
   const executeSkill = (atk, def, num, buf, isPlayer) => {
@@ -908,6 +968,39 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             dealDirectDmg(100, atk, def, buf);
             applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred);
         }
+    } else if (id === 'manor') {
+        // 🪴 烏薩（園藝家）：寄生 + 溢補循環
+        if (num === 1) {
+            const exist = (def.status || []).find(s => s && !s.isDeferred && s.type === 'PARASITE');
+            if (exist) {
+                exist.duration += 2;
+                exist.value = (exist.value || 25) + 10;
+                buf.push({ text: `🪴 [嫁接孢囊] 目標已寄生：延長 2 回合並使吸取值 +10！`, type: 'info' });
+            } else {
+                applyStatus(def, 'PARASITE', 3, 25, null, buf, defDeferred);
+                buf.push({ text: `🪴 [嫁接孢囊] 施加 🌿[寄生] 3 回合（吸取25）。`, type: 'info' });
+            }
+            applyHeal(atk, 120, buf, `🪴 [嫁接孢囊]`);
+            flushManorParasitePending(atk, def, buf);
+        } else {
+            dealDirectDmg(80, atk, def, buf);
+            const p = (def.status || []).find(s => s && !s.isDeferred && s.type === 'PARASITE');
+            if (p) {
+                const v = p.value || 25;
+                // 立即追加一次吸取（不消耗回合）
+                def.hp = Math.max(0, def.hp - v);
+                applyHeal(atk, v, buf, `🌿 [寄生追加吸取]`);
+                p.duration += 1;
+                buf.push({ text: `🪴 [溢補蔓延] 立即結算一次寄生吸取 ${v}，並延長 1 回合！`, type: 'info' });
+            }
+            applyHeal(atk, 150, buf, `🪴 [溢補蔓延]`);
+            flushManorParasitePending(atk, def, buf);
+
+            if ((atk.shield || 0) >= 120) {
+                applyStatus(def, 'DEF_DOWN', 3, 20, null, buf, defDeferred);
+                buf.push({ text: `🪴 [溢補蔓延] 護盾充盈，施加 📉[降防] 3 回合！`, type: 'info' });
+            }
+        }
     } else if (id === 'am1') { 
         if (num === 1) { dealDirectDmg(20, atk, def, buf); applyStatus(def, 'DEF_DOWN', 3, 20, null, buf, defDeferred); applyStatus(def, 'VULNERABLE', 3, 0, null, buf, defDeferred); }
         else { dealDirectDmg(120, atk, def, buf, true); }
@@ -1012,8 +1105,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
   const processEoR = (ent, other, buf) => {
     let next = [];
-    if ((ent.talents||[]).includes('t_wolf') && ent.shield > 0) { ent.hp = Math.min(ent.maxHp, ent.hp + 25); buf.push({text: `[極寒護體] 恢復 25 HP！`, type: 'heal'}); }
-    if ((ent.talents||[]).includes('t_xiangxiang') && ent.hp < ent.maxHp * 0.5) { ent.hp = Math.min(ent.maxHp, ent.hp + 20); ent.shield += 10; buf.push({text: `[愛心宵夜] 恢復 20 HP 並獲得 10 護盾！`, type: 'heal'}); }
+    if ((ent.talents||[]).includes('t_wolf') && ent.shield > 0) { applyHeal(ent, 25, buf, `[極寒護體]`); flushManorParasitePending(ent, other, buf); }
+    if ((ent.talents||[]).includes('t_xiangxiang') && ent.hp < ent.maxHp * 0.5) { applyHeal(ent, 20, buf, `[愛心宵夜]`); ent.shield += 10; flushManorParasitePending(ent, other, buf); buf.push({text: `[愛心宵夜] 獲得 10 護盾！`, type: 'shield'}); }
     if ((ent.talents||[]).includes('t_cat')) {
         const dCount = (other.status || []).filter(s => s && isDebuffStatus(s.type)).length;
         if (dCount > 0) {
@@ -1046,7 +1139,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         ent.permaBuffs.turnCount = (ent.permaBuffs.turnCount || 0) + 1;
         if (ent.permaBuffs.turnCount % 3 === 0) {
             const heal = Math.floor(ent.maxHp * 0.1);
-            ent.hp = Math.min(ent.maxHp, ent.hp + heal);
+            applyHeal(ent, heal, buf, `🎁 [最棒的禮物]`);
+            flushManorParasitePending(ent, other, buf);
             ent.energy = Math.min(100, ent.energy + 20);
             buf.push({text: `🎁 [最棒的禮物] 恢復 ${heal} 點生命與 20 點能量！`, type: 'heal'});
         }
@@ -1071,10 +1165,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         if (s.type === 'PARASITE') {
             const v = s.value || 25;
             ent.hp = Math.max(0, ent.hp - v);
-            other.hp = Math.min(other.maxHp, other.hp + v);
+            applyHeal(other, v, buf, `🌿 寄生吸取`);
+            flushManorParasitePending(other, ent, buf);
             buf.push({text: `🌿 寄生吸取 ${v} HP！`, type: 'damage'});
         }
-        if (s.type === 'REGEN') { ent.hp = Math.min(ent.maxHp, ent.hp + 20); buf.push({text: `💖 再生恢復 20 HP！`, type: 'heal'}); }
+        if (s.type === 'REGEN') { applyHeal(ent, 20, buf, `💖 再生`); flushManorParasitePending(ent, other, buf); }
         
         if (s.isDeferred) {
             next.push({ ...s, isDeferred: false });
@@ -1144,7 +1239,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         playSound('rps_draw');
         const ce = (ent) => { if ((ent.status||[]).some(s => s && s.type === 'FATIGUE')) return 0; let b = (ent.talents||[]).includes('t5') ? 30 : 20; if ((ent.status||[]).some(s => s && s.type === 'EXCITE')) b = Math.floor(b * 1.5); return b; };
         p.energy = Math.min(100, p.energy + ce(p)); e.energy = Math.min(100, e.energy + ce(e));
-        if ((p.talents||[]).includes('t5')) p.hp = Math.min(p.maxHp, p.hp + 15);
+        if ((p.talents||[]).includes('t5')) { applyHeal(p, 15, buf, `[鬥氣]`); flushManorParasitePending(p, e, buf); }
         buf.push({ text: '平手！雙方各退一步。', type: 'info' });
 
         // 🎣 [熊吉的釣竿]（永久武裝）：限定熊吉出戰，平手 50% 隨機獲得增益（不重複）
@@ -1228,13 +1323,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         char: tutChar, talents: [], hp: tutChar.stats.maxHp, maxHp: tutChar.stats.maxHp,
         atk: tutChar.stats.atk, def: tutChar.stats.def, energy: 0, shield: 0,
         buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false },
-        permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: []
+        permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0, manorOverhealShield: 0, manorShieldAcc: 0, manorParasiteBonus: 0, manorParasitePending: 0 }, status: []
     };
     const eObj = {
         char: TUTORIAL_ENEMY, talents: [], hp: TUTORIAL_ENEMY.stats.maxHp, maxHp: TUTORIAL_ENEMY.stats.maxHp,
         atk: TUTORIAL_ENEMY.stats.atk, def: TUTORIAL_ENEMY.stats.def, energy: 0, shield: 0,
         buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false },
-        permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: []
+        permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0, manorOverhealShield: 0, manorShieldAcc: 0, manorParasiteBonus: 0, manorParasitePending: 0 }, status: []
     };
     setGameMode('tutorial');
     setPlayer(pObj);
@@ -1292,7 +1387,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             atk: selectedChar.stats.atk + (tIds.includes('t2') ? 10 : 0),
             def: selectedChar.stats.def, energy: initE, shield: tIds.includes('t4') ? 80 : 0,
             buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false },
-            permaBuffs: { startEnergy: 0, startShield: 0, seeds: pSeeds, coins: 0, turnCount: 0, armor: progress.equippedArmor || null, consumableArmor: progress.pendingConsumableArmor || null }, status: []
+            permaBuffs: { startEnergy: 0, startShield: 0, seeds: pSeeds, coins: 0, turnCount: 0, manorOverhealShield: 0, manorShieldAcc: 0, manorParasiteBonus: 0, manorParasitePending: 0, armor: progress.equippedArmor || null, consumableArmor: progress.pendingConsumableArmor || null }, status: []
         };
         if (tIds.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); pObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
 
@@ -1379,7 +1474,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             atk: eChar.stats.atk + (eT.includes('t2') ? 10 : 0), 
             def: eChar.stats.def, energy: eInitE, shield: eT.includes('t4') ? 80 : 0, 
             buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false }, 
-            permaBuffs: { startEnergy: 0, startShield: 0, seeds: eSeeds, coins: 0, turnCount: 0 }, status: [] 
+            permaBuffs: { startEnergy: 0, startShield: 0, seeds: eSeeds, coins: 0, turnCount: 0, manorOverhealShield: 0, manorShieldAcc: 0, manorParasiteBonus: 0, manorParasitePending: 0 }, status: [] 
         };
         if (eT.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); eObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
 
@@ -1437,7 +1532,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       def: attackerChar.stats.def, energy: pInitE,
       shield: pTalents.includes('t4') ? 80 : 0,
       buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false },
-      permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: []
+      permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0, manorOverhealShield: 0, manorShieldAcc: 0, manorParasiteBonus: 0, manorParasitePending: 0 }, status: []
     };
     if (pTalents.includes('t_bear')) { const pool = shuffle(['ATK_UP','DEF_UP','REGEN']); pObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
 
@@ -1489,7 +1584,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       atk: eChar.stats.atk + (eT.includes('t2') ? 10 : 0),
       def: eChar.stats.def, energy: eInitE, shield: 0,
       buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false },
-      permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: []
+      permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0, manorOverhealShield: 0, manorShieldAcc: 0, manorParasiteBonus: 0, manorParasitePending: 0 }, status: []
     };
     if (eT.includes('t_bear')) { const pool = shuffle(['ATK_UP','DEF_UP','REGEN']); eObj.status.push({ type: pool[0], duration: 99, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 99, value: 20, isNew: false, isDeferred: false }); }
 
@@ -1557,8 +1652,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     } else {
       switch (itemId) {
         case 'stardust':
-          newPlayer.hp = Math.min(newPlayer.maxHp, newPlayer.hp + 100);
-          logText = '✨ 使用星晶砂粉！恢復 100 HP！'; break;
+          applyHeal(newPlayer, 100, extraLogs, '✨ 使用星晶砂粉！');
+          flushManorParasitePending(newPlayer, newEnemy, extraLogs);
+          logText = '✨ 使用星晶砂粉！'; break;
         case 'excite_potion':
           newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'EXCITE'), { type: 'EXCITE', duration: 3, value: 0, isNew: true, isDeferred: false }];
           logText = '🧪 使用亢奮藥劑！獲得 ⚡[亢奮] 3回合！'; break;
@@ -1731,6 +1827,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     np.status = [];
     if (np.permaBuffs?.meal?.regen) np.status.push({ type: 'REGEN', duration: 99, value: np.permaBuffs.meal.regen, isNew: false, isDeferred: false });
     np.buffs = { dmgMult: 1, extraDmg: 0, energyOnLoss: false };
+    // 園藝家機制：每場戰鬥重新計算溢補/累積
+    np.permaBuffs = { ...(np.permaBuffs || {}), manorOverhealShield: 0, manorShieldAcc: 0, manorParasiteBonus: 0, manorParasitePending: 0 };
     
     let pSeeds = np.talents.includes('t_elf') ? 2 : 0;
     if (np.talents.includes('t_harvest_elf')) pSeeds += 2;
@@ -3693,6 +3791,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       { id: 'f_halloween', name: '萬聖布提婭碎片 x5', desc: '高階情報，用於圖鑑合成解鎖。', cost: 150, currency: 'fragment', icon: '🎃', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('halloween_cat', 150, 5) },
       { id: 'f_kohaku', name: '琥珀碎片 x5', desc: '傳說情報，商會會長的專屬碎片。', cost: 300, currency: 'fragment', icon: '🦊', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('kohaku', 300, 5) },
       { id: 'f_aldous', name: '奧爾德斯碎片 x5', desc: '傳說情報，大長老的專屬碎片。', cost: 300, currency: 'fragment', icon: '🦉', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('aldous', 300, 5) },
+      { id: 'f_manor', name: '烏薩碎片 x5', desc: '傳說情報，園藝家的專屬碎片。', cost: 300, currency: 'fragment', icon: '🪴', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('manor', 300, 5) },
     ];
 
     const recipeItems = RECIPES.map(r => ({
@@ -4466,6 +4565,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       const featuredPrizes = [
         { char: CHARACTERS.find(c=>c.id==='kohaku'), rarity: 'SSR' },
         { char: CHARACTERS.find(c=>c.id==='aldous'), rarity: 'SSR' },
+        { char: CHARACTERS.find(c=>c.id==='manor'), rarity: 'SSR' },
         { char: VARIANTS.find(v=>v.id==='newyear_bear'), rarity: 'SR' },
         { char: VARIANTS.find(v=>v.id==='harvest_elf'), rarity: 'SR' },
         { char: VARIANTS.find(v=>v.id==='blackflame_human'), rarity: 'SR' },
@@ -4496,7 +4596,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               const vData = VARIANTS.find(v => v.id === picked);
               return { type: 'char_frag', id: picked, name: `${vData.name}碎片`, amt: Math.floor(Math.random() * 11) + 5, icon: vData.icon, rarity: 'SR', color: 'text-purple-400' };
           } else { 
-              const t0Pool = ['kohaku', 'aldous'];
+              const t0Pool = ['kohaku', 'aldous', 'manor'];
               const picked = t0Pool[Math.floor(Math.random() * t0Pool.length)];
               const cData = CHARACTERS.find(c => c.id === picked);
               return { type: 'char_frag', id: picked, name: `${cData.name}碎片`, amt: Math.floor(Math.random() * 11) + 5, icon: cData.icon, rarity: 'SSR', color: 'text-yellow-400' };
@@ -4521,7 +4621,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               if (res.type === 'ap') np.ap += res.amt;
               if (res.type === 'fragment') np.fragments = (np.fragments || 0) + res.amt;
               if (res.type === 'char_frag') {
-                  const isOneTimeOnly = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat', 'kohaku', 'aldous', 'christmas_xiangxiang'].includes(res.id);
+                  const isOneTimeOnly = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat', 'kohaku', 'aldous', 'manor', 'christmas_xiangxiang'].includes(res.id);
                   const currentUpgrades = np.charCostUpgrades[res.id] || 0;
                   
                   let ratio = 5; 

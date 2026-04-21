@@ -15,6 +15,7 @@ export const ALL_TALENTS = [
   { id: 't_xiangxiang', name: '柯特的愛心宵夜', cost: 3, desc: 'HP低於50%時每回合回覆 20 HP 並獲 10 盾。(虎吉專屬)', icon: '🍜', req: 'char_talents', exclusiveTo: 'xiangxiang' },
   { id: 't_moying', name: '影術之道', cost: 3, desc: '武裝機率觸發效果必定觸發，腐蝕刃固定施加降防。(墨影專屬)', icon: '🌑', req: 'char_talents', exclusiveTo: 'moying' },
   { id: 't_jack', name: '贓物大師', cost: 3, desc: '己方使用道具時，若己方持有道具反轉，額外造成 30 點真實傷害。(傑克專屬)', icon: '🎭', req: 'char_talents', exclusiveTo: 'jack' },
+  { id: 't_manor', name: '溢補栽培', cost: 3, desc: '自身獲得治療溢出時，溢出值 100% 轉為護盾(上限200)。若場上有敵方🌿[寄生]：每獲得40點「新護盾」使其寄生吸取值+5(上限+20)。(烏薩專屬)', icon: '🪴', req: 'char_talents', exclusiveTo: 'manor' },
   { id: 't9', name: '銳利', cost: 4, desc: '出剪刀獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '✂️', req: 'cost4' },
   { id: 't10', name: '堅硬', cost: 4, desc: '出石頭獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🪨', req: 'cost4' },
   { id: 't11', name: '柔和', cost: 4, desc: '出布獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🧻', req: 'cost4' },
