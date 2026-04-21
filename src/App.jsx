@@ -159,7 +159,7 @@ const getElementMultiplier = (atkElem, defElem) => {
 };
 
 const isBuffStatus = (type) => type && ['ATK_UP', 'DEF_UP', 'REGEN', 'EVADE', 'EXCITE', 'ITEM_REVERSE'].includes(type);
-const isDebuffStatus = (type) => type && ['BURN', 'PARASITE', 'FREEZE', 'DAZZLE', 'SILENCE', 'ATK_DOWN', 'DEF_DOWN', 'VULNERABLE', 'FATIGUE', 'VIP'].includes(type);
+const isDebuffStatus = (type) => type && ['BURN', 'POISON', 'PARASITE', 'FREEZE', 'DAZZLE', 'SILENCE', 'ATK_DOWN', 'DEF_DOWN', 'VULNERABLE', 'FATIGUE', 'VIP'].includes(type);
 
 const getStatusValueSum = (ent, type) => {
     if (!ent || !ent.status) return 0;
@@ -277,11 +277,11 @@ const getBaseTalents = (char) => {
 };
 
 const getStatusName = (type) => {
-    const map = { 'BURN': '燃燒', 'PARASITE': '寄生', 'FREEZE': '封印', 'DAZZLE': '強制', 'SILENCE': '沉默', 'ATK_UP': '攻擊提升', 'DEF_UP': '防禦提升', 'REGEN': '再生', 'ATK_DOWN': '攻擊下降', 'DEF_DOWN': '防禦下降', 'VULNERABLE': '易傷', 'EVADE': '迴避', 'FATIGUE': '疲憊', 'EXCITE': '亢奮', 'VIP': 'VIP', 'ITEM_REVERSE': '道具反轉' };
+    const map = { 'BURN': '燃燒', 'POISON': '中毒', 'PARASITE': '寄生', 'FREEZE': '封印', 'DAZZLE': '強制', 'SILENCE': '沉默', 'ATK_UP': '攻擊提升', 'DEF_UP': '防禦提升', 'REGEN': '再生', 'ATK_DOWN': '攻擊下降', 'DEF_DOWN': '防禦下降', 'VULNERABLE': '易傷', 'EVADE': '迴避', 'FATIGUE': '疲憊', 'EXCITE': '亢奮', 'VIP': 'VIP', 'ITEM_REVERSE': '道具反轉' };
     return map[type] || type;
 };
 const getStatusIcon = (type) => {
-    const map = { 'VULNERABLE': '💢', 'EVADE': '💨', 'FATIGUE': '💤', 'EXCITE': '⚡', 'BURN': '🔥', 'PARASITE': '🌿', 'FREEZE': '❄️', 'DAZZLE': '💫', 'SILENCE': '🤐', 'ATK_UP': '⚔️', 'DEF_UP': '🛡️', 'REGEN': '💖', 'ATK_DOWN': '📉', 'DEF_DOWN': '📉', 'VIP': '💳' };
+    const map = { 'VULNERABLE': '💢', 'EVADE': '💨', 'FATIGUE': '💤', 'EXCITE': '⚡', 'BURN': '🔥', 'POISON': '☠️', 'PARASITE': '🌿', 'FREEZE': '❄️', 'DAZZLE': '💫', 'SILENCE': '🤐', 'ATK_UP': '⚔️', 'DEF_UP': '🛡️', 'REGEN': '💖', 'ATK_DOWN': '📉', 'DEF_DOWN': '📉', 'VIP': '💳' };
     return map[type] || '✨';
 };
 
@@ -384,6 +384,7 @@ export default function App() {
   const [sysError, setSysError] = useState(null);
   const [sysInfo, setSysInfo] = useState(null);
   const [battleInspect, setBattleInspect] = useState(null);
+  const [campaignPickerOpen, setCampaignPickerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [resetStep, setResetStep] = useState(0);
   const [resetInput, setResetInput] = useState('');
@@ -425,6 +426,8 @@ export default function App() {
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
   const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 }, dailyQuestState: null, viewedEncounters: [] });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [campaignRadarActive, setCampaignRadarActive] = useState(false); // 📡 寶物雷達：本次戰役全程星晶加倍
+  const [singleRadarActive, setSingleRadarActive] = useState(false);     // 📡 寶物雷達：單場模式（如自訂對決）星晶加倍
 
   const [player, setPlayer] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
   const [enemy, setEnemy] = useState({ char: null, talents: [], hp: 0, maxHp: 0, energy: 0, atk: 0, def: 0, shield: 0, buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false }, permaBuffs: { startEnergy: 0, startShield: 0, seeds: 0, coins: 0, turnCount: 0 }, status: [] });
@@ -611,6 +614,17 @@ export default function App() {
 
 const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   let dmg = base;
+
+  // 🌻 [布布的葵花護符]：生命<50% 受擊時消耗葵花子，當下傷害 -50%
+  const defBaseId0 = def?.char?.baseId || def?.char?.id;
+  if (dmg > 0 && defBaseId0 === 'elf' && def?.permaBuffs?.armor === 'armor_seedguard' && def.hp < def.maxHp * 0.5) {
+    const seeds = def.permaBuffs?.seeds || 0;
+    if (seeds > 0) {
+      def.permaBuffs = { ...(def.permaBuffs || {}), seeds: Math.max(0, seeds - 1) };
+      dmg = Math.floor(dmg * 0.5);
+      logBuffer.push({ text: `🌻 [布布的葵花護符] 消耗 1 顆葵花子，當下受到傷害減半！`, type: 'info' });
+    }
+  }
   
   if ((def.talents || []).includes('t_harvest_elf') && (def.status || []).some(s => s?.type === 'REGEN')) {
       dmg = Math.floor(dmg * 0.85);
@@ -644,6 +658,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       def.shield -= dmg;
       logBuffer.push({ text: `護盾吸收了 ${dmg} 點傷害！`, type: 'system' });
     } else {
+      const prevShield = def.shield;
       const remainingDmg = dmg - def.shield;
       logBuffer.push({ text: `護盾破裂！吸收了 ${def.shield} 點傷害。`, type: 'system' });
       def.shield = 0;
@@ -652,6 +667,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           def.energy = Math.min(100, def.energy + 20);
           applyStatus(def, 'ATK_UP', 3, 20, null, logBuffer, false);
           logBuffer.push({ text: `💝 [苦甜回憶] 護盾破裂！恢復 20 點能量並提升攻擊！`, type: 'info' });
+      }
+
+      // 🧊 [白澤的冰晶護盾]：限定白澤出戰，護盾被打破時反擊 20 傷害
+      const defBaseId = def.char?.baseId || def.char?.id;
+      if (prevShield > 0 && defBaseId === 'wolf' && def.permaBuffs?.armor === 'armor_icebarrier') {
+        dealDirectDmg(20, def, atk, logBuffer, true);
+        logBuffer.push({ text: `🧊 [白澤的冰晶護盾] 護盾破裂反擊！對敵造成 20 傷害！`, type: 'info' });
       }
 
       def.hp -= remainingDmg;
@@ -697,9 +719,39 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         else { dmgDealt = dealDirectDmg(80, atk, def, buf); atk.energy = 0; atk.hp = Math.min(atk.maxHp, atk.hp + 100); def.hp = Math.min(def.maxHp, def.hp + 30); atk.shield += 80; applyStatus(atk, 'EVADE', 1, 0, null, buf, atkDeferred); }
     } else if (id === 'wolf') {
         if (num === 1) { atk.shield += 50; if(!atk.buffs) atk.buffs={}; atk.buffs.energyOnLoss = true; }
-        else { dmgDealt = dealDirectDmg(atk.shield, atk, def, buf); atk.hp = Math.min(atk.maxHp, atk.hp + Math.floor(atk.shield/2)); atk.shield = 0; }
+        else {
+            const prevShield = atk.shield;
+            dmgDealt = dealDirectDmg(atk.shield, atk, def, buf);
+            atk.hp = Math.min(atk.maxHp, atk.hp + Math.floor(atk.shield/2));
+            atk.shield = 0;
+
+            // 🧊 [白澤的冰晶護盾]：限定白澤出戰，奧義主動清空護盾時反擊 20 傷害
+            const atkBaseId = atk.char?.baseId || atk.char?.id;
+            if (prevShield > 0 && atkBaseId === 'wolf' && atk.permaBuffs?.armor === 'armor_icebarrier') {
+                dealDirectDmg(20, atk, def, buf, true);
+                buf.push({ text: `🧊 [白澤的冰晶護盾] 奧義清空護盾反擊！對敵造成 20 傷害！`, type: 'info' });
+            }
+        }
     } else if (id === 'cat') {
-        if (num === 1) { const existDebufTypes = (def.status||[]).filter(s=>s).map(s=>s.type); const availStats = ['ATK_DOWN','DEF_DOWN'].filter(t=>!existDebufTypes.includes(t)); if (availStats.length > 0) applyStatus(def, availStats[Math.floor(Math.random()*availStats.length)], 3, 20, null, buf, defDeferred); else buf.push({text:`對手已中所有屬性下降效果！`, type:'info'}); if (!existDebufTypes.includes('FREEZE')) applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); else buf.push({text:`對手已處於封印狀態！`, type:'info'}); }
+        if (num === 1) {
+            const existDebufTypes = (def.status||[]).filter(s=>s).map(s=>s.type);
+            const availStats = ['ATK_DOWN','DEF_DOWN'].filter(t=>!existDebufTypes.includes(t));
+            const hasBothDown = existDebufTypes.includes('ATK_DOWN') && existDebufTypes.includes('DEF_DOWN');
+            const atkBaseId = atk.char?.baseId || atk.char?.id;
+            const hasVenomArmor = atkBaseId === 'cat' && atk.permaBuffs?.armor === 'armor_venomcharm';
+
+            if (hasBothDown && hasVenomArmor) {
+                applyStatus(def, 'POISON', 2, 10, null, buf, defDeferred);
+                buf.push({ text: `🕸️ [布提婭的毒咒] 對手已同時降攻/降防，改為施加 ☠️[中毒] 2回合！`, type: 'info' });
+            } else if (availStats.length > 0) {
+                applyStatus(def, availStats[Math.floor(Math.random()*availStats.length)], 3, 20, null, buf, defDeferred);
+            } else {
+                buf.push({text:`對手已中所有屬性下降效果！`, type:'info'});
+            }
+
+            if (!existDebufTypes.includes('FREEZE')) applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred);
+            else buf.push({text:`對手已處於封印狀態！`, type:'info'});
+        }
         else { dmgDealt = dealDirectDmg(80, atk, def, buf, true); const count = (def.status||[]).filter(s => s && isDebuffStatus(s.type)).length; atk.hp = Math.min(atk.maxHp, atk.hp + count * 30); }
     } else if (id === 'human') {
         if (num === 1) { dealDirectDmg(30, atk, def, buf); const existBurn = (def.status||[]).find(s=>s&&s.type==='BURN'); if (existBurn) { existBurn.duration += 3; buf.push({text:`🔥 燃燒延長了 3 回合！(剩餘 ${existBurn.duration} 回)`, type:'info'}); } else applyStatus(def, 'BURN', 3, 20, null, buf, defDeferred); }
@@ -958,6 +1010,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     for (let s of (ent.status || [])) {
         if (!s) continue;
         if (s.type === 'BURN') { const baseBDmg = s.value || 20; const bDmg = (other.talents||[]).includes('t_human') ? baseBDmg + 10 : baseBDmg; ent.hp = Math.max(0, ent.hp - bDmg); buf.push({text: `🔥 燃燒造成 ${bDmg} 傷害！`, type: 'damage'}); }
+        if (s.type === 'POISON') {
+            const pDmg = Math.max(0, s.value || 10);
+            ent.hp = Math.max(0, ent.hp - pDmg);
+            buf.push({text: `☠️ 中毒造成 ${pDmg} 傷害！`, type: 'damage'});
+        }
         if (s.type === 'PARASITE') {
             const v = s.value || 25;
             ent.hp = Math.max(0, ent.hp - v);
@@ -969,7 +1026,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         if (s.isDeferred) {
             next.push({ ...s, isDeferred: false });
         } else {
-            if (s.duration > 1) { next.push({ ...s, duration: s.duration - 1 }); } 
+            if (s.duration > 1) {
+                if (s.type === 'POISON') {
+                    // 每回合遞增：10 → 20 → 30 ...
+                    next.push({ ...s, duration: s.duration - 1, value: (s.value || 10) + 10 });
+                } else {
+                    next.push({ ...s, duration: s.duration - 1 });
+                }
+            } 
             else { buf.push({text: `[狀態解除] ${getStatusName(s.type)} 效果結束。`, type: 'info'}); }
         }
     }
@@ -1029,6 +1093,33 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         p.energy = Math.min(100, p.energy + ce(p)); e.energy = Math.min(100, e.energy + ce(e));
         if ((p.talents||[]).includes('t5')) p.hp = Math.min(p.maxHp, p.hp + 15);
         buf.push({ text: '平手！雙方各退一步。', type: 'info' });
+
+        // 🎣 [熊吉的釣竿]（永久武裝）：限定熊吉出戰，平手 50% 隨機獲得增益（不重複）
+        const pBaseId = p.char?.baseId || p.char?.id;
+        if (pBaseId === 'bear' && p.permaBuffs?.armor === 'armor_fishingrod' && Math.random() < 0.5) {
+            const existBufTypes = (p.status || []).filter(s => s).map(s => s.type);
+            const availBufs = ['ATK_UP', 'DEF_UP', 'REGEN'].filter(t => !existBufTypes.includes(t));
+            if (availBufs.length > 0) {
+                const got = availBufs[Math.floor(Math.random() * availBufs.length)];
+                applyStatus(p, got, 3, 20, null, buf, false);
+                const nameMap = { ATK_UP: '攻擊提升', DEF_UP: '防禦提升', REGEN: '再生' };
+                buf.push({ text: `🎣 [熊吉的釣竿] 平手觸發！獲得「${nameMap[got]}」3 回合！`, type: 'info' });
+            } else {
+                buf.push({ text: `🎣 [熊吉的釣竿] 平手觸發，但身上已有所有增益，未獲得新的效果。`, type: 'info' });
+            }
+        }
+
+        // 🧯 [普爾斯的引火匣]（永久武裝）：限定普爾斯出戰，平手 50% 施加/延長燃燒 1 回合
+        if (pBaseId === 'human' && p.permaBuffs?.armor === 'armor_matchstick' && Math.random() < 0.5) {
+            const burn = (e.status || []).find(s => s && !s.isDeferred && s.type === 'BURN');
+            if (burn) {
+                burn.duration += 1;
+                buf.push({ text: `🧯 [普爾斯的引火匣] 平手觸發！敵人燃燒延長 1 回合！(剩餘 ${burn.duration} 回)`, type: 'info' });
+            } else {
+                applyStatus(e, 'BURN', 1, 20, null, buf, false);
+                buf.push({ text: `🧯 [普爾斯的引火匣] 平手觸發！敵人陷入 🔥[燃燒] 1 回合！`, type: 'info' });
+            }
+        }
     } else {
         const isPW = RPS_CHOICES[choice].beats === aiChoice;
         playSound(isPW ? 'rps_win' : 'rps_lose'); let atk = isPW ? p : e; let def = isPW ? e : p;
@@ -1104,6 +1195,36 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   const startBattleMode = (selectedChar, tIds, specificEnemy = null) => {
     try {
         if (!selectedChar) throw new Error("未選擇出戰角色！");
+
+        // 📡 寶物雷達：進入戰鬥（尤其戰役）就先消耗 1 個，避免撤退/重整投機
+        // - 戰役/征戰夜巡：啟動「本次戰役全程加倍」
+        // - 自訂對決：啟動「單場加倍」
+        let radarActivated = false;
+        if (progress.pendingConsumableArmor === 'carm_radar') {
+          const stock = progress.consumableArmors?.carm_radar || 0;
+          if (stock <= 0) {
+            // 避免舊存檔/異常狀態：備用但庫存為 0
+            const npFix = { ...progress, pendingConsumableArmor: null };
+            saveProgress(npFix);
+            setProgress(npFix);
+            setSysError('寶物雷達庫存不足，已自動取消備用。');
+          } else {
+            const charBaseId = selectedChar.baseId || selectedChar.id;
+            const hasMinerRadarTalent = charBaseId === 'miner_char' && (tIds || []).includes('t_miner_radar_save');
+            const noConsume = hasMinerRadarTalent && Math.random() < 0.5;
+            const npUse = {
+              ...progress,
+              consumableArmors: { ...progress.consumableArmors, carm_radar: Math.max(0, stock - (noConsume ? 0 : 1)) },
+              pendingConsumableArmor: null,
+            };
+            saveProgress(npUse);
+            setProgress(npUse);
+            radarActivated = true;
+          }
+        }
+        const isCampaignRun = gameMode.includes('campaign');
+        setCampaignRadarActive(radarActivated && isCampaignRun);
+        setSingleRadarActive(radarActivated && !isCampaignRun && gameMode === 'brawl');
 
         let pMax = selectedChar.stats.maxHp + (tIds.includes('t1') ? 100 : 0);
         let initE = tIds.includes('t3') ? 25 : 0; if (tIds.some(t=>['t9','t10','t11'].includes(t))) initE += 20;
@@ -1325,7 +1446,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     setGameState('battle');
   };
 
-  const NEGATIVE_STATUSES = ['BURN','PARASITE','FREEZE','DAZZLE','SILENCE','ATK_DOWN','DEF_DOWN','VULNERABLE','FATIGUE'];
+  const NEGATIVE_STATUSES = ['BURN','POISON','PARASITE','FREEZE','DAZZLE','SILENCE','ATK_DOWN','DEF_DOWN','VULNERABLE','FATIGUE'];
   const handleUseItem = (itemId) => {
     if (battleItemUses <= 0) { setSysError('本場戰鬥道具使用次數已達上限（3次）！'); return; }
     if ((progress.items?.[itemId] || 0) <= 0) { setSysError('道具數量不足！'); return; }
@@ -1353,6 +1474,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         case 'antidote':
           newEnemy.status = newEnemy.status.filter(s => !isBuffStatus(s.type));
           buf.push({ text: `🔄 [道具反轉] 萬能解藥翻轉！對手所有增益被清除！`, type: 'damage' }); break;
+        case 'guard_potion':
+          newEnemy.hp = Math.max(0, newEnemy.hp - 50);
+          buf.push({ text: `🔄 [道具反轉] 防護藥水翻轉！無視護盾，對手受到 50 傷害！`, type: 'damage' }); break;
+        case 'health_food':
+          newEnemy.status = [...newEnemy.status.filter(s => s.type !== 'POISON'), { type: 'POISON', duration: 3, value: 10, isNew: true, isDeferred: false }];
+          buf.push({ text: `🔄 [道具反轉] 保健食品翻轉！對手陷入 ☠️[中毒] 3回合！`, type: 'damage' }); break;
         default: break;
       }
       if (hasJackTalent) {
@@ -1376,6 +1503,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         case 'antidote':
           newPlayer.status = newPlayer.status.filter(s => !NEGATIVE_STATUSES.includes(s.type));
           logText = '💊 使用萬能解藥！清除所有負面狀態！'; break;
+        case 'guard_potion':
+          newPlayer.shield += 50;
+          logText = '🛡️ 使用防護藥水！獲得 50 點護盾！'; break;
+        case 'health_food':
+          newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'REGEN'), { type: 'REGEN', duration: 3, value: 0, isNew: true, isDeferred: false }];
+          logText = '🥗 使用保健食品！獲得 💖[再生] 3回合！'; break;
         default: return;
       }
       playSound('heal');
@@ -1419,12 +1552,19 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         const earned = [3, 5, 10][storyBattleStage] ?? 5;
         np.crystals += earned;
         setRewardCrystals(earned);
+
         const nextStage = storyBattleStage + 1;
         if (nextStage < 3) {
           saveProgress(np);
           setStoryBattleStage(nextStage);
           startStoryBattle(storyChapterId, nextStage);
         } else {
+          // 消耗型武裝在最終勝利後消耗（故事章節通關）
+          if (np.pendingConsumableArmor) {
+            const cId = np.pendingConsumableArmor;
+            np.consumableArmors = { ...np.consumableArmors, [cId]: Math.max(0, (np.consumableArmors[cId] || 1) - 1) };
+            np.pendingConsumableArmor = null;
+          }
           np.completedStoryChapters = [...new Set([...(np.completedStoryChapters || []), storyChapterId])];
           saveProgress(np);
           setGameState('story_victory');
@@ -1450,7 +1590,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const isAdvanced = gameMode === 'advanced_campaign';
     const maxStage = isAdvanced ? 4 : 2;
 
-    if (target === 'player') { playSound('defeat'); saveProgress(updateDailyQuestProgress('battle_any', np)); setGameState('game_over'); setWinner('enemy'); }
+    if (target === 'player') {
+      playSound('defeat');
+      setCampaignRadarActive(false);
+      setSingleRadarActive(false);
+      saveProgress(updateDailyQuestProgress('battle_any', np));
+      setGameState('game_over');
+      setWinner('enemy');
+    }
     else { playSound('victory');
         if (!enemy.char.isUncapturable && unlocks.includes('tamer_kert') && !captured.includes(enemy.char.id) && !enemy.char.baseId && !isLegendaryChar(enemy.char) && !isEpicChar(enemy.char)) {
             np.captured = [...captured, enemy.char.id]; setNewlyCaptured(enemy.char); 
@@ -1470,7 +1617,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         else if (gameMode === 'campaign') { earned = campaignStage < maxStage ? 3 : 8; }
         else { earned = getBrawlReward(enemy.char); }
         
+        if (campaignRadarActive && gameMode.includes('campaign')) earned *= 2;
+        if (singleRadarActive && gameMode === 'brawl') earned *= 2;
+        
         np.crystals += earned;
+
         // 消耗型武裝在最終勝利後消耗
         const isFinalWin = gameMode === 'brawl' || (gameMode.includes('campaign') && campaignStage === maxStage);
         if (isFinalWin && np.pendingConsumableArmor) {
@@ -1478,9 +1629,18 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             np.consumableArmors = { ...np.consumableArmors, [cId]: Math.max(0, (np.consumableArmors[cId] || 1) - 1) };
             np.pendingConsumableArmor = null;
         }
+
+        // ⛏️ 礦工天賦：最終勝利額外 +5 通用碎片
+        const pBaseId = player.char?.baseId || player.char?.id;
+        if (isFinalWin && pBaseId === 'miner_char' && (player.talents || []).includes('t_miner_frag5')) {
+            np.fragments = (np.fragments || 0) + 5;
+            showToastMsg('⛏️ [碎片採集] 額外獲得 💠 5 通用碎片！');
+        }
+
         np = updateDailyQuestProgress('battle_any', np);
         np = updateDailyQuestProgress('battle_win', np);
         if (isFinalWin && gameMode === 'campaign') np = updateDailyQuestProgress('campaign_clear', np);
+        if (isFinalWin) { setCampaignRadarActive(false); setSingleRadarActive(false); }
         saveProgress(np); setRewardCrystals(earned);
         if (gameMode.includes('campaign') && campaignStage < maxStage) { setAvailableRewards(shuffle([...REWARD_POOL]).slice(0, 3)); setGameState('select_reward'); }
         else { setGameState('game_over'); setWinner('player'); }
@@ -1683,7 +1843,16 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             p.charFragments = {...p.charFragments}; 
             p.charFragments['blackflame_human'] = (p.charFragments['blackflame_human'] || 0) + 30; 
         } 
-    }
+    },
+
+    // 測試/開發用
+    'MINER50': {
+        desc: '礦工碎片 x50',
+        apply: (p) => {
+            p.charFragments = {...p.charFragments};
+            p.charFragments['miner_char'] = (p.charFragments['miner_char'] || 0) + 50;
+        }
+    },
   };
 
   const handleRedeemCode = () => {
@@ -2320,14 +2489,58 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   <div className="z-10 text-indigo-400 text-xs font-bold">{(progress.completedStoryChapters||[]).length} / {STORY_CHAPTERS.length} 章</div>
               </button>
 
-              {/* 夜巡戰役 */}
-              {(() => { const ok = (progress.completedStoryChapters||[]).includes(5); return (
-              <button onClick={() => ok ? selectMode('campaign') : setSysError('【章節鎖定】請先完成主線夜巡第五章，解鎖夜巡戰役！')} className={`bg-stone-800 p-4 border-2 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center ${ok ? 'border-stone-700 hover:border-yellow-500' : 'border-stone-800 opacity-60 grayscale cursor-not-allowed'}`}>
-                  <div className="text-3xl mb-2">{ok ? '🗺️' : <Lock className="text-stone-500" size={32}/>}</div>
-                  <h2 className={`text-lg font-bold mb-1 ${ok ? '' : 'text-stone-500'}`}>{ok ? '夜巡戰役' : '🔒 夜巡戰役'}</h2>
-                  <p className="text-stone-400 text-[10px] hidden md:block">連續討伐，挑戰深淵霸主。</p>
-              </button>
-              ); })()}
+              {/* 夜巡戰役（入口合併：普通 / 征戰） */}
+              {(() => {
+                const ok = (progress.completedStoryChapters||[]).includes(5);
+                return (
+                  <>
+                    <button
+                      onClick={() => ok ? setCampaignPickerOpen(true) : setSysError('【章節鎖定】請先完成主線夜巡第五章，解鎖夜巡戰役！')}
+                      className={`bg-stone-800 p-4 border-2 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center ${ok ? 'border-stone-700 hover:border-yellow-500' : 'border-stone-800 opacity-60 grayscale cursor-not-allowed'}`}
+                    >
+                      <div className="text-3xl mb-2">{ok ? '🗺️' : <Lock className="text-stone-500" size={32}/>}</div>
+                      <h2 className={`text-lg font-bold mb-1 ${ok ? '' : 'text-stone-500'}`}>{ok ? '夜巡戰役' : '🔒 夜巡戰役'}</h2>
+                      <p className="text-stone-400 text-[10px] hidden md:block">普通 / 高階 連戰模式</p>
+                    </button>
+
+                    {campaignPickerOpen && (
+                      <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setCampaignPickerOpen(false)}>
+                        <div className="bg-stone-900 border-2 border-stone-700 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-lg font-bold text-yellow-400 flex items-center gap-2"><Gamepad2 size={18}/> 夜巡戰役</h2>
+                            <button className="text-stone-500 hover:text-white text-xl leading-none" onClick={() => setCampaignPickerOpen(false)}>✕</button>
+                          </div>
+
+                          <div className="space-y-3">
+                            <button
+                              onClick={() => { setCampaignPickerOpen(false); selectMode('campaign'); }}
+                              className="w-full bg-yellow-600 hover:bg-yellow-500 text-stone-900 font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform"
+                            >
+                              🗺️ 普通夜巡（3 連戰）
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                if (isAdvancedUnlocked) { setCampaignPickerOpen(false); selectMode('advanced_campaign'); }
+                                else setSysError('【權限不足】請先將任意一位角色的「專精等級」提升至 3 星 (完成普通夜巡3次)，以證明你有足夠的實力面對深淵的真正面貌！');
+                              }}
+                              className={`w-full font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform border ${
+                                isAdvancedUnlocked
+                                  ? 'bg-red-700 hover:bg-red-600 text-white border-red-500'
+                                  : 'bg-stone-800 text-stone-500 border-stone-700 cursor-not-allowed'
+                              }`}
+                              disabled={!isAdvancedUnlocked}
+                            >
+                              💀 征戰夜巡（高階 5 連戰）
+                              {!isAdvancedUnlocked && <div className="text-[10px] text-yellow-500 font-bold mt-1">需 1 名 3 星專精角色</div>}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {/* 自訂對決 */}
               {(() => { const ok = (progress.completedStoryChapters||[]).includes(5); return (
@@ -2373,21 +2586,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   <p className="text-stone-400 text-[10px] hidden md:block">種植釣魚狩獵，取得高級食材。</p>
               </button>
 
-              {/* 征戰夜巡 - 最後 */}
-              <button onClick={() => {
-                  if (isAdvancedUnlocked) selectMode('advanced_campaign');
-                  else setSysError('【權限不足】請先將任意一位角色的「專精等級」提升至 3 星 (完成普通夜巡3次)，以證明你有足夠的實力面對深淵的真正面貌！');
-              }} className={`col-span-2 md:col-span-1 bg-stone-800 p-4 border-2 rounded-2xl shadow-lg flex flex-col items-center justify-center transition-all active:scale-95 text-center relative overflow-hidden ${isAdvancedUnlocked ? 'border-red-900 hover:border-red-500' : 'border-stone-800 opacity-60 grayscale cursor-not-allowed'}`}>
-                  {isAdvancedUnlocked && <div className="absolute inset-0 bg-red-900/10 pointer-events-none"></div>}
-                  <div className="text-3xl mb-2">
-                      {isAdvancedUnlocked ? <Skull className="text-red-500" size={32} /> : <Lock className="text-stone-500" size={32} />}
-                  </div>
-                  <h2 className={`text-lg font-bold mb-1 ${isAdvancedUnlocked ? 'text-red-400' : 'text-stone-500'}`}>
-                      {isAdvancedUnlocked ? '征戰夜巡' : '🔒 征戰夜巡'}
-                  </h2>
-                  <p className={`${isAdvancedUnlocked ? 'text-red-400/60' : 'text-stone-500'} text-[10px] hidden md:block`}>高階 5 連戰，更高回報。</p>
-                  {!isAdvancedUnlocked && <div className="text-[9px] text-yellow-500 font-bold mt-1">需1名3星專精角色</div>}
-              </button>
+              {/* （已合併）征戰夜巡入口已併入夜巡戰役 */}
           </div>
           <div className="flex items-center gap-4 z-10">
               <div className="relative">
@@ -2889,6 +3088,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     </button>
                     {gameMode !== 'tutorial' && (
                         <button onClick={() => {
+                            setCampaignRadarActive(false);
+                            setSingleRadarActive(false);
                             if (gameMode === 'story') setGameState('story_chapters');
                             else if (gameMode === 'brawl') setGameState('intro');
                             else setGameState('select_char');
@@ -3798,9 +3999,23 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         saveProgress(np);
     };
     const forgeCraft = (armor, isConsumable) => {
-        if (progress.fragments < armor.cost) { setSysError('碎片不足！'); return; }
+        const currency = armor.currency || 'fragment';
+        if (currency === 'charFragment') {
+            const cid = armor.fragmentCharId;
+            const cur = progress.charFragments?.[cid] || 0;
+            if (cur < armor.cost) { setSysError('專屬碎片不足！'); return; }
+        } else {
+            if (progress.fragments < armor.cost) { setSysError('碎片不足！'); return; }
+        }
         if (!isConsumable && progress.unlockedArmors.includes(armor.id)) { setSysError('已製作過此永久武裝！'); return; }
-        let np = { ...progress, fragments: progress.fragments - armor.cost };
+        let np = { ...progress };
+        if (currency === 'charFragment') {
+            const cid = armor.fragmentCharId;
+            np.charFragments = { ...(progress.charFragments || {}) };
+            np.charFragments[cid] = (np.charFragments[cid] || 0) - armor.cost;
+        } else {
+            np.fragments = (progress.fragments || 0) - armor.cost;
+        }
         if (isConsumable) {
             np.consumableArmors = { ...progress.consumableArmors, [armor.id]: (progress.consumableArmors[armor.id] || 0) + 1 };
         } else {
@@ -3853,6 +4068,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               {FORGE_PERMANENT.map(armor => {
                 const owned = progress.unlockedArmors.includes(armor.id);
                 const equipped = progress.equippedArmor === armor.id;
+                const currency = armor.currency || 'fragment';
+                const craftable = currency === 'charFragment'
+                  ? (progress.charFragments?.[armor.fragmentCharId] || 0) >= armor.cost
+                  : (progress.fragments || 0) >= armor.cost;
                 return (
                   <div key={armor.id} className={`bg-stone-900 rounded-2xl p-4 border-2 transition-all ${equipped ? 'border-purple-500 shadow-[0_0_12px_rgba(168,85,247,0.3)]' : 'border-stone-700'}`}>
                     <div className="flex items-start gap-3 mb-3">
@@ -3864,9 +4083,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     </div>
                     <div className="flex gap-2">
                       {!owned ? (
-                        <button onClick={() => forgeCraft(armor, false)} disabled={progress.fragments < armor.cost}
-                          className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${progress.fragments >= armor.cost ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-stone-700 text-stone-500 cursor-not-allowed'}`}>
-                          🧩 {armor.cost} 碎片 製作
+                        <button onClick={() => forgeCraft(armor, false)} disabled={!craftable}
+                          className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${craftable ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-stone-700 text-stone-500 cursor-not-allowed'}`}>
+                          {currency === 'charFragment' ? `🐻 ${armor.cost} 專屬碎片 製作` : `🧩 ${armor.cost} 碎片 製作`}
                         </button>
                       ) : (
                         <button onClick={() => forgeEquip(armor.id)}

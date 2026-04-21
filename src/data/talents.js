@@ -25,5 +25,9 @@ export const ALL_TALENTS = [
   { id: 't_valentine_wolf', name: '苦甜回憶', cost: 5, desc: '護盾被破壞時，恢復20點能量並獲得攻擊提升3回合。(情人節白澤專屬)', icon: '💝', req: 'cost5', exclusiveTo: 'valentine_wolf' },
   { id: 't_halloween_cat', name: '幻夜貓蹤', cost: 5, desc: '回合結束對手每個Debuff造成15傷。對手有Debuff時減傷20%。(萬聖布提婭專屬)', icon: '🦇', req: 'cost5', exclusiveTo: 'halloween_cat' },
   { id: 't_christmas_xiangxiang', name: '最棒的禮物', cost: 5, desc: '每 3 回合自動恢復 10% 最大生命值並獲得 20 能量。(聖誕虎吉專屬)', icon: '🎄', req: 'cost5', exclusiveTo: 'christmas_xiangxiang' },
+
+  // === 礦工（資源角）===
+  { id: 't_miner_frag5', name: '碎片採集', cost: 3, desc: '最終勝利結算時，額外獲得 💠 5 通用碎片。(礦工專屬)', icon: '⛏️', req: 'char_talents', exclusiveTo: 'miner_char' },
+  { id: 't_miner_radar_save', name: '節流手法', cost: 3, desc: '使用 📡[寶物雷達] 進入戰鬥時，有 50% 機率不消耗。(礦工專屬)', icon: '📡', req: 'char_talents', exclusiveTo: 'miner_char' },
 ];
 
