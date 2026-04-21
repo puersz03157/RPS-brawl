@@ -426,7 +426,7 @@ export default function App() {
   const [memTime, setMemTime] = useState(60);
 
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
-  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, scout3Clears: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 }, dailyQuestState: null, viewedEncounters: [] });
+  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, scout3Clears: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0, claimedMinerBonus: false }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 }, dailyQuestState: null, viewedEncounters: [] });
   const [isLoaded, setIsLoaded] = useState(false);
   const [campaignRadarActive, setCampaignRadarActive] = useState(false); // 📡 寶物雷達：本次戰役全程星晶加倍
   const [singleRadarActive, setSingleRadarActive] = useState(false);     // 📡 寶物雷達：單場模式（如自訂對決）星晶加倍
@@ -531,7 +531,7 @@ export default function App() {
                 charCostUpgrades: p.charCostUpgrades || {},
                 battlesWon: p.battlesWon || 0, gachaPulls: p.gachaPulls || 0, claimedAchievements: Array.isArray(p.claimedAchievements) ? p.claimedAchievements : [],
                 scout3Clears: p.scout3Clears || 0,
-                mine: p.mine || { lv: 1, workers: [], lastCollect: null, pending: 0 },
+                mine: { lv: p.mine?.lv || 1, workers: p.mine?.workers || [], lastCollect: p.mine?.lastCollect || null, pending: p.mine?.pending || 0, claimedMinerBonus: !!p.mine?.claimedMinerBonus },
                 ingredients: p.ingredients || {}, unlockedRecipes: Array.isArray(p.unlockedRecipes) ? p.unlockedRecipes : [], pendingMeal: p.pendingMeal || null,
                 tutorialDone: p.tutorialDone || false,
                 completedStoryChapters: Array.isArray(p.completedStoryChapters) ? p.completedStoryChapters : [],
@@ -2056,13 +2056,6 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const gained = total + catBonus;
     let np = { ...progress, fragments: (progress.fragments || 0) + gained, mine: { ...mine, pending: 0, lastCollect: new Date().toISOString() } };
 
-    // ⛏️ 礦坑滿級加成：領取時額外獲得礦工碎片 ×50
-    if (mine.lv >= 5) {
-      np.charFragments = { ...(np.charFragments || {}) };
-      np.charFragments['miner_char'] = (np.charFragments['miner_char'] || 0) + 50;
-      showToastMsg('🌟 滿級礦坑獎勵：⛏️ 礦工碎片 ×50！');
-    }
-
     np = updateDailyQuestProgress('mine_collect', np);
     saveProgress(np);
     showToastMsg(`⛏️ 領取了 ${gained} 顆星晶碎片！`);
@@ -2077,6 +2070,18 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const np = { ...progress, crystals: progress.crystals - lvData.upgradeCost, mine: { ...mine, lv: mine.lv + 1, pending: currentPending, lastCollect: new Date().toISOString() } };
     saveProgress(np);
     showToastMsg(`⛏️ 礦坑升級至 Lv${mine.lv + 1}！`);
+  };
+
+  const claimMaxMineMinerBonus = () => {
+    const mine = getMineInfo();
+    if (mine.lv < 5) { setSysError('礦坑尚未滿級！'); return; }
+    if (mine.claimedMinerBonus) { setSysError('滿級礦坑獎勵已領取過！'); return; }
+    let np = { ...progress };
+    np.charFragments = { ...(np.charFragments || {}) };
+    np.charFragments['miner_char'] = (np.charFragments['miner_char'] || 0) + 50;
+    np.mine = { ...mine, claimedMinerBonus: true };
+    saveProgress(np);
+    setSysInfo('🌟 滿級礦坑獎勵領取成功！\n\n🎁 獲得：⛏️ 礦工碎片 ×50');
   };
 
   // ========================== 烹飪系統函數 ==========================
@@ -4217,6 +4222,21 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
               <div className="text-4xl mb-2">🌟</div>
               <h3 className="text-xl font-bold text-yellow-400 mb-1">星晶核心礦 — 滿級</h3>
               <p className="text-stone-400 text-sm">礦坑已達最高等級，盡情享受豐厚的碎片產出吧！</p>
+              <div className="mt-5 bg-stone-900/60 border border-stone-700 rounded-2xl p-4">
+                <div className="text-xs font-bold text-stone-300 mb-2">🎁 滿級一次性獎勵</div>
+                <div className="text-sm font-bold text-yellow-400 mb-3">⛏️ 礦工碎片 ×50</div>
+                <button
+                  onClick={claimMaxMineMinerBonus}
+                  disabled={!!mine.claimedMinerBonus}
+                  className={`w-full py-3 rounded-xl font-bold transition-all active:scale-95 ${
+                    mine.claimedMinerBonus
+                      ? 'bg-stone-700 text-stone-500 cursor-not-allowed'
+                      : 'bg-yellow-600 hover:bg-yellow-500 text-stone-900 shadow-lg'
+                  }`}
+                >
+                  {mine.claimedMinerBonus ? '✅ 已領取' : '領取獎勵'}
+                </button>
+              </div>
             </div>
           )}
         </div>
