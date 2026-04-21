@@ -364,6 +364,7 @@ export default function App() {
   const [campaignRoute, setCampaignRoute] = useState([]); 
   const [campaignStage, setCampaignStage] = useState(0); 
   const [campaignEnemyTalents, setCampaignEnemyTalents] = useState([]); // 偵查戰役：預先抽好的敵方天賦
+  const [scoutTalentExpanded, setScoutTalentExpanded] = useState({}); // { [stageIdx]: boolean }
   const [availableRewards, setAvailableRewards] = useState([]);
   const [galleryTab, setGalleryTab] = useState('companions');
   const [selectedTalentIds, setSelectedTalentIds] = useState([]);
@@ -3798,6 +3799,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           <div className="grid grid-cols-1 gap-4">
             {route.map((c, i) => {
               const tIds = campaignEnemyTalents[i] || [];
+              const isExpanded = !!scoutTalentExpanded[i];
               return (
                 <div key={`${c.id}_${i}`} className="bg-stone-900 border-2 border-stone-700 rounded-3xl p-6 shadow-xl">
                   <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -3818,24 +3820,55 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   </div>
 
                   <div className="mt-5">
-                    <div className="text-xs font-bold text-cyan-300 mb-2">🎲 抽取天賦（{tIds.length}）</div>
-                    {tIds.length === 0 ? (
-                      <div className="text-stone-500 text-sm">（本戰無天賦）</div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                        {tIds.map(tid => {
-                          const t = tMap[tid];
-                          return (
-                            <div key={tid} className="bg-stone-950 border border-stone-800 rounded-2xl p-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-lg">{t?.icon || '✨'}</span>
-                                <span className="font-bold text-stone-100 text-sm">{t?.name || tid}</span>
-                                <span className="ml-auto text-[10px] text-stone-500 font-bold">{tid}</span>
-                              </div>
-                              <div className="text-xs text-stone-400 mt-1 leading-relaxed">{t?.desc || ''}</div>
-                            </div>
-                          );
-                        })}
+                    <button
+                      type="button"
+                      onClick={() => setScoutTalentExpanded(prev => ({ ...prev, [i]: !prev[i] }))}
+                      className="w-full flex items-center justify-between gap-3 bg-stone-950/60 hover:bg-stone-950 border border-stone-800 rounded-2xl px-4 py-3 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-cyan-300 font-bold text-xs shrink-0">🎲 抽取天賦（{tIds.length}）</span>
+                        {tIds.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 min-w-0">
+                            {tIds.slice(0, 4).map(tid => {
+                              const t = tMap[tid];
+                              return (
+                                <span key={tid} className="text-[10px] px-2 py-0.5 rounded-full border border-stone-700 bg-stone-900 text-stone-300 font-bold truncate max-w-[10rem]">
+                                  {t?.icon || '✨'} {t?.name || tid}
+                                </span>
+                              );
+                            })}
+                            {tIds.length > 4 && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full border border-stone-800 bg-stone-900 text-stone-500 font-bold">
+                                +{tIds.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-stone-500 text-xs font-bold shrink-0">{isExpanded ? '收合 ▲' : '展開 ▼'}</span>
+                    </button>
+
+                    {isExpanded && (
+                      <div className="mt-3">
+                        {tIds.length === 0 ? (
+                          <div className="text-stone-500 text-sm">（本戰無天賦）</div>
+                        ) : (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            {tIds.map(tid => {
+                              const t = tMap[tid];
+                              return (
+                                <div key={tid} className="bg-stone-950 border border-stone-800 rounded-2xl p-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-lg">{t?.icon || '✨'}</span>
+                                    <span className="font-bold text-stone-100 text-sm">{t?.name || tid}</span>
+                                    <span className="ml-auto text-[10px] text-stone-500 font-bold">{tid}</span>
+                                  </div>
+                                  <div className="text-xs text-stone-400 mt-1 leading-relaxed">{t?.desc || ''}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -4747,7 +4780,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                   <div className="text-blue-300 flex justify-between text-lg"><span>獲得星晶：</span><span>💎 {rewardCrystals}</span></div>
                                   {winner==='player' && <div className="text-green-400 flex justify-between text-lg"><span>獲得 AP：</span><span>⚡ 1</span></div>}
                               </div>
-                              <button onClick={()=>startBattleMode(player.char, selectedTalentIds)} className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold mb-4 shadow-lg active:scale-95 transition-all text-white">重整態勢再出發</button>
+                              {winner === 'player' && !(gameMode === 'scout_campaign' || gameMode === 'scout_campaign3') && (
+                                <button onClick={()=>startBattleMode(player.char, selectedTalentIds)} className="w-full bg-blue-600 hover:bg-blue-500 py-4 rounded-xl font-bold mb-4 shadow-lg active:scale-95 transition-all text-white">
+                                  重整態勢再出發
+                                </button>
+                              )}
                               <button onClick={()=>setGameState('intro')} className="w-full bg-stone-700 hover:bg-stone-600 py-4 rounded-xl font-bold text-stone-300 transition-colors">返回首頁</button>
                           </div>
                       </div>
