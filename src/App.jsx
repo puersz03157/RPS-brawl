@@ -969,34 +969,35 @@ const flushManorParasitePending = (owner, target, buf) => {
             applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred);
         }
     } else if (id === 'manor') {
-        // 🪴 烏薩（園藝家）：寄生 + 溢補循環
+        // 🪴 烏薩（園藝家）：寄生 + 溢補循環（數值已下修：避免無天賦仍過量自補碾壓長戰）
         if (num === 1) {
             const exist = (def.status || []).find(s => s && !s.isDeferred && s.type === 'PARASITE');
             if (exist) {
                 exist.duration += 2;
-                exist.value = (exist.value || 25) + 10;
-                buf.push({ text: `🪴 [嫁接孢囊] 目標已寄生：延長 2 回合並使吸取值 +10！`, type: 'info' });
+                exist.value = (exist.value || 18) + 5;
+                buf.push({ text: `🪴 [嫁接孢囊] 目標已寄生：延長 2 回合並使吸取值 +5！`, type: 'info' });
             } else {
-                applyStatus(def, 'PARASITE', 3, 25, null, buf, defDeferred);
-                buf.push({ text: `🪴 [嫁接孢囊] 施加 🌿[寄生] 3 回合（吸取25）。`, type: 'info' });
+                applyStatus(def, 'PARASITE', 3, 18, null, buf, defDeferred);
+                buf.push({ text: `🪴 [嫁接孢囊] 施加 🌿[寄生] 3 回合（吸取18）。`, type: 'info' });
             }
-            applyHeal(atk, 120, buf, `🪴 [嫁接孢囊]`);
+            applyHeal(atk, 75, buf, `🪴 [嫁接孢囊]`);
             flushManorParasitePending(atk, def, buf);
         } else {
-            dealDirectDmg(80, atk, def, buf);
+            dealDirectDmg(65, atk, def, buf);
             const p = (def.status || []).find(s => s && !s.isDeferred && s.type === 'PARASITE');
             if (p) {
-                const v = p.value || 25;
-                // 立即追加一次吸取（不消耗回合）
+                const v = p.value || 18;
+                // 立即追加一次吸取（不消耗回合）；對敵仍為完整吸取，但轉化自補減半，避免奧義一鍵把血線拉滿
                 def.hp = Math.max(0, def.hp - v);
-                applyHeal(atk, v, buf, `🌿 [寄生追加吸取]`);
+                const burstHeal = Math.max(1, Math.floor(v * 0.5));
+                applyHeal(atk, burstHeal, buf, `🌿 [寄生追加吸取]`);
                 p.duration += 1;
-                buf.push({ text: `🪴 [溢補蔓延] 立即結算一次寄生吸取 ${v}，並延長 1 回合！`, type: 'info' });
+                buf.push({ text: `🪴 [溢補蔓延] 立即結算一次寄生吸取 ${v}（自補 ${burstHeal}），並延長 1 回合！`, type: 'info' });
             }
-            applyHeal(atk, 150, buf, `🪴 [溢補蔓延]`);
+            applyHeal(atk, 95, buf, `🪴 [溢補蔓延]`);
             flushManorParasitePending(atk, def, buf);
 
-            if ((atk.shield || 0) >= 120) {
+            if ((atk.shield || 0) >= 140) {
                 applyStatus(def, 'DEF_DOWN', 3, 20, null, buf, defDeferred);
                 buf.push({ text: `🪴 [溢補蔓延] 護盾充盈，施加 📉[降防] 3 回合！`, type: 'info' });
             }
