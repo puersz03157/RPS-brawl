@@ -600,6 +600,7 @@ export default function App() {
   const encountered = Array.isArray(progress.encountered) ? progress.encountered : [];
   const mastery = progress.mastery || {};
   const affection = progress.affection || {};
+  const getBattleItemUseMax = (talentIds) => ((talentIds || []).includes('t_kohaku') ? 5 : 3);
 
   const selectMode = (mode) => { 
       setGameMode(mode); 
@@ -1051,7 +1052,7 @@ const flushManorParasitePending = (owner, target, buf) => {
             const restoreCount = atk.permaBuffs?.itemRestoreCount || 0;
             if (isPlayer && restoreCount < 2) {
                 atk.permaBuffs = { ...atk.permaBuffs, itemRestoreCount: restoreCount + 1 };
-                setBattleItemUses(prev => Math.min(3, prev + 1));
+                setBattleItemUses(prev => Math.min(getBattleItemUseMax(atk.talents), prev + 1));
                 buf.push({ text: `🃏 [盜影疾走] 自身獲得 🔄[道具反轉] 3 回合！道具使用次數 +1！`, type: 'info' });
             } else {
                 buf.push({ text: `🃏 [盜影疾走] 自身獲得 🔄[道具反轉] 3 回合！${restoreCount >= 2 ? '（本場道具恢復已達上限）' : ''}`, type: 'info' });
@@ -1145,7 +1146,7 @@ const flushManorParasitePending = (owner, target, buf) => {
         }
     }
     
-    if (ent.char?.id === 'aldous') {
+    if ((ent.talents || []).includes('t_aldous')) {
         ent.energy = Math.min(100, ent.energy + 5);
         buf.push({text: `[睿智之風] 恢復 5 點能量！`, type: 'info'});
     }
@@ -1366,6 +1367,7 @@ const flushManorParasitePending = (owner, target, buf) => {
     setLogs([{ text: '【訓練場】教官為你安排了一場模擬戰鬥！', type: 'system' }]);
     setWinner(null);
     setTutorialStep(1);
+    setBattleItemUses(3);
     setGameState('battle');
   };
 
@@ -1409,7 +1411,7 @@ const flushManorParasitePending = (owner, target, buf) => {
         let pSeeds = tIds.includes('t_elf') ? 2 : 0;
         if (tIds.includes('t_harvest_elf')) pSeeds += 2; 
         
-        if (selectedChar.id === 'aldous') initE = Math.min(100, initE + 25);
+        if (tIds.includes('t_aldous')) initE = Math.min(100, initE + 25);
 
         let pObj = {
             char: selectedChar, talents: tIds, hp: pMax, maxHp: pMax,
@@ -1496,7 +1498,7 @@ const flushManorParasitePending = (owner, target, buf) => {
         let eSeeds = eT.includes('t_elf') ? 2 : 0;
         if (eT.includes('t_harvest_elf')) eSeeds += 2;
 
-        if (eChar.id === 'aldous') eInitE = Math.min(100, eInitE + 25);
+        if (eT.includes('t_aldous')) eInitE = Math.min(100, eInitE + 25);
 
         let eObj = { 
             char: eChar, talents: eT, hp: eMax, maxHp: eMax, 
@@ -1527,7 +1529,7 @@ const flushManorParasitePending = (owner, target, buf) => {
             initLogs.push({ text: `🌑 [暗晶碎塊] 戰鬥開始，對敵施加封印 2 回合！`, type: 'info' });
         }
 
-        setPlayer(pObj); setEnemy(eObj); setNewlyCaptured(null); setLogs(initLogs); setBattleItemUses(3); setShowItemPanel(false); setGameState('battle');
+        setPlayer(pObj); setEnemy(eObj); setNewlyCaptured(null); setLogs(initLogs); setBattleItemUses(getBattleItemUseMax(pObj.talents)); setShowItemPanel(false); setGameState('battle');
 
     } catch (e) {
         console.error(e);
@@ -1553,7 +1555,8 @@ const flushManorParasitePending = (owner, target, buf) => {
     const validP = ALL_TALENTS.filter(t => !t.req && !t.exclusiveTo);
     const pTalents = selectedTalentIds.length > 0 ? selectedTalentIds : getRandomTalents(3, validP);
     const pMax = attackerChar.stats.maxHp + (pTalents.includes('t1') ? 100 : 0);
-    const pInitE = (pTalents.includes('t3') ? 25 : 0) + (pTalents.some(t => ['t9','t10','t11'].includes(t)) ? 20 : 0);
+    let pInitE = (pTalents.includes('t3') ? 25 : 0) + (pTalents.some(t => ['t9','t10','t11'].includes(t)) ? 20 : 0);
+    if (pTalents.includes('t_aldous')) pInitE = Math.min(100, pInitE + 25);
     const pObj = {
       char: attackerChar, talents: pTalents,
       hp: pMax, maxHp: pMax,
@@ -1630,14 +1633,15 @@ const flushManorParasitePending = (owner, target, buf) => {
     if (homeFieldLog) initLogs.push({ text: homeFieldLog, type: 'info' });
     setLogs(initLogs);
     setNewlyCaptured(null);
-    setBattleItemUses(3); setShowItemPanel(false);
+    setBattleItemUses(getBattleItemUseMax(pObj.talents)); setShowItemPanel(false);
     setGameMode('story');
     setGameState('battle');
   };
 
   const NEGATIVE_STATUSES = ['BURN','POISON','PARASITE','FREEZE','DAZZLE','SILENCE','ATK_DOWN','DEF_DOWN','VULNERABLE','FATIGUE'];
   const handleUseItem = (itemId) => {
-    if (battleItemUses <= 0) { setSysError('本場戰鬥道具使用次數已達上限（3次）！'); return; }
+    const itemUseCap = getBattleItemUseMax(player.talents);
+    if (battleItemUses <= 0) { setSysError(`本場戰鬥道具使用次數已達上限（${itemUseCap}次）！`); return; }
     if ((progress.items?.[itemId] || 0) <= 0) { setSysError('道具數量不足！'); return; }
     let newPlayer = { ...player, status: [...(player.status||[])] };
     let newEnemy = { ...enemy, status: [...(enemy.status||[])] };
@@ -1669,6 +1673,9 @@ const flushManorParasitePending = (owner, target, buf) => {
         case 'health_food':
           newEnemy.status = [...newEnemy.status.filter(s => s.type !== 'POISON'), { type: 'POISON', duration: 3, value: 10, isNew: true, isDeferred: false }];
           buf.push({ text: `🔄 [道具反轉] 保健食品翻轉！對手陷入 ☠️[中毒] 3回合！`, type: 'damage' }); break;
+        case 'energy_drink':
+          newEnemy.energy = Math.max(0, (newEnemy.energy || 0) - 30);
+          buf.push({ text: `🔄 [道具反轉] 提神飲料翻轉！對手失去 30 能量！`, type: 'damage' }); break;
         default: break;
       }
       if (hasJackTalent) {
@@ -1699,17 +1706,27 @@ const flushManorParasitePending = (owner, target, buf) => {
         case 'health_food':
           newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'REGEN'), { type: 'REGEN', duration: 3, value: 0, isNew: true, isDeferred: false }];
           logText = '🥗 使用保健食品！獲得 💖[再生] 3回合！'; break;
+        case 'energy_drink':
+          newPlayer.energy = Math.min(100, (newPlayer.energy || 0) + 30);
+          logText = '🥤 使用提神飲料！瞬間獲得 30 能量！'; break;
         default: return;
       }
-      playSound('heal');
+      if (itemId === 'energy_drink') playSound('buff');
+      else playSound('heal');
     }
 
     setPlayer(newPlayer);
     setEnemy(newEnemy);
-    setBattleItemUses(prev => prev - 1);
+    const wealthFree = (newPlayer.talents || []).includes('t_kohaku') && Math.random() < 0.3;
+    if (wealthFree) {
+      extraLogs.push({ text: '💰 [財富自由] 觸發！本次不消耗道具次數與庫存！', type: 'info' });
+      showToastMsg('💰 [財富自由] 本次道具免費！');
+    } else {
+      setBattleItemUses(prev => prev - 1);
+      const np = { ...progress, items: { ...progress.items, [itemId]: Math.max(0, (progress.items?.[itemId] || 0) - 1) } };
+      saveProgress(np);
+    }
     setLogs(prev => [...prev, { text: logText, type: enemyHasReverse ? 'damage' : 'heal' }, ...extraLogs]);
-    let np = { ...progress, items: { ...progress.items, [itemId]: Math.max(0, (progress.items?.[itemId] || 0) - 1) } };
-    saveProgress(np);
     setShowItemPanel(false);
     if (newEnemy.hp <= 0) handleDeath('enemy');
   };
@@ -1731,7 +1748,11 @@ const flushManorParasitePending = (owner, target, buf) => {
       if (target === 'player') {
         playSound('defeat');
         setPlayer(prev => ({ ...prev, hp: prev.maxHp, energy: 0, shield: 0, status: [], buffs: { dmgMult: 1, extraDmg: 0, energyOnLoss: false }, permaBuffs: { ...prev.permaBuffs, turnCount: 0 } }));
-        setEnemy(prev => ({ ...prev, hp: prev.maxHp, energy: prev.talents.includes('t3') ? 25 : 0, shield: 0, status: [], buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false }, permaBuffs: { ...prev.permaBuffs, turnCount: 0 } }));
+        setEnemy(prev => {
+          let eE = prev.talents.includes('t3') ? 25 : 0;
+          if (prev.talents.includes('t_aldous')) eE = Math.min(100, eE + 25);
+          return { ...prev, hp: prev.maxHp, energy: eE, shield: 0, status: [], buffs: { dmgMult: 1, extraDmg: 0, atkReduction: 0, energyOnLoss: false }, permaBuffs: { ...prev.permaBuffs, turnCount: 0 } };
+        });
         setLogs([{ text: '💪 不要放棄！繼續挑戰！', type: 'info' }]);
         return;
       } else {
@@ -1851,7 +1872,7 @@ const flushManorParasitePending = (owner, target, buf) => {
     if (!prog.encountered.includes(ne.id)) { prog.encountered.push(ne.id); }
     saveProgress(prog); 
     
-    np.energy = Math.min(100, (np.permaBuffs?.startEnergy || 0) + (np.permaBuffs?.meal?.energy || 0) + (np.talents.includes('t3') ? 25 : 0) + (np.talents.some(t=>['t9','t10','t11'].includes(t)) ? 20 : 0));
+    np.energy = Math.min(100, (np.permaBuffs?.startEnergy || 0) + (np.permaBuffs?.meal?.energy || 0) + (np.talents.includes('t3') ? 25 : 0) + (np.talents.some(t=>['t9','t10','t11'].includes(t)) ? 20 : 0) + (np.talents.includes('t_aldous') ? 25 : 0));
     np.shield = (np.permaBuffs?.startShield || 0) + (np.talents.includes('t4') ? 80 : 0) + (np.permaBuffs?.meal?.shield || 0);
     np.status = [];
     if (np.permaBuffs?.meal?.regen) np.status.push({ type: 'REGEN', duration: 99, value: np.permaBuffs.meal.regen, isNew: false, isDeferred: false });
@@ -1885,7 +1906,7 @@ const flushManorParasitePending = (owner, target, buf) => {
     
     let eSeeds = eT.includes('t_elf') ? 2 : 0;
     if (eT.includes('t_harvest_elf')) eSeeds += 2;
-    if (ne.id === 'aldous') eInitE = Math.min(100, eInitE + 25);
+    if (eT.includes('t_aldous')) eInitE = Math.min(100, eInitE + 25);
 
     let eObj = { 
         char: ne, 
@@ -1903,7 +1924,7 @@ const flushManorParasitePending = (owner, target, buf) => {
     if (eT.includes('t_bear')) { const pool = shuffle(['ATK_UP', 'DEF_UP', 'REGEN']); eObj.status.push({ type: pool[0], duration: 3, value: 20, isNew: false, isDeferred: false }, { type: pool[1], duration: 3, value: 20, isNew: false, isDeferred: false }); }
     
     setEnemy(eObj);
-    setBattleItemUses(3); setShowItemPanel(false);
+    setBattleItemUses(getBattleItemUseMax(np.talents)); setShowItemPanel(false);
     setLogs([{ text: `深淵的 ${ne.name} 出現了！`, type: 'system' }]);
     setGameState('battle');
   };
@@ -3032,6 +3053,7 @@ const flushManorParasitePending = (owner, target, buf) => {
     const silenced = (player.status||[]).some(s => s && s.type === 'SILENCE' && !s.isDeferred);
     const dazzleStatus = (player.status||[]).find(s => s && s.type === 'DAZZLE' && !s.isDeferred);
     const freezeStatus = (player.status||[]).find(s => s && s.type === 'FREEZE' && !s.isDeferred);
+    const playerItemUseMax = getBattleItemUseMax(player.talents);
 
     const skill1Cost = getActualCost(player.char.skill1.cost, (player.talents || []).includes('t8'));
     const skill2Cost = getActualCost(player.char.skill2.cost, (player.talents || []).includes('t8'));
@@ -3317,7 +3339,7 @@ const flushManorParasitePending = (owner, target, buf) => {
                 </div>
                 <div className="flex gap-2 shrink-0">
                     <button onClick={() => setShowItemPanel(true)} className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border transition-colors select-none ${battleItemUses > 0 ? 'bg-stone-900 border-stone-700 text-stone-400 hover:bg-stone-700 hover:text-white' : 'bg-stone-900 border-stone-800 text-stone-600 cursor-not-allowed'}`}>
-                        🎒 道具<span className={`text-[9px] ml-0.5 font-bold ${battleItemUses > 0 ? 'text-yellow-500' : 'text-stone-700'}`}>{battleItemUses}/3</span>
+                        🎒 道具<span className={`text-[9px] ml-0.5 font-bold ${battleItemUses > 0 ? 'text-yellow-500' : 'text-stone-700'}`}>{battleItemUses}/{playerItemUseMax}</span>
                     </button>
                     {gameMode !== 'tutorial' && (
                         <button onClick={() => {
@@ -3389,7 +3411,7 @@ const flushManorParasitePending = (owner, target, buf) => {
                 <div className="fixed inset-0 bg-black/75 z-50 flex items-end justify-center p-4" onClick={() => setShowItemPanel(false)}>
                     <div className="bg-stone-900 border-2 border-stone-700 rounded-2xl p-5 max-w-sm w-full shadow-2xl mb-2" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
-                            <div className="font-bold text-white flex items-center gap-2">🎒 使用道具 <span className="text-xs text-yellow-400 bg-stone-800 px-2 py-0.5 rounded-full border border-stone-700">剩餘 {battleItemUses}/3 次</span></div>
+                            <div className="font-bold text-white flex items-center gap-2">🎒 使用道具 <span className="text-xs text-yellow-400 bg-stone-800 px-2 py-0.5 rounded-full border border-stone-700">剩餘 {battleItemUses}/{playerItemUseMax} 次</span></div>
                             <button className="text-stone-500 hover:text-white text-lg leading-none" onClick={() => setShowItemPanel(false)}>✕</button>
                         </div>
                         {BATTLE_ITEMS.every(bi => !(progress.items?.[bi.id] > 0)) ? (
@@ -3795,6 +3817,7 @@ const flushManorParasitePending = (owner, target, buf) => {
       { id: 'antidote',      name: '道具製作：萬能解藥', desc: `戰鬥中使用，清除自身所有負面狀態。持有：${progress.items?.antidote||0} 個`,      cost: 3, currency: 'ap', icon: '💊', canBuy: progress.ap >= 3, bought: false, isInfinite: true, onBuy: craftItem('antidote',      '萬能解藥', '💊') },
       { id: 'guard_potion',  name: '道具製作：防護藥水', desc: `戰鬥中使用，獲得 50 點護盾。持有：${progress.items?.guard_potion||0} 個`,        cost: 2, currency: 'ap', icon: '🛡️', canBuy: progress.ap >= 2, bought: false, isInfinite: true, onBuy: craftItem('guard_potion',  '防護藥水', '🛡️') },
       { id: 'health_food',   name: '道具製作：保健食品', desc: `戰鬥中使用，獲得再生狀態 3 回合。持有：${progress.items?.health_food||0} 個`,     cost: 2, currency: 'ap', icon: '🥗', canBuy: progress.ap >= 2, bought: false, isInfinite: true, onBuy: craftItem('health_food',   '保健食品', '🥗') },
+      { id: 'energy_drink',  name: '道具製作：提神飲料', desc: `戰鬥中使用，瞬間獲得 30 能量。持有：${progress.items?.energy_drink||0} 個`,       cost: 2, currency: 'ap', icon: '🥤', canBuy: progress.ap >= 2, bought: false, isInfinite: true, onBuy: craftItem('energy_drink',  '提神飲料', '🥤') },
     ];
 
     const crystalItems = [
