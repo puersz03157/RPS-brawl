@@ -1,5 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Zap, Sparkles, BookOpen, Home, Gamepad2, Coffee, MessageCircle, ArrowLeft, ShoppingCart, Star, Camera, X, Moon, Heart, HelpCircle, Info, AlertTriangle, Skull, ChevronLeft, ChevronRight, Lock, Trophy, CheckCircle, Settings, Trash2 } from 'lucide-react';
+import { ELEMENTS, RPS_CHOICES } from './data/elements';
+import { STORY_CHAPTERS } from './data/storyChapters';
+import { BATTLE_ITEMS } from './data/battleItems';
+import { FORGE_PERMANENT, FORGE_CONSUMABLE, ALL_ARMORS } from './data/forge';
+import { CHARACTERS, HIDDEN_CHARACTER, VARIANTS } from './data/characters';
+import { NORMAL_MONSTERS, BOSS_MONSTERS, ADVANCED_MONSTERS, ADVANCED_BOSSES, TUTORIAL_ENEMY } from './data/monsters';
+import { ALL_TALENTS } from './data/talents';
+import { REWARD_POOL, STATUS_DOCS } from './data/rewards';
+import { MINE_LEVELS, MINE_CHAR_BONUS } from './data/mine';
+import { INGREDIENTS, RECIPES, COOKING_PREF_BONUS, GARDEN_INGREDIENTS, ALL_INGREDIENTS } from './data/cooking';
+import { DAILY_QUEST_POOL, DAILY_QUEST_FULL_CLEAR, ALL_DAILY_QUESTS, ENCOUNTER_EVENTS } from './data/dailyQuests';
+import { GUIDE_TERMS, GUIDE_SYSTEMS, ACHIEVEMENTS } from './data/guideAndAchievements';
+import { CHAPTER_HOME_ADVANTAGES } from './data/chapterHomeAdvantage';
 
 // ==========================================
 // 0. 音效系統 (Web Audio API)
@@ -108,7 +121,14 @@ const playSound = (type) => {
 // ==========================================
 // 1. 基礎工具函數 (絕對安全全域區)
 // ==========================================
-const shuffle = (array) => [...array].sort(() => Math.random() - 0.5);
+const shuffle = (array) => {
+  const a = [...array];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
 
 const getRandomTalents = (budget, availableTalents) => {
   let talents = [];
@@ -146,335 +166,65 @@ const getStatusValueSum = (ent, type) => {
     return ent.status.filter(s => s && s.type === type).reduce((acc, curr) => acc + (curr.value || 0), 0);
 };
 
+/** 猜拳傷害第一步：面板攻防 + 狀態加減（與 playRound 一致） */
+const getPanelAtk = (ent) => {
+    if (!ent) return 0;
+    return ent.atk + getStatusValueSum(ent, 'ATK_UP') - getStatusValueSum(ent, 'ATK_DOWN');
+};
+const getPanelDef = (ent) => {
+    if (!ent) return 0;
+    return ent.def + getStatusValueSum(ent, 'DEF_UP') - getStatusValueSum(ent, 'DEF_DOWN');
+};
+
+/**
+ * 本側為「出拳獲勝的攻擊方」時的攻擊值推演（順序與 playRound 相同：狀態 → 黑炎+30 → t6×1.5）
+ * lines 供戰鬥圖鑑說明，避免玩家誤以為面板數即最終傷害。
+ */
+const getAttackerAtkBreakdown = (ent) => {
+    const panel = getPanelAtk(ent);
+    const lines = [];
+    let v = panel;
+    if ((ent.talents || []).includes('t_blackflame_human') && ent.hp < ent.maxHp * 0.4) {
+        v += 30;
+        lines.push('狂化血脈（生命<40%）：攻擊 +30；命中時對手「防禦」結算 −15');
+    }
+    if ((ent.talents || []).includes('t6') && ent.hp < ent.maxHp * 0.3) {
+        const before = v;
+        v = Math.floor(v * 1.5);
+        lines.push(`絕境反擊（生命<30%）：攻擊值×1.5（${before}→${v}）`);
+    }
+    return { panel, final: v, lines };
+};
+
+/** 攻擊方為黑炎暴走且生命<40% 時，對「防禦方」結算採用的防禦值（對方 def -15） */
+const getDefValueVsBlackflameAttacker = (defender, attacker) => {
+    if (!defender || !attacker) return null;
+    if (!(attacker.talents || []).includes('t_blackflame_human')) return null;
+    if (attacker.hp >= attacker.maxHp * 0.4) return null;
+    return Math.max(0, getPanelDef(defender) - 15);
+};
+
 // ==========================================
 // 2. 遊戲資料庫
 // ==========================================
-const ELEMENTS = {
-  WOOD:  { id: 'wood',  name: '木', icon: '🌿', color: 'text-green-400',  bg: 'bg-green-100',  border: 'border-green-500'  },
-  WATER: { id: 'water', name: '水', icon: '💧', color: 'text-blue-400',   bg: 'bg-blue-100',   border: 'border-blue-500'   },
-  FIRE:  { id: 'fire',  name: '火', icon: '🔥', color: 'text-red-400',    bg: 'bg-red-100',    border: 'border-red-500'    },
-  LIGHT: { id: 'light', name: '光', icon: '✨', color: 'text-yellow-400', bg: 'bg-yellow-100', border: 'border-yellow-500' },
-  DARK:  { id: 'dark',  name: '暗', icon: '🌑', color: 'text-purple-400', bg: 'bg-purple-100', border: 'border-purple-500' },
-};
+// （已拆分）元素 / 角色 / 魔物 / 天賦資料已搬到 `src/data/*`
 
-const RPS_CHOICES = {
-  ROCK: { id: 'ROCK', icon: '✊', name: '石頭', beats: 'SCISSORS' },
-  PAPER: { id: 'PAPER', icon: '🖐️', name: '布', beats: 'ROCK' },
-  SCISSORS: { id: 'SCISSORS', icon: '✌️', name: '剪刀', beats: 'PAPER' }
-};
-
-const CHARACTERS = [
-  { id: 'bear', name: '熊吉', icon: '🐻', title: '森林守護者', element: ELEMENTS.WOOD, image: 'avatar_bear.png', prefAction: 'snack', stats: { hp: 650, maxHp: 650, atk: 40, def: 30 }, desc: '依賴增益強化自身的爆發型戰士。', lore: '原本是守護森林神木的巨熊獸人。大星晶碎裂導致森林枯萎，為了解決異變而踏上旅程。超級喜歡蜂蜜，肚子餓的時候會變得暴躁。', skill1: { name: '熊吼之怒', cost: 20, desc: '自身隨機獲得一種增益：攻擊提升、防禦提升或再生 (3回合)。' }, skill2: { name: '魚竿甩擊', cost: 80, desc: '消耗身上所有增益，基礎 50 傷害 (每層增益+40)，並施加 🌿[寄生] 3回合。' } },
-  { id: 'wolf', name: '白澤', icon: '🐺', title: '滄海孤狼', element: ELEMENTS.WATER, image: 'avatar_wolf.png', prefAction: 'gaming', stats: { hp: 500, maxHp: 500, atk: 55, def: 20 }, desc: '善用冰封護盾進行防禦與風險反擊。', lore: '來自極寒之地的冷酷劍客，奉命尋找失落的星晶。外表高冷，但其實是個會默默幫大家守夜的傲嬌，非常注重保暖。', skill1: { name: '冰封防禦', cost: 30, desc: '給予自身 50 護盾，並獲得「下一次猜拳戰敗時獲得 50 能量」狀態。' }, skill2: { name: '護盾攻擊', cost: 80, desc: '消耗所有護盾造成等量傷害，並自身恢復消耗護盾值一半的 HP。' } },
-  { id: 'cat', name: '布提婭', icon: '🐈‍⬛', title: '夜靈貓', element: ELEMENTS.DARK, image: 'avatar_cat.png', prefAction: 'snack', stats: { hp: 400, maxHp: 400, atk: 70, def: 15 }, desc: '能施加多種負面狀態並吸取生命。', lore: '意外吞下了暗屬性的星晶碎片，化身為擁有強大魔力的夜靈貓。傲慢任性，覺得人類都是她的鏟屎官，但為了保護高級罐罐會拼盡全力。', skill1: { name: '奇異之光', cost: 40, desc: '施加降攻或降防(3回)，再施加封印(1回)。已有的效果不會重複疊加。' }, skill2: { name: '黑暗之抓', cost: 75, desc: '無視護盾造成 80 傷害。對方每有一種負面狀態，自身恢復 30 HP。' } },
-  { id: 'human', name: '普爾斯', icon: '🧑‍🚒', title: '烈焰鬥士', element: ELEMENTS.FIRE, image: 'avatar_human.png', prefAction: 'gaming', stats: { hp: 550, maxHp: 550, atk: 50, def: 20 }, desc: '能引爆燃燒造成毀滅性爆發與回復。', lore: '熱血的工會討伐者，以一把燃燒的大劍聞名。總是衝在最前線享受狩獵魔物的快感，不管遇到什麼困難都覺得「烤個肉吃就能解決」。', skill1: { name: '燃燒之劍', cost: 40, desc: '給予對方 30 傷害，施加 🔥[燃燒] 3回合。目標已燃燒時，改為延長 3 回合。' }, skill2: { name: '黑炎爆發', cost: 80, desc: '給予 70 傷害，立即結算對手燃燒，每結算一回合自身恢復 30 HP。' } },
-  { id: 'elf', name: '布布', icon: '🧚', title: '光之精靈', element: ELEMENTS.LIGHT, image: 'avatar_elf.png', prefAction: 'chat', stats: { hp: 450, maxHp: 450, atk: 45, def: 25 }, desc: '運用能量反噬與葵花子戰鬥的奇兵。', lore: '誕生於光之星晶的精靈，負責引導夜行者們收集星晶。天然呆，喜歡收集發亮的東西和各種植物種子（尤其是葵花子）。', skill1: { name: '能量炸彈', cost: 50, desc: '清空雙方能量並造成各自能量傷害，自身恢復能量差值的 HP。' }, skill2: { name: '囤囤之力', cost: 35, desc: '獲得一個葵花子，每有一個葵花子給予對手 20 傷害 (不消耗)。' } },
-  { id: 'kohaku', name: '琥珀', icon: '🦊', title: '商會會長', element: ELEMENTS.LIGHT, image: 'avatar_kohaku.png', prefAction: 'snack', stats: { hp: 750, maxHp: 750, atk: 55, def: 40 }, desc: '利用金幣與VIP狀態進行極致剝削。', lore: '艾歐蘭斯商會的最高負責人。看似笑瞇瞇其實精打細算，掌握著整個大陸的經濟命脈。用錢砸人是他的拿手好戲。', skill1: { name: '尊榮推銷', cost: 30, desc: '自身獲得 1 枚【商會金幣】與 50 盾，並強制對手成為 💳[VIP] 3回合。' }, skill2: { name: '資本鎮壓', cost: 80, desc: '基礎 80 傷。每消耗 1 枚金幣追加 50 真實傷害並回 30 HP。' } },
-  { id: 'aldous', name: '奧爾德斯', icon: '🦉', title: '大長老', element: ELEMENTS.DARK, image: 'avatar_aldous.png', prefAction: 'chat', stats: { hp: 680, maxHp: 680, atk: 80, def: 30 }, desc: '擁有看破機制的極限單體爆發力。', lore: '黑羽公會大長老，實力深不可測的貓頭鷹獸人。雖然年事已高，但揮舞天羽斬的速度依舊無人能及。戰鬥時周身環繞睿智之風。', skill1: { name: '長老的威壓', cost: 40, desc: '施加 ❄️[封印] 1回、🤐[沉默] 2回與 📉[降防] 3回。' }, skill2: { name: '秘劍・天羽斬', cost: 60, desc: '無視護盾 80 傷。若對手處於沉默或封印，傷害變為 4 倍(320)並吸血 50%。' } },
-  { id: 'moying', name: '墨影', icon: '🌑', title: '影の劍客', element: ELEMENTS.DARK, image: 'avatar_moying.png', prefAction: 'chat', stats: { hp: 560, maxHp: 560, atk: 65, def: 20 }, desc: '藉由武裝協同，以自適應奧義制敵的影系劍客。', lore: '來自極寒之地的老練劍客，白澤昔日的前輩。行蹤飄忽，雲遊各大陸。看似隨意卻洞悉全局，每次出手都恰到好處，令人猜不透他的真正目的。', skill1: { name: '影切', cost: 35, desc: '造成 45 傷害，施加降防 2 回合。裝備消耗武裝時增強：65 傷 + 自身獲迴避 1 次。' }, skill2: { name: '墨影絕斬', cost: 75, desc: '依敵方狀態自適應。有降防→無視護盾 130 真實傷；有封印/沉默→90 傷+竊取增益；二者皆有→150 真實傷+竊取；否則 80 傷並施沉默 2 回。' } },
-  { id: 'jack', name: '傑克', icon: '🃏', title: '幻影怪盜', element: ELEMENTS.DARK, image: 'avatar_jack.png', prefAction: 'gaming', stats: { hp: 480, maxHp: 480, atk: 65, def: 15 }, desc: '施加道具反轉使敵方道具效果翻轉，以怪盜手法反客為主。', lore: '布提婭的哥哥，行蹤神出鬼沒的幻影怪盜。不留姓名、只留傳說，每次出現必帶走目標，又在瞬間消失無蹤。對妹妹的關心從不言明，只以各種隱晦的方式暗中守護。', skill1: { name: '盜影疾走', cost: 35, desc: '自身獲得 🔄[道具反轉] 3 回合（道具效果翻轉打向對手），並恢復 1 次道具使用次數。每場最多恢復 2 次。' }, skill2: { name: '怪盜絕技', cost: 70, desc: '造成 80 傷害；自身持有 [道具反轉] 時，改為無視護盾並追加 60 真實傷害，同時延長 [道具反轉] 2 回合。' } }
-];
-
-const HIDDEN_CHARACTER = { 
-  id: 'xiangxiang', name: '虎吉', icon: '🐯', title: '慵懶的白虎', element: ELEMENTS.LIGHT, isEmoji: false, image: 'avatar_xiangxiang.png', stats: { hp: 700, maxHp: 700, atk: 60, def: 35 }, prefAction: 'snack', desc: '全圖鑑收集獎勵。擁有強大的防禦與拘束力。', lore: '傳說中負責維持大陸夜間秩序的白虎神獸。因為大星晶碎裂導致魔物橫行，被迫瘋狂加班巡夜，導致他現在極度嗜睡。被柯特的訓獸之力與特製宵夜喚醒而加入。', skill1: { name: '軟萌肚肚', cost: 40, desc: '展現充滿彈性的肚子，獲得 50 護盾，並使對手 💫[強制] 下回出拳。' }, skill2: { name: '致命擁抱', cost: 90, desc: '無視護盾造成 100 傷害。若施放時有護盾，額外加 50 傷並 ❄️[封印]。' } 
-};
-
-const VARIANTS = [
-  { id: 'newyear_bear', baseId: 'bear', name: '新年熊吉', icon: '🧧', title: '人人有魚', element: ELEMENTS.WOOD, isEmoji: false, image: 'avatar_newyear_bear.png', stats: { hp: 700, maxHp: 700, atk: 35, def: 35 }, desc: '分享祝福的森林大胃王。', lore: '換上喜氣洋洋的紅色和服，拿著釣竿到處分享漁獲與祝福的熊吉。', skill1: { name: '新春撒網', cost: 30, desc: '自身獲得 ⚡[亢奮] 3回合，對手陷入 💤[疲憊] 3回合。' }, skill2: { name: '年年有餘', cost: 80, desc: '消耗所有能量造成 80 基礎傷害。自身恢復 100 HP與80盾，對手僅恢復 30 HP。' }, unlockHint: '收集 50 個碎片於圖鑑合成解鎖。' },
-  { id: 'harvest_elf', baseId: 'elf', name: '豐收節布布', icon: '🌻', title: '花開富貴', element: ELEMENTS.WOOD, isEmoji: false, image: 'avatar_harvest_elf.png', stats: { hp: 600, maxHp: 600, atk: 40, def: 30 }, desc: '生命再生與護盾雙修的生存輔助。', lore: '換上秋季豐收服飾的布布，口袋裡總是塞滿了剛採收的黃金葵花子。', skill1: { name: '黃金種子', cost: 30, desc: '獲得 1 顆葵花子(上限5)，並獲得再生(3回)。' }, skill2: { name: '萬物滋長', cost: 60, desc: '造成40傷(每顆種子+20傷)，總傷害的50%轉為護盾。' }, unlockHint: '收集 50 個碎片於圖鑑合成解鎖。' },
-  { id: 'blackflame_human', baseId: 'human', name: '黑炎暴走普爾斯', icon: '🔥', title: '終焉煉獄', element: ELEMENTS.FIRE, isEmoji: false, image: 'avatar_blackflame_human.png', stats: { hp: 500, maxHp: 500, atk: 85, def: 15 }, desc: '燃燒結算與殘血狂化的極限輸出。', lore: '被深淵魔炎侵蝕的普爾斯。理智邊緣徘徊，但換來了能將一切焚燒殆盡的終焉之力。', skill1: { name: '餘燼枷鎖', cost: 40, desc: '造成35傷，施加燃燒與易傷(3回)。' }, skill2: { name: '終焉煉獄斬', cost: 85, desc: '基礎80傷。若目標有燃燒，立即結算其傷害，每剩餘回合使奧義傷害+20%。' }, unlockHint: '收集 50 個碎片於圖鑑合成解鎖。' },
-  { id: 'valentine_wolf', baseId: 'wolf', name: '情人節白澤', icon: '💝', title: '冷酷甜心', element: ELEMENTS.WATER, isEmoji: false, image: 'avatar_valentine_wolf.png', stats: { hp: 550, maxHp: 550, atk: 50, def: 35 }, desc: '靈活護盾與封印控制的防禦反擊者。', lore: '罕見地穿上正裝，嘴裡刁著巧克力棒。雖然總是一臉嫌棄，但對於收到的心意都會好好珍惜。', skill1: { name: '糖衣護盾', cost: 45, desc: '獲得60點護盾，並賦予迴避(1次)。' }, skill2: { name: '心碎冰封', cost: 75, desc: '造成65傷，60%機率施加封印(1回)。' }, unlockHint: '收集 50 個碎片於圖鑑合成解鎖。' },
-  { id: 'halloween_cat', baseId: 'cat', name: '萬聖節布提婭', icon: '🎃', title: '搗蛋貓咪', element: ELEMENTS.DARK, isEmoji: false, image: 'avatar_halloween_cat.png', stats: { hp: 450, maxHp: 450, atk: 65, def: 20 }, desc: '隨機擾亂與負面狀態增傷的惡作劇大師。', lore: '萬聖夜的絕對統治者。為了討要全大陸的高級貓草罐罐，她不介意用最惡劣的咒語來「拜訪」不給糖的傢伙。', skill1: { name: '不給糖就搗蛋', cost: 30, desc: '隨機賦予敵方一種屬性下降，且自身獲得亢奮或迴避。' }, skill2: { name: '萬聖影襲', cost: 80, desc: '無視護盾基礎50傷。目標每有一種負面狀態，傷害提升 1.5 倍(連乘)。' }, unlockHint: '收集 50 個碎片於圖鑑合成解鎖。' },
-  { id: 'christmas_xiangxiang', baseId: 'xiangxiang', name: '聖誕節虎吉', icon: '🎁', title: '最棒的禮物', element: ELEMENTS.LIGHT, isEmoji: false, image: 'avatar_christmas_xiangxiang.png', stats: { hp: 850, maxHp: 850, atk: 70, def: 45 }, desc: '全圖鑑收集與異裝齊全的終極型態。', lore: '被柯特套上麋鹿裝的白虎。原本想在聖誕節好好補眠，卻因為收到太多禮物而難得精神百倍。', skill1: { name: '聖誕大禮包', cost: 40, desc: '隨機抽取三種增益狀態賦予自身(3回合)。' }, skill2: { name: '聖夜沉眠', cost: 90, desc: '造成100點光屬性傷害，並強制施加眩目/強制。' }, unlockHint: '收集齊其餘五件異裝後自動解鎖。' }
-];
-
-const NORMAL_MONSTERS = [
-  { id: 'm1', name: '草原史萊姆', title: '黏糊糊的', element: ELEMENTS.WOOD, isEmoji: false, icon: '🍄', image: 'monster_slime.png', prefHand: 'PAPER', stats: { hp: 250, maxHp: 250, atk: 25, def: 5 }, lore: '最常見的低級魔物，喜歡寄生在別人身上吸取養分。被收服後意外地適合拿來當抱枕。', skill1: { name: '寄生孢子', cost: 30, desc: '造成 10 傷害並施加 🌿[寄生] 2回合。' }, skill2: { name: '光合作用', cost: 60, desc: '回復自己 60 點生命值。' } },
-  { id: 'm2', name: '巨石蟹', title: '硬邦邦的', element: ELEMENTS.WATER, isEmoji: false, icon: '🦀', image: 'monster_crab.png', prefHand: 'SCISSORS', stats: { hp: 400, maxHp: 400, atk: 20, def: 25 }, lore: '全身覆蓋堅硬岩石的螃蟹，防禦力驚人。生氣時會吐出冰封泡泡。', skill1: { name: '硬化', cost: 30, desc: '獲得 50 點護盾。' }, skill2: { name: '泡泡光線', cost: 60, desc: '造成 40 傷害並施加 ❄️[封印] 1回合。' } },
-  { id: 'm3', name: '爆炎犬', title: '熱騰騰的', element: ELEMENTS.FIRE, isEmoji: false, icon: '🐕', image: 'monster_dog.png', prefHand: 'ROCK', stats: { hp: 300, maxHp: 300, atk: 45, def: 10 }, lore: '性格暴躁的犬型魔物，全身燃燒著火焰，咬合力極強。收服後冬天可以用來當暖爐。', skill1: { name: '火焰牙', cost: 30, desc: '造成 20 傷害並施加 🔥[燃燒] 2回合。' }, skill2: { name: '地獄火', cost: 70, desc: '造成高達 80 點傷害。' } },
-  { id: 'm4', name: '閃耀精靈', title: '刺眼的', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🧚', image: 'monster_fairy.png', prefHand: 'PAPER', stats: { hp: 280, maxHp: 280, atk: 35, def: 15 }, lore: '被光之星晶過度影響而失去理智的精靈，會發出強光致盲對手。', skill1: { name: '致盲', cost: 40, desc: '施加 💫[眩目] 1回合。' }, skill2: { name: '神聖新星', cost: 70, desc: '造成 40 點傷害並回復自身 40 血。' } },
-  { id: 'm5', name: '影魔眼', title: '陰森森的', element: ELEMENTS.DARK, isEmoji: false, icon: '👁️', image: 'monster_eye.png', prefHand: 'ROCK', stats: { hp: 220, maxHp: 220, atk: 55, def: 5 }, lore: '漂浮在空中的巨大眼球，凝視會讓人陷入恐懼與沉默。', skill1: { name: '恐懼凝視', cost: 40, desc: '施加 🤐[沉默] 2回合。' }, skill2: { name: '虛空射線', cost: 60, desc: '造成 70 點高額傷害。' } },
-  { id: 'm6', name: '刺藤傀儡', title: '荊棘纏繞的', element: ELEMENTS.WOOD, isEmoji: false, icon: '🪴', image: 'monster_vine.png', prefHand: 'SCISSORS', stats: { hp: 350, maxHp: 350, atk: 20, def: 30 }, lore: '由魔力星晶滋養的藤蔓怪，渾身佈滿荊棘。行動遲緩，但能讓靠近的敵人越戰越弱。', skill1: { name: '荊棘纏繞', cost: 35, desc: '對敵施加 📉[降攻] 與 📉[降防] 各 2 回合。' }, skill2: { name: '蔓延怒刺', cost: 65, desc: '造成 30 傷害，敵方每個負面狀態額外追加 20 傷。' } },
-  { id: 'm7', name: '海藍水母', title: '飄渺無形的', element: ELEMENTS.WATER, isEmoji: false, icon: '🪼', image: 'monster_jellyfish.png', prefHand: 'PAPER', stats: { hp: 230, maxHp: 230, atk: 35, def: 10 }, lore: '在深海中靜靜飄蕩的神秘水母，半透明的傘蓋能折射光線讓人難以捕捉。觸手帶有強力麻痺毒素。', skill1: { name: '幻象漂浮', cost: 30, desc: '獲得 💨[迴避] 1次，並奪取敵方 20 點能量。' }, skill2: { name: '電擊觸手', cost: 65, desc: '造成 60 傷害，施加 ❄️[封印] 1回合並再奪取 30 點能量。' } },
-  { id: 'm8', name: '熔岩蜥蜴', title: '滾燙的', element: ELEMENTS.FIRE, isEmoji: false, icon: '🦎', image: 'monster_lizard.png', prefHand: 'ROCK', stats: { hp: 320, maxHp: 320, atk: 35, def: 15 }, lore: '棲息於火山岩漿地帶的蜥蜴型魔物。表皮由凝固岩漿構成，蓄積熱能後能引爆全身造成毀滅性衝擊。', skill1: { name: '熔甲防禦', cost: 35, desc: '獲得 60 點護盾。' }, skill2: { name: '熔岩爆裂', cost: 70, desc: '消耗所有護盾，造成 40 加護盾等量的真實傷害。' } },
-  { id: 'm9', name: '星晶鷺鳥', title: '輕盈飛翔的', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🦢', image: 'monster_heron.png', prefHand: 'SCISSORS', stats: { hp: 260, maxHp: 260, atk: 40, def: 10 }, lore: '翅膀結晶化的光屬性鳥型魔物，飛行速度極快。振翅產生的光芒能令對手陷入眩目。', skill1: { name: '星光羽翼', cost: 30, desc: '獲得 ⚡[亢奮] 3回合，並獲得 30 點護盾。' }, skill2: { name: '天光衝擊', cost: 60, desc: '造成 55 傷害，並強制對手下回 💫[強制出拳]。' } },
-  { id: 'm10', name: '噬夢獸', title: '令人昏昏欲睡的', element: ELEMENTS.DARK, isEmoji: false, icon: '🦇', image: 'monster_bat.png', prefHand: 'PAPER', stats: { hp: 280, maxHp: 280, atk: 45, def: 10 }, lore: '在夜間悄悄侵入夢境吸食精神力的蝙蝠型魔物。讓對手陷入持續疲憊的同時，自身卻越來越精力充沛。', skill1: { name: '夢魘爪', cost: 35, desc: '施加 💤[疲憊] 3回合，並自身恢復 30 HP。' }, skill2: { name: '虛空侵蝕', cost: 70, desc: '無視護盾造成 50 傷害，敵方每個負面狀態額外吸血 20 HP。' } }
-];
-
-const BOSS_MONSTERS = [
-  { id: 'b1', name: '災厄黑龍', title: '深淵霸主', element: ELEMENTS.DARK, isEmoji: false, icon: '🐉', image: 'boss_dragon.png', prefHand: 'ROCK', stats: { hp: 800, maxHp: 800, atk: 55, def: 25 }, lore: '盤踞在廢棄古城的巨龍，擁有毀滅性的吐息，被認為是大星晶碎裂的罪魁禍首之一。', skill1: { name: '龍威', cost: 40, desc: '扣除 20 能量並施加 🤐[沉默] 1回合。' }, skill2: { name: '毀滅吐息', cost: 90, desc: '無視護盾造成 150 點傷害。' } },
-  { id: 'b2', name: '耀光大天使', title: '天界審判', element: ELEMENTS.LIGHT, isEmoji: false, icon: '👼', image: 'boss_angel.png', prefHand: 'PAPER', stats: { hp: 750, maxHp: 750, atk: 60, def: 20 }, lore: '原本是守護神殿的天使，卻被過度純粹的光之能量逼瘋，對所有入侵者降下無差別的神罰。', skill1: { name: '致盲之光', cost: 40, desc: '施加 💫[眩目] 1回合，並獲得 30 護盾。' }, skill2: { name: '神罰', cost: 90, desc: '造成 130 點直接傷害。' } },
-  { id: 'b3', name: '獄炎魔王', title: '焦熱地獄', element: ELEMENTS.FIRE, isEmoji: false, icon: '🌋', image: 'boss_demon.png', prefHand: 'ROCK', stats: { hp: 850, maxHp: 850, atk: 65, def: 15 }, lore: '從火山深處誕生的炎之惡魔，企圖將整個世界化為焦熱地獄。', skill1: { name: '沸騰之血', cost: 40, desc: '提升自身 10 攻擊力，並施加 🔥[燃燒] 2回合。' }, skill2: { name: '天地灰燼', cost: 100, desc: '造成 180 點毀滅性傷害。' } },
-  { id: 'b4', name: '森之巨神', title: '萬古腐化', element: ELEMENTS.WOOD, isEmoji: false, icon: '🌳', image: 'boss_tree.png', prefHand: 'PAPER', stats: { hp: 1000, maxHp: 1000, atk: 45, def: 35 }, lore: '被腐化力量侵蝕的遠古樹神，其寄生藤蔓能瞬間吸乾整座森林的生命力。', skill1: { name: '寄生藤蔓', cost: 40, desc: '造成 30 傷害並施加 🌿[寄生] 3回合。' }, skill2: { name: '萬物歸一', cost: 80, desc: '瞬間回復 200 點生命值。' } },
-  { id: 'b5', name: '冰霜巨龍', title: '絕對零度', element: ELEMENTS.WATER, isEmoji: false, icon: '❄️', image: 'boss_icedragon.png', prefHand: 'SCISSORS', stats: { hp: 700, maxHp: 700, atk: 50, def: 40 }, lore: '沉睡在冰川下的古老存在，其吐息能帶來絕對零度的冰河時代。', skill1: { name: '冰霜裝甲', cost: 40, desc: '獲得高達 80 點的護盾。' }, skill2: { name: '冰河時代', cost: 90, desc: '造成 100 傷害，清空能量並施加 ❄️[封印] 1回合。' } }
-];
-
-const ADVANCED_MONSTERS = [
-  { id: 'am1', name: '猩紅史萊姆', title: '沸騰的', element: ELEMENTS.FIRE, isEmoji: false, icon: '🩸', image: 'adv_slime.png', prefHand: 'ROCK', stats: { hp: 600, maxHp: 600, atk: 55, def: 20 }, lore: '吸收了過量火屬性星晶的變異體。', skill1: { name: '強酸腐蝕', cost: 40, desc: '造成20傷，施加防禦下降與易傷(3回)。' }, skill2: { name: '自爆', cost: 90, desc: '造成120點無視護盾的真實傷害。' }, isUncapturable: true },
-  { id: 'am2', name: '極光護衛蟹', title: '堅不可摧', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🛡️', image: 'adv_crab.png', prefHand: 'PAPER', stats: { hp: 800, maxHp: 800, atk: 40, def: 50 }, lore: '外殼已經完全星晶化的變異蟹。', skill1: { name: '星晶裝甲', cost: 30, desc: '獲得100點護盾。' }, skill2: { name: '極光制裁', cost: 80, desc: '造成80傷並施加眩目(1回)。' }, isUncapturable: true },
-  { id: 'am3', name: '深淵監視者', title: '凝視者', element: ELEMENTS.DARK, isEmoji: false, icon: '🧿', image: 'adv_eye.png', prefHand: 'SCISSORS', stats: { hp: 550, maxHp: 550, atk: 80, def: 15 }, lore: '來自更深層的恐懼。', skill1: { name: '精神污染', cost: 40, desc: '施加沉默(2回)與疲憊(3回)。' }, skill2: { name: '湮滅射線', cost: 70, desc: '造成100點高額傷害。' }, isUncapturable: true }
-];
-
-const ADVANCED_BOSSES = [
-  { id: 'ab1', name: '混沌縫合怪', title: '人造惡意', element: ELEMENTS.WOOD, isEmoji: false, icon: '🧟', image: 'adv_boss_amalgam.png', prefHand: 'ROCK', stats: { hp: 1500, maxHp: 1500, atk: 75, def: 40 }, lore: '不知名法師拼湊出的恐怖怪物。', skill1: { name: '劇毒孢子', cost: 40, desc: '造成40傷並施加寄生與燃燒(3回)。' }, skill2: { name: '大地粉碎', cost: 100, desc: '造成200點傷害，並施加強制(1回)。' }, isUncapturable: true },
-  { id: 'ab2', name: '星曜古龍', title: '星晶化身', element: ELEMENTS.LIGHT, isEmoji: false, icon: '🐲', image: 'adv_boss_dragon.png', prefHand: 'PAPER', stats: { hp: 2000, maxHp: 2000, atk: 90, def: 50 }, lore: '完全吞噬了大星晶核心的遠古巨龍，難以名狀的災厄。', skill1: { name: '星辰庇護', cost: 50, desc: '獲得150點護盾與再生(3回)。' }, skill2: { name: '星爆氣流', cost: 120, desc: '無視護盾造成250點真實傷害。' }, isUncapturable: true }
-];
-
-const TUTORIAL_ENEMY = {
-    id: 'tutorial_dummy', name: '訓練魔傀儡', title: '乖巧的', element: ELEMENTS.WOOD,
-    isEmoji: true, emoji: '🪆', icon: '🪆',
-    prefHand: 'ROCK',
-    stats: { hp: 220, maxHp: 220, atk: 12, def: 5 },
-    lore: '由教官以魔法製成的訓練用傀儡，不會造成致命傷害。',
-    skill1: { name: '輕拍', cost: 999, desc: '造成 10 點傷害。' },
-    skill2: { name: '搖晃', cost: 999, desc: '造成 20 點傷害。' },
-    isUncapturable: true
-};
-
-const ALL_TALENTS = [
-  { id: 't1', name: '活力', cost: 1, desc: '最大生命值 +100', icon: '❤️' },
-  { id: 't2', name: '怪力', cost: 1, desc: '攻擊力 +10', icon: '⚔️' },
-  { id: 't3', name: '靈光', cost: 1, desc: '戰鬥開始時，初始能量 +25', icon: '⚡' },
-  { id: 't4', name: '鐵壁', cost: 2, desc: '戰鬥開始時，獲得 80 點護盾', icon: '🛡️' },
-  { id: 't5', name: '鬥氣', cost: 2, desc: '平手時，獲得能量提升為 30，並恢復 15 HP', icon: '🔄' },
-  { id: 't6', name: '逆境', cost: 2, desc: '生命值低於 30% 時，攻擊力提升 50%', icon: '🔥' },
-  { id: 't7', name: '嗜血', cost: 3, desc: '造成傷害時，回復等同傷害量 20% 的生命', icon: '🦇' },
-  { id: 't8', name: '賢者', cost: 3, desc: '所有技能與奧義，耗能減少 20%', icon: '📖' },
-  { id: 't_bear', name: '厚實脂肪', cost: 3, desc: '開場隨機獲得 2 種增益狀態(全場持續)。(熊吉專屬)', icon: '🍯', req: 'char_talents', exclusiveTo: 'bear' },
-  { id: 't_wolf', name: '極寒護體', cost: 3, desc: '回合結束時，若有護盾則恢復 25 HP。(白澤專屬)', icon: '❄️', req: 'char_talents', exclusiveTo: 'wolf' },
-  { id: 't_cat', name: '虐襲', cost: 3, desc: '回合結束時，對手每個負面狀態受 15 傷。(布提婭專屬)', icon: '🐾', req: 'char_talents', exclusiveTo: 'cat' },
-  { id: 't_human', name: '助燃劑', cost: 3, desc: '敵人受到的燃燒傷害提升 50%。(普爾斯專屬)', icon: '🛢️', req: 'char_talents', exclusiveTo: 'human' },
-  { id: 't_elf', name: '倉鼠性格', cost: 3, desc: '開場直接獲得 2 顆葵花子。(布布專屬)', icon: '🐹', req: 'char_talents', exclusiveTo: 'elf' },
-  { id: 't_xiangxiang', name: '柯特的愛心宵夜', cost: 3, desc: 'HP低於50%時每回合回覆 20 HP 並獲 10 盾。(虎吉專屬)', icon: '🍜', req: 'char_talents', exclusiveTo: 'xiangxiang' },
-  { id: 't_moying', name: '影術之道', cost: 3, desc: '武裝機率觸發效果必定觸發，腐蝕刃固定施加降防。(墨影專屬)', icon: '🌑', req: 'char_talents', exclusiveTo: 'moying' },
-  { id: 't_jack', name: '贓物大師', cost: 3, desc: '己方使用道具時，若對手持有道具反轉，額外造成 30 點真實傷害。(傑克專屬)', icon: '🎭', req: 'char_talents', exclusiveTo: 'jack' },
-  { id: 't9', name: '銳利', cost: 4, desc: '出剪刀獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '✂️', req: 'cost4' },
-  { id: 't10', name: '堅硬', cost: 4, desc: '出石頭獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🪨', req: 'cost4' },
-  { id: 't11', name: '柔和', cost: 4, desc: '出布獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🧻', req: 'cost4' },
-  { id: 't12', name: '神佑', cost: 5, desc: '絕對霸體免疫異常，且受到直接傷害減少 15%', icon: '👼', req: 'cost5' },
-  { id: 't13', name: '極限爆發', cost: 5, desc: '所有造成的直接傷害無條件 x1.5 倍', icon: '💥', req: 'cost5' },
-  { id: 't_harvest_elf', name: '豐饒之角', cost: 5, desc: '初始+2種子。再生狀態時受傷-15%，每回恢復5能量。(豐收節布布專屬)', icon: '🌽', req: 'cost5', exclusiveTo: 'harvest_elf' },
-  { id: 't_blackflame_human', name: '狂化血脈', cost: 5, desc: 'HP低於40%時攻擊力提升30點，且無視目標15點防禦。(黑炎普爾斯專屬)', icon: '🩸', req: 'cost5', exclusiveTo: 'blackflame_human' },
-  { id: 't_valentine_wolf', name: '苦甜回憶', cost: 5, desc: '護盾被破壞時，恢復20點能量並獲得攻擊提升3回合。(情人節白澤專屬)', icon: '💝', req: 'cost5', exclusiveTo: 'valentine_wolf' },
-  { id: 't_halloween_cat', name: '幻夜貓蹤', cost: 5, desc: '回合結束對手每個Debuff造成15傷。對手有Debuff時減傷20%。(萬聖布提婭專屬)', icon: '🦇', req: 'cost5', exclusiveTo: 'halloween_cat' },
-  { id: 't_christmas_xiangxiang', name: '最棒的禮物', cost: 5, desc: '每 3 回合自動恢復 10% 最大生命值並獲得 20 能量。(聖誕虎吉專屬)', icon: '🎄', req: 'cost5', exclusiveTo: 'christmas_xiangxiang' }
-];
-
-const REWARD_POOL = [
-  { id: 'r1', name: '生命湧動', icon: '❤️', desc: '最大生命值 +150，並回復等量生命。', apply: (p, progRef) => { p.maxHp += 150; p.hp += 150; return p; } },
-  { id: 'r2', name: '夜行者貓飯', icon: '🍗', desc: '攻擊力永久 +25。', apply: (p, progRef) => { p.atk += 25; return p; } },
-  { id: 'r3', name: '防禦強化', icon: '🛡️', desc: '防禦力永久 +20。', apply: (p, progRef) => { p.def += 20; return p; } },
-  { id: 'r4', name: '戰術護盾', icon: '🔰', desc: '每次戰鬥開始時，自動獲得 60 點護盾。', apply: (p, progRef) => { p.permaBuffs = {...p.permaBuffs, startShield: (p.permaBuffs?.startShield || 0) + 60}; return p; } },
-  { id: 'r5', name: '能量充沛', icon: '⚡', desc: '每次戰鬥開始時，額外獲得 30 點能量。', apply: (p, progRef) => { p.permaBuffs = {...p.permaBuffs, startEnergy: (p.permaBuffs?.startEnergy || 0) + 30}; return p; } },
-  { id: 'r6', name: '星晶餽贈', icon: '💎', desc: '立刻獲得 30 顆星晶。', apply: (p, progRef) => { if(progRef) progRef.crystals += 30; return p; } }
-];
-
-const STATUS_DOCS = [
-    { name: '攻擊提升/下降', effect: '攻擊力增加/減少 20 點。', icon: '⚔️', color: 'text-orange-400' },
-    { name: '防禦提升/下降', effect: '防禦力增加/減少 20 點。', icon: '🛡️', color: 'text-cyan-400' },
-    { name: '再生', effect: '每回合結束恢復 20 點 HP。', icon: '💖', color: 'text-pink-400' },
-    { name: '燃燒', effect: '每回合結束受到 20 點灼燒傷害。', icon: '🔥', color: 'text-red-500' },
-    { name: '寄生', effect: '每回合結束被吸取 15 點生命轉移至對手。', icon: '🌿', color: 'text-green-500' },
-    { name: '易傷', effect: '受到的傷害變為 1.2 倍。', icon: '💢', color: 'text-red-300' },
-    { name: 'VIP', effect: '受到的最終傷害變為 1.3 倍，且每次受傷額外流失 5 點能量。', icon: '💳', color: 'text-yellow-300' },
-    { name: '迴避', effect: '免除下一次受到的直接傷害。', icon: '💨', color: 'text-green-300' },
-    { name: '疲憊', effect: '平手時無法獲得能量。', icon: '💤', color: 'text-stone-400' },
-    { name: '亢奮', effect: '平手獲取的能量提升 50%。', icon: '⚡', color: 'text-yellow-500' },
-    { name: '封印', effect: '下次出拳無法使用特定的手勢。', icon: '❄️', color: 'text-blue-400' },
-    { name: '強制', effect: '下次出拳被強制固定為特定手勢。', icon: '💫', color: 'text-yellow-400' },
-    { name: '沉默', effect: '無法使用戰技與奧義。', icon: '🤐', color: 'text-purple-400' }
-];
+// （已拆分）獎勵池 / 狀態說明已搬到 `src/data/rewards.js`
 
 // ==========================================
 // 礦坑系統設定
 // ==========================================
-const MINE_LEVELS = [
-  { lv: 1, name: '廢棄礦道',   baseRate: 10, capBase: 100, slots: 2, upgradeCost: 50  },
-  { lv: 2, name: '開採礦坑',   baseRate: 15, capBase: 80,  slots: 2, upgradeCost: 120 },
-  { lv: 3, name: '深層礦脈',   baseRate: 20, capBase: 110, slots: 3, upgradeCost: 250 },
-  { lv: 4, name: '精煉礦場',   baseRate: 25, capBase: 140, slots: 3, upgradeCost: 500 },
-  { lv: 5, name: '星晶核心',   baseRate: 30, capBase: 200, slots: 4, upgradeCost: null },
-];
-
-const MINE_CHAR_BONUS = {
-  bear:  { type: 'rate',     value: 0.25, desc: '碎片產出 +25%（賣力挖礦）' },
-  wolf:  { type: 'cooldown', value: 0.15, desc: '累積速度 +15%（效率型）' },
-  cat:   { type: 'bonus',    value: 0.10, desc: '10% 機率額外獲得 50% 碎片（竊取）' },
-  human: { type: 'cap',      value: 0.20, desc: '碎片上限 +20%（爆發型）' },
-  elf:   { type: 'combo',    rate: 0.15, cap: 0.10, desc: '碎片產出 +15% 且上限 +10%（複合型）' },
-};
+// （已拆分）礦坑系統設定已搬到 `src/data/mine.js`
 
 // ==========================================
 // 烹飪系統設定
 // ==========================================
-const INGREDIENTS = [
-  { id: 'egg',  name: '星紋鳥蛋', icon: '🥚', cost: 10 },
-  { id: 'meat', name: '野獸魔肉', icon: '🥩', cost: 10 },
-  { id: 'fish', name: '銀流溪魚', icon: '🐟', cost: 10 },
-  { id: 'mush', name: '夜光孢菇', icon: '🍄', cost: 10 },
-  { id: 'herb', name: '翠葉靈草', icon: '🌿', cost: 10 },
-  { id: 'water',name: '元素靈水', icon: '💧', cost: 10 },
-];
-
-const RECIPES = [
-  {
-    id: 'grilled_fish', name: '銀流鮮握', grade: '普通', icon: '🍣', cost: 15,
-    ingredients: { fish: 2 },
-    buff: { type: 'hp', value: 100, desc: '戰鬥開始時 HP +100' },
-    favoredBy: ['bear', 'cat'],
-  },
-  {
-    id: 'roast_meat', name: '烈焰炙肉', grade: '普通', icon: '🍖', cost: 15,
-    ingredients: { meat: 2 },
-    buff: { type: 'shield', value: 80, desc: '戰鬥開始時護盾 +80' },
-    favoredBy: ['wolf'],
-  },
-  {
-    id: 'egg_stir', name: '星蛋嫩炒', grade: '普通', icon: '🍳', cost: 15,
-    ingredients: { egg: 2 },
-    buff: { type: 'energy', value: 30, desc: '戰鬥開始時能量 +30' },
-    favoredBy: ['human'],
-  },
-  {
-    id: 'herb_salad', name: '靈草沙拉', grade: '普通', icon: '🥗', cost: 15,
-    ingredients: { herb: 2 },
-    buff: { type: 'regen', value: 10, desc: '戰鬥中每回合再生 +10' },
-    favoredBy: ['elf'],
-  },
-  {
-    id: 'mush_fish_soup', name: '孢菇燉魚湯', grade: '精良', icon: '🍲', cost: 30,
-    ingredients: { fish: 1, mush: 1, water: 1 },
-    buff: { type: 'hp_energy', hp: 80, energy: 20, desc: '戰鬥開始時 HP +80 且能量 +20' },
-    favoredBy: ['bear', 'cat', 'elf'],
-  },
-  {
-    id: 'meat_egg_roll', name: '魔肉蛋捲', grade: '精良', icon: '🌯', cost: 30,
-    ingredients: { meat: 1, egg: 1 },
-    buff: { type: 'atk_shield', atk: 15, shield: 50, desc: '戰鬥開始時攻擊 +15 且護盾 +50' },
-    favoredBy: ['wolf', 'human'],
-  },
-  {
-    id: 'veggie_mush_stew', name: '晨菇靈燉湯', grade: '絕品', icon: '🥣', cost: 80,
-    ingredients: { veggie: 1, rare_mush: 1 },
-    buff: { type: 'hp_regen', hp: 200, regen: 15, desc: '戰鬥開始時 HP +200 且每回合再生 +15' },
-    favoredBy: ['bear', 'elf', 'cat'],
-  },
-  {
-    id: 'deep_fish_sashimi', name: '深淵幻魚刺身', grade: '絕品', icon: '🍱', cost: 80,
-    ingredients: { rare_fish: 2 },
-    buff: { type: 'hp_energy', hp: 150, energy: 60, desc: '戰鬥開始時 HP +150 且能量 +60' },
-    favoredBy: ['cat', 'human', 'wolf'],
-  },
-  {
-    id: 'beast_supreme_roast', name: '魔獸至尊燒', grade: '絕品', icon: '🍢', cost: 80,
-    ingredients: { prime_meat: 1, golden_egg: 1 },
-    buff: { type: 'atk_shield', atk: 30, shield: 150, desc: '戰鬥開始時攻擊 +30 且護盾 +150' },
-    favoredBy: ['wolf', 'bear', 'human'],
-  },
-];
-
-const COOKING_PREF_BONUS = 1.2; // 偏好料理效果 +20%
-
-// 悠活莊園高級食材（僅可從莊園小遊戲取得，不在商店販售）
-const GARDEN_INGREDIENTS = [
-  { id: 'veggie',     name: '晨露嫩蔬', icon: '🥬', source: '種植園' },
-  { id: 'rare_mush',  name: '星晶靈菇', icon: '🍄', source: '種植園' },
-  { id: 'rare_fish',  name: '深淵幻魚', icon: '🐡', source: '釣魚池' },
-  { id: 'prime_meat', name: '魔獸精肉', icon: '🍗', source: '魔物狩獵' },
-  { id: 'golden_egg', name: '金晶巨卵', icon: '🪺', source: '魔物狩獵' },
-];
-const ALL_INGREDIENTS = [...INGREDIENTS, ...GARDEN_INGREDIENTS];
+// （已拆分）烹飪系統設定已搬到 `src/data/cooking.js`
 
 // ==========================================
 // 每日任務系統
 // ==========================================
-const DAILY_QUEST_POOL = {
-  easy: [
-    { id: 'dq_login',        name: '每日登入',           desc: '每天登入遊戲',                    target: 1, reward: { fragments: 20 }, rewardDesc: '💠 碎片 ×20', trigger: 'login'        },
-    { id: 'dq_battle_any',   name: '踏上征途',           desc: '進行任意 1 場戰鬥（不限勝負）',    target: 1, reward: { fragments: 30 }, rewardDesc: '💠 碎片 ×30', trigger: 'battle_any'   },
-    { id: 'dq_visit_garden', name: '莊園探訪',           desc: '訪問悠活莊園',                    target: 1, reward: { crystals: 10  }, rewardDesc: '💎 星晶 ×10',  trigger: 'visit_garden' },
-    { id: 'dq_shop_work',    name: '勤勞工人',           desc: '在商店打工或製作任意道具 1 次',    target: 1, reward: { ap: 1          }, rewardDesc: '⚡ AP ×1',     trigger: 'shop_work'    },
-  ],
-  medium: [
-    { id: 'dq_win_3',        name: '連戰連勝',           desc: '贏得 3 場戰鬥',                   target: 3, reward: { crystals: 30  }, rewardDesc: '💎 星晶 ×30',  trigger: 'battle_win'   },
-    { id: 'dq_cook',         name: '篝火廚師',           desc: '在白晝營地完成 1 道料理',          target: 1, reward: { fragments: 50 }, rewardDesc: '💠 碎片 ×50',  trigger: 'cook'         },
-    { id: 'dq_mine_collect', name: '礦脈採集',           desc: '在星晶礦坑收集碎片 1 次',          target: 1, reward: { crystals: 20  }, rewardDesc: '💎 星晶 ×20',  trigger: 'mine_collect' },
-    { id: 'dq_garden_game',  name: '莊園玩家',           desc: '完成悠活莊園任意小遊戲 1 次',      target: 1, reward: { fragments: 40 }, rewardDesc: '💠 碎片 ×40',  trigger: 'garden_game'  },
-  ],
-  hard: [
-    { id: 'dq_campaign',     name: '戰役征服者',         desc: '完成 1 場夜巡戰役（全3場通關）',   target: 1, reward: { crystals: 100 }, rewardDesc: '💎 星晶 ×100', trigger: 'campaign_clear'},
-    { id: 'dq_gacha',        name: '酒館常客',           desc: '在迷途酒館進行 1 次招募',          target: 1, reward: { fragments: 60 }, rewardDesc: '💠 碎片 ×60',  trigger: 'gacha_pull'   },
-    { id: 'dq_forge',        name: '鍛造師傅',           desc: '使用鍛造工坊製作任意武裝 1 次',    target: 1, reward: { crystals: 50  }, rewardDesc: '💎 星晶 ×50',  trigger: 'forge'        },
-  ],
-};
-const DAILY_QUEST_FULL_CLEAR = { reward: { crystals: 50 }, rewardDesc: '💎 星晶 ×50' };
-const ALL_DAILY_QUESTS = [...DAILY_QUEST_POOL.easy, ...DAILY_QUEST_POOL.medium, ...DAILY_QUEST_POOL.hard];
-
-const ENCOUNTER_EVENTS = [
-  {
-    id: 'enc_001',
-    title: '舊友的身影',
-    subtitle: '白澤 × 墨影',
-    themeGrad: 'from-slate-950 via-stone-950 to-stone-950',
-    themeColor: 'text-slate-300',
-    themeBorder: 'border-slate-600',
-    icon: '🍶',
-    desc: '夜深酒靜，一個熟悉的背影出現在迷途酒館的角落……',
-    reward: { charFragments: { moying: 50 }, rewardDesc: '🌑 墨影碎片 ×50' },
-    dialogue: [
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……（環顧酒館）今晚客人還真多。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '（角落那個背影——不，不可能。在這種地方？）' },
-      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '哈。真是稀奇，在這種地方碰見你，白澤。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……墨影前輩。你在艾歐蘭斯做什麼？' },
-      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '還不是跟你一樣？四處漂泊，碰巧路過了。' },
-      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '坐吧。難得遇見老鄉，今晚喝一杯。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……（沉默片刻，拉開了椅子）' },
-      { speaker: '酒保', icon: '🐰',    image: null,               side: 'right', text: '兩位，今晚的特調——「孤星夜行」，請慢用。' },
-      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '好名字。（舉起酒杯）——為了故鄉的那片雪。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……（輕輕碰杯）——為了還沒走完的路。' },
-      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '聽說你現在在夜行者工會做事？不太像你的作風。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '有件事得查清楚。' },
-      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '……跟星晶有關？（眼神銳利了一瞬）' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '前輩，你知道些什麼？' },
-      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '（放下酒杯，低笑）我只是個過路人。不過，有緣的話……也許能幫上你。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '……你變了，前輩。' },
-      { speaker: '墨影', icon: '🌑',    image: 'avatar_moying.png', side: 'right', text: '是嗎。（轉頭看向窗外夜空）——好好喝吧，今晚只是喝酒。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left',  text: '（沉默，再次舉杯）……也許。' },
-    ],
-  },
-  {
-    id: 'enc_002',
-    title: '蜂蜜怪盜來襲',
-    subtitle: '布提婭 × 傑克',
-    themeGrad: 'from-amber-950 via-stone-950 to-stone-950',
-    themeColor: 'text-amber-300',
-    themeBorder: 'border-amber-700',
-    icon: '🍯',
-    desc: '一封狂妄的怪盜預告信，一場深夜迷煙奇襲，以及幽暗樹林中，兩道身影的悄然對話……',
-    reward: { charFragments: { jack: 50 }, rewardDesc: '🃏 傑克碎片 ×50' },
-    dialogue: [
-      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '某日，日晝營地的帳篷內赫然出現了一張怪盜預告信，上面狂妄地寫著：「今日深夜零時，我將取走熊吉的特製蜂蜜。」' },
-      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '禁不住熊吉的苦苦哀求與堅持，營地裡的夜行者們決定在午夜時分全員戒備。' },
-      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '然而，當時鐘敲響零時，一道身披斗篷的黑影如鬼魅般掠過。剎那間，濃烈的迷煙席捲了整個營地，所有全神貫注警戒著的夜行者接連陷入昏厥。' },
-      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '待眾人悠悠轉醒時，只見原先存放蜂蜜的罐子已空空如也。' },
-      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '趁著混亂，布提婭悄悄脫隊，獨自走進了營地旁的幽暗樹林。她停下腳步，目光鎖定在一棵粗壯的樹幹後，語氣平靜地開口。' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left',  text: '是你吧，哥哥。' },
-      { speaker: '傑克', icon: '🃏', image: null, side: 'right', text: '不愧是妳啊，竟然在遭到襲擊的瞬間，就精準地對我下好了追蹤術式。' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left',  text: '這次就算是哥哥，我也不能輕易放過了。把蜂蜜留下然後走吧，不然接下來的任務裡，我們所有人大概都得在熊吉無休止的哭鬧聲中度過了。' },
-      { speaker: '傑克', icon: '🃏', image: null, side: 'right', text: '這種「扮家家酒」的遊戲，妳到底還打算玩到什麼時候？' },
-      { speaker: '傑克', icon: '🃏', image: null, side: 'right', text: '罷了，看來這次還是只能放棄這罐蜂蜜了。' },
-      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '話音剛落，黑影將蜂蜜罐穩穩放在原地，隨即以肉眼難以捕捉的極快速度，瞬間撤出了布提婭的術式感知範圍。' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left',  text: '逃得還真快啊……' },
-      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '布提婭輕嘆一聲，上前抱起蜂蜜罐，轉身朝著營地的方向走去。' },
-      { speaker: '傑克', icon: '🃏', image: null, side: 'right', text: '（看來，即使選擇了融入群體，妳的實力也絲毫沒有退步。能確認這點，這趟就足夠了。）' },
-      { speaker: '旁白', icon: '📜', image: null, side: 'left',  text: '他在心裡暗自想著，隨即徹底融入了夜色之中。' },
-    ],
-  },
-  { id: 'enc_003', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
-  { id: 'enc_004', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
-  { id: 'enc_005', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
-  { id: 'enc_006', title: '即將揭曉', subtitle: '', icon: '🔒', desc: '新的故事正在醞釀中……', locked: true, dialogue: [] },
-];
+// （已拆分）每日任務池 / 奇遇事件已搬到 `src/data/dailyQuests.js`
 
 const getDailyQuestIds = (dateStr) => {
   let seed = 0;
@@ -498,49 +248,20 @@ const getDailyQuestIds = (dateStr) => {
   return [...selEasy, ...selMedium, hard[0]];
 };
 
-const GUIDE_TERMS = [
-    { term: '星晶 (Star Crystal)', desc: '核心貨幣，可在星晶商店購買天賦、特殊型態，或透過公會打工與成就獎勵取得。' },
-    { term: 'AP (行動點數)', desc: '戰鬥勝利後獲得，用於日晝營地提升角色羈絆，也可在商店「打工專區」製作戰鬥道具。' },
-    { term: '專精等級', desc: '角色在戰役通關時累積，最高 3 星，滿 3 星可解鎖該角色的專屬 CG。' },
-    { term: '友誼之巔', desc: '任意雙人羈絆達滿級（20 點）時，解鎖的特殊雙人回憶 CG。' },
-    { term: '平手能量', desc: '出拳平手時，雙方各獲得 20 點能量。裝備「鬥氣」天賦可提升至 30 點，並額外回復 15 HP。擁有「疲憊」狀態時平手能量歸零；擁有「亢奮」狀態時能量提升 50%。' },
-    { term: '護盾', desc: '受到傷害時，護盾值優先被消耗，歸零後才扣除生命值。部分天賦（鐵壁）與料理可提供初始護盾。' },
-    { term: '天賦配置', desc: '選角後進入天賦配置畫面，可裝備 3 個天賦（T0 角色 5 個，Boss/魔物角色 4 個）。效果持續整場戰鬥，視模式不同可攜帶入下一場。' },
-    { term: '長按頭像', desc: '長按戰鬥畫面中的敵方或我方頭像，可查看詳細能力、技能說明，以及敵方出拳偏好——是預判對手行動的關鍵情報。' },
-    { term: '戰技 / 奧義', desc: '能量達門檻時亮起，可主動發動。戰技耗能較低、效果穩定；奧義耗能較高、威力強大。「賢者」天賦可減少 20% 耗能。處於「沉默」狀態時無法發動。' },
-];
-
-const GUIDE_SYSTEMS = [
-    { icon: '🍳', name: '料理系統', desc: '在日晝營地的料理台，以食材烹飪各種料理。效果（HP 上限、攻擊力、護盾、初始能量、每回合再生）於下一場戰鬥開始時生效，且在整個戰役／主線章節的所有戰鬥中持續有效。使用符合角色偏好的食材，效果可額外提升 20%。' },
-    { icon: '🎒', name: '戰鬥道具', desc: '在星晶商店「打工專區」消耗 AP 製作道具後可攜入戰場。每場戰鬥最多使用 3 次，隨時可用。可用道具：✨ 星晶砂粉（回復 100 HP）、🧪 亢奮藥劑（亢奮 3 回合）、💨 煙霧彈（迴避 1 次）、💊 萬能解藥（清除所有負面狀態）。' },
-    { icon: '📖', name: '主線夜巡', desc: '依章節推進劇情，每章可自由選擇出陣角色並配置天賦（非強制使用推薦角色）。料理加成於章節所有戰鬥中持續有效。完成每章可解鎖對應成就並獲得食材獎勵。' },
-    { icon: '💼', name: '公會打工 / 打工專區', desc: '在星晶商店的「打工專區」分頁，可消耗 1 AP 完成公會打工（獲得 50 星晶），或消耗 AP 製作戰鬥道具備用。AP 來源為戰鬥勝利獎勵。' },
-];
-
-// 【V2.6 成就系統定義】
-const ACHIEVEMENTS = [
-    { id: 'a_win_10', name: '初級夜行者', desc: '戰鬥勝利 10 場', target: 10, reward: 100, getProgress: (p) => p.battlesWon || 0 },
-    { id: 'a_win_50', name: '傳說夜行者', desc: '戰鬥勝利 50 場', target: 50, reward: 300, getProgress: (p) => p.battlesWon || 0 },
-    { id: 'a_cap_5', name: '訓獸見習生', desc: '成功收服 5 種魔物', target: 5, reward: 150, getProgress: (p) => (p.captured || []).length },
-    { id: 'a_cap_all', name: '生態觀察家', desc: '收服所有一般與Boss魔物 (共10種)', target: 10, reward: 500, getProgress: (p) => (p.captured || []).length },
-    { id: 'a_pull_10', name: '小試身手', desc: '在迷途酒館進行 10 次招募', target: 10, reward: 150, getProgress: (p) => p.gachaPulls || 0 },
-    { id: 'a_pull_50', name: '資本的力量', desc: '在迷途酒館進行 50 次招募', target: 50, reward: 500, getProgress: (p) => p.gachaPulls || 0 },
-    { id: 'a_mastery_1', name: '專精之路', desc: '將 1 名角色的專精提升至 3 星', target: 1, reward: 200, getProgress: (p) => Object.values(p.mastery || {}).filter(v => v >= 3).length },
-    { id: 'a_mastery_all', name: '全職業制霸', desc: '將 5 名角色的專精提升至 3 星', target: 5, reward: 1000, getProgress: (p) => Object.values(p.mastery || {}).filter(v => v >= 3).length },
-    { id: 'a_aff_1', name: '最好的朋友', desc: '解鎖 1 張雙人羈絆滿級CG', target: 1, reward: 200, getProgress: (p) => Object.values(p.affection || {}).filter(v => v >= 20).length },
-    { id: 'a_aff_3', name: '最棒的摯友', desc: '解鎖 3 張雙人羈絆滿級CG', target: 3, reward: 600, getProgress: (p) => Object.values(p.affection || {}).filter(v => v >= 20).length },
-    { id: 'a_story_1', name: '翡翠森之獵手', desc: '完成主線夜巡第一章「翡翠森之徑」', target: 1, reward: 0, rewardIngredients: { herb: 3 }, rewardDesc: '🌿 翠葉靈草 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(1) ? 1 : 0 },
-    { id: 'a_story_2', name: '冰封湖的訪客', desc: '完成主線夜巡第二章「冰封星晶湖」', target: 1, reward: 0, rewardIngredients: { fish: 3 }, rewardDesc: '🐟 銀流溪魚 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(2) ? 1 : 0 },
-    { id: 'a_story_3', name: '煉獄山的試煉者', desc: '完成主線夜巡第三章「焦熱煉獄山」', target: 1, reward: 0, rewardIngredients: { meat: 3 }, rewardDesc: '🥩 野獸魔肉 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(3) ? 1 : 0 },
-    { id: 'a_story_4', name: '神殿遺忘的光', desc: '完成主線夜巡第四章「曦光遺忘神殿」', target: 1, reward: 0, rewardIngredients: { egg: 3 }, rewardDesc: '🥚 星紋鳥蛋 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(4) ? 1 : 0 },
-    { id: 'a_story_5', name: '深淵裂隙封鎖者', desc: '完成主線夜巡第五章「深淵星晶裂隙」', target: 1, reward: 0, rewardIngredients: { mush: 3, water: 3 }, rewardDesc: '🍄 夜光孢菇 ×3 + 💧 元素靈水 ×3', getProgress: (p) => (p.completedStoryChapters||[]).includes(5) ? 1 : 0 },
-];
+// （已拆分）圖鑑用語 / 系統說明 / 成就定義已搬到 `src/data/guideAndAchievements.js`
 
 // ==========================================
 // 3. 遊戲機制輔助函數
 // ==========================================
 const isBasicChar = (c) => ['bear', 'wolf', 'cat', 'human', 'elf'].includes(c?.id);
-const isT0Char = (c) => ['xiangxiang', 'kohaku', 'aldous', 'christmas_xiangxiang', 'moying', 'jack'].includes(c?.id);
+const getCharTier = (c) => {
+    if (!c) return 'unknown';
+    // variants / 異裝型態（帶 baseId 的角色物件）
+    if (c.baseId) return c.tier || 'rare';
+    return c.tier || 'basic';
+};
+const isLegendaryChar = (c) => getCharTier(c) === 'legendary';
+const isEpicChar = (c) => getCharTier(c) === 'epic';
 const isMonsterChar = (c) => NORMAL_MONSTERS.some(m => m.id === c?.id) || BOSS_MONSTERS.some(b => b.id === c?.id) || ADVANCED_MONSTERS.some(m => m.id === c?.id) || ADVANCED_BOSSES.some(b => b.id === c?.id);
 const isVariantChar = (c) => VARIANTS.some(v => v.id === c?.id);
 const isFullGallery = (capturedArr) => (capturedArr || []).length >= (NORMAL_MONSTERS.length + BOSS_MONSTERS.length);
@@ -548,7 +269,8 @@ const getActualCost = (cost, hasT8) => hasT8 ? Math.max(0, Math.ceil(cost * 0.8)
 
 const getBaseTalents = (char) => {
     if (!char) return 3;
-    if (isT0Char(char)) return 5;
+    if (isLegendaryChar(char)) return 5;
+    if (isEpicChar(char)) return 4;
     if (BOSS_MONSTERS.some(b => b.id === char.id) || ADVANCED_BOSSES.some(b => b.id === char.id)) return 4;
     if (NORMAL_MONSTERS.some(m => m.id === char.id) || ADVANCED_MONSTERS.some(m => m.id === char.id)) return 4;
     return 3;
@@ -632,118 +354,9 @@ const NpcDialogue = ({ npcName, npcImage, npcImageFallback, dialogues }) => {
     );
 };
 
-const STORY_CHAPTERS = [
-  {
-    id: 1, name: '翡翠森之徑', elementIcon: '🌿', element: ELEMENTS.WOOD,
-    themeGrad: 'from-green-950 via-stone-950 to-stone-950', themeColor: 'text-green-400', themeBorder: 'border-green-700',
-    charOptions: ['human', 'bear'], recommendedCharId: 'human',
-    attackerCharId: 'human',
-    unlockLabel: '角色解鎖', unlockName: '🐻 熊吉', unlockDesc: '守護翡翠森林的熊族戰士，從此踏上夜行者旅途。',
-    enemyIds: ['m1', 'm6', 'b4'],
-    dialogue: [
-      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '星晶調查報告，第七頁。翡翠森林的異變比預期嚴重得多……' },
-      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '魔物數量暴增，植被開始結晶化。能量的根源，就藏在森林深處。' },
-      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'right', text: '站住！這裡不是你能進來的地方，人類！' },
-      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '我沒有惡意。我是夜行者工會的調查員，普爾斯。你是這片森林的守護者？' },
-      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'right', text: '……哼。守護者？現在哪算什麼守護。神木快枯死了，我連那些魔物都趕不走。' },
-      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '那就讓我們合力解決。不過首先——讓我確認你的實力。' },
-      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'right', text: '你想幹什麼！？' },
-      { speaker: '普爾斯', charId: 'human', image: 'avatar_human.png', side: 'left', text: '放心，這是夜行者工會的例行測試。準備好了嗎？' },
-    ],
-  },
-  {
-    id: 2, name: '冰封星晶湖', elementIcon: '❄️', element: ELEMENTS.WATER,
-    themeGrad: 'from-blue-950 via-stone-950 to-stone-950', themeColor: 'text-blue-400', themeBorder: 'border-blue-700',
-    charOptions: ['human', 'bear', 'wolf'], recommendedCharId: 'bear',
-    attackerCharId: 'bear',
-    unlockLabel: '角色解鎖', unlockName: '🐺 白澤', unlockDesc: '來自極寒之地的孤狼劍客，冷漠外表下藏著羈絆。',
-    enemyIds: ['m2', 'm7', 'b5'],
-    dialogue: [
-      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '呼……終於到了。這就是傳說中永不結凍的星晶湖？' },
-      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '全結冰了……而且這種冰的味道不對，帶著濃烈的星晶氣息。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'right', text: '……' },
-      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '欸？那邊有人！喂——你沒事吧！' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'right', text: '走開。' },
-      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '冰這麼厚，你一個人能解決嗎？需要幫手嗎？' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'right', text: '……不需要。' },
-      { speaker: '熊吉', charId: 'bear', image: 'avatar_bear.png', side: 'left', text: '看你說話的樣子就知道需要！走，一起解決！但先讓我確認你的實力！' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'right', text: '……真是煩人的傢伙。' },
-    ],
-  },
-  {
-    id: 3, name: '焦熱煉獄山', elementIcon: '🔥', element: ELEMENTS.FIRE,
-    themeGrad: 'from-red-950 via-stone-950 to-stone-950', themeColor: 'text-red-400', themeBorder: 'border-red-700',
-    charOptions: ['human', 'bear', 'wolf'], recommendedCharId: 'wolf',
-    attackerCharId: 'wolf',
-    unlockLabel: '角色解鎖', unlockName: '🐈‍⬛ 布提婭', unlockDesc: '吞下暗星晶的夜靈貓，傲嬌地決定暫時同行。',
-    enemyIds: ['m3', 'm8', 'b3'],
-    dialogue: [
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '焦熱煉獄山……果然名不虛傳。連空氣都在燃燒。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '能量通道就在山頂，必須在岩漿蔓延前封鎖。' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'right', text: '喵嗚～這裡好熱，本大爺不喜歡。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '……貓？這種地方怎麼會有貓。' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'right', text: '你才是貓！本大爺是夜靈貓，布提婭！這裡有重要的東西，來取回的。' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '你一個人對付那些魔物？' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'right', text: '哼，本大爺當然沒問題！你才需要擔心自己！' },
-      { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '這樣吧，先比試一下。輸的人聽另一個人的指揮。' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'right', text: '有趣！來吧！' },
-    ],
-  },
-  {
-    id: 4, name: '曦光遺忘神殿', elementIcon: '✨', element: ELEMENTS.LIGHT,
-    themeGrad: 'from-yellow-950 via-stone-950 to-stone-950', themeColor: 'text-yellow-400', themeBorder: 'border-yellow-700',
-    charOptions: ['human', 'bear', 'wolf', 'cat'], recommendedCharId: 'cat',
-    attackerCharId: 'cat',
-    unlockLabel: '角色解鎖', unlockName: '🧚 布布', unlockDesc: '光之精靈重拾記憶，以嚮導之姿引領眾人前往終焉。',
-    enemyIds: ['m4', 'm9', 'b2'],
-    dialogue: [
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '喵嗚……好多光，刺眼。這就是曦光遺忘神殿？' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '裡面的魔物都是光屬性……對本大爺的暗魔法有點棘手呢。' },
-      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'right', text: '……救……救我……' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '哎？誰在說話？出來！' },
-      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'right', text: '嗚，我被困在這裡了，走不出去……我叫布布，是光之精靈，我、我忘了很多事……' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '失憶的精靈？在神殿深處被困著……這種事說出去誰信啊。' },
-      { speaker: '布提婭', charId: 'cat', image: 'avatar_cat.png', side: 'left', text: '……算了，本大爺今天心情好，就救你一次。但先要確認你不是陷阱。' },
-      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'right', text: '咦？等、等等！我沒有在騙你！……雖然我確實不太記得怎麼戰鬥了……' },
-    ],
-  },
-  {
-    id: 5, name: '深淵星晶裂隙', elementIcon: '🌑', element: ELEMENTS.DARK,
-    themeGrad: 'from-purple-950 via-stone-950 to-stone-950', themeColor: 'text-purple-400', themeBorder: 'border-purple-700',
-    charOptions: ['human', 'bear', 'wolf', 'cat', 'elf'], recommendedCharId: 'elf',
-    attackerCharId: 'elf',
-    unlockLabel: '解鎖遊戲模式', unlockName: '⚔️ 夜巡戰役 & 自訂對決', unlockDesc: '深淵裂隙封鎖。星晶異變的真相，在更遠的旅途等待著你們。',
-    enemyIds: ['m5', 'm10', 'b1'],
-    dialogue: [
-      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '……這裡就是大星晶碎裂的地方嗎？' },
-      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '黑暗能量好強……但我不害怕了。大家都在背後支持我。' },
-      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '普爾斯說過：「直視恐懼，才能超越它。」……熊吉說：「蜂蜜最好吃！」' },
-      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '……熊吉那個不算。不管了，往前衝！' },
-      { speaker: '???', charId: null, image: null, side: 'right', text: '……很久沒有人類踏入這裡了。你就是那些夜行者？' },
-      { speaker: '布布', charId: 'elf', image: 'avatar_elf.png', side: 'left', text: '是的！我是布布，光之精靈！我要封鎖這道裂隙！' },
-      { speaker: '???', charId: null, image: null, side: 'right', text: '有趣。那就先通過我這關吧……' },
-    ],
-  },
-];
-
-const BATTLE_ITEMS = [
-  { id: 'stardust',      icon: '✨', name: '星晶砂粉', effect: '恢復 100 HP' },
-  { id: 'excite_potion', icon: '🧪', name: '亢奮藥劑', effect: '獲得 ⚡[亢奮] 3回合' },
-  { id: 'smoke_bomb',    icon: '💨', name: '煙霧彈',   effect: '獲得 💨[迴避] 1次' },
-  { id: 'antidote',      icon: '💊', name: '萬能解藥', effect: '清除所有負面狀態' },
-];
-
-const FORGE_PERMANENT = [
-  { id: 'armor_burst',     name: '爆裂星晶', icon: '💠', cost: 80,  desc: '出拳獲勝時，額外造成 30 點真實傷害。' },
-  { id: 'armor_corrosion', name: '腐蝕刃',   icon: '🗡️', cost: 120, desc: '出拳獲勝時，對敵隨機施加降攻或降防 2 回合。' },
-  { id: 'armor_chaos',     name: '干擾符文', icon: '🌀', cost: 150, desc: '每回合結束有 30% 機率對敵施加隨機負面狀態。' },
-  { id: 'armor_overload',  name: '超載電容', icon: '⚡', cost: 180, desc: '戰鬥開始時，對敵施加疲憊 3 回合。' },
-];
-const FORGE_CONSUMABLE = [
-  { id: 'carm_pierce', name: '破甲符',   icon: '💢', cost: 20, desc: '出拳獲勝時，對敵施加易傷 1 回合。(消耗品)' },
-  { id: 'carm_dark',   name: '暗晶碎塊', icon: '🌑', cost: 25, desc: '戰鬥開始時，對敵施加封印 2 回合。(消耗品)' },
-];
-const ALL_ARMORS = [...FORGE_PERMANENT, ...FORGE_CONSUMABLE];
+// （已拆分）主線夜巡章節資料已搬到 `src/data/storyChapters.js`
+// （已拆分）戰鬥道具列表已搬到 `src/data/battleItems.js`
+// （已拆分）鍛造／護符資料已搬到 `src/data/forge.js`
 
 export default function App() {
   const [gameState, setGameState] = useState('intro'); 
@@ -868,27 +481,35 @@ export default function App() {
   useEffect(() => {
     if (memFlipped.length !== 2) return;
     const [a, b] = memFlipped;
-    if (memCards[a]?.pairId === memCards[b]?.pairId) {
-      const nm = [...memMatched, memCards[a].pairId];
-      setMemMatched(nm);
+    const pairA = memCards[a]?.pairId;
+    const pairB = memCards[b]?.pairId;
+    if (pairA && pairA === pairB) {
+      setMemMatched((prev) => {
+        const nm = [...prev, pairA];
+        if (nm.length === 8) setMemPhase('result');
+        return nm;
+      });
       setMemFlipped([]);
-      if (nm.length === 8) setMemPhase('result');
     } else {
       const t = setTimeout(() => setMemFlipped([]), 900);
       return () => clearTimeout(t);
     }
-  }, [memFlipped]);
+  }, [memFlipped, memCards]);
 
   // 每日任務：登入初始化
   useEffect(() => {
     if (!isLoaded) return;
     const today = new Date().toISOString().slice(0, 10);
-    const dqs = progress.dailyQuestState;
-    if (!dqs || dqs.date !== today) {
-      saveProgress({ ...progress, dailyQuestState: { date: today, progress: { dq_login: 1 }, claimed: [], fullClearClaimed: false } });
-    } else if ((dqs.progress.dq_login || 0) < 1 && !dqs.claimed.includes('dq_login')) {
-      saveProgress({ ...progress, dailyQuestState: { ...dqs, progress: { ...dqs.progress, dq_login: 1 } } });
-    }
+    saveProgress((prev) => {
+      const dqs = prev.dailyQuestState;
+      if (!dqs || dqs.date !== today) {
+        return { ...prev, dailyQuestState: { date: today, progress: { dq_login: 1 }, claimed: [], fullClearClaimed: false } };
+      }
+      if ((dqs.progress?.dq_login || 0) < 1 && !dqs.claimed.includes('dq_login')) {
+        return { ...prev, dailyQuestState: { ...dqs, progress: { ...dqs.progress, dq_login: 1 } } };
+      }
+      return prev;
+    });
   }, [isLoaded]);
 
   useEffect(() => {
@@ -923,9 +544,12 @@ export default function App() {
     setIsLoaded(true);
   }, []);
 
-  const saveProgress = (np) => {
-    setProgress(np);
-    try { localStorage.setItem('starCrystalTales_V38_Stable', JSON.stringify(np)); } catch(e) {}
+  const saveProgress = (nextOrUpdater) => {
+    setProgress((prev) => {
+      const next = typeof nextOrUpdater === 'function' ? nextOrUpdater(prev) : nextOrUpdater;
+      try { localStorage.setItem('starCrystalTales_V38_Stable', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
   };
 
   useEffect(() => { if (logsEndRef.current) logsEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, [logs]);
@@ -1405,17 +1029,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         playSound(isPW ? 'rps_win' : 'rps_lose'); let atk = isPW ? p : e; let def = isPW ? e : p;
         if (def.buffs && def.buffs.energyOnLoss) { def.energy = Math.min(100, def.energy + 50); def.buffs.energyOnLoss = false; }
         let mult = getElementMultiplier(atk.char.element.id, def.char.element.id);
-        
-        let atkVal = atk.atk + getStatusValueSum(atk, 'ATK_UP') - getStatusValueSum(atk, 'ATK_DOWN');
-        let defVal = def.def + getStatusValueSum(def, 'DEF_UP') - getStatusValueSum(def, 'DEF_DOWN');
-        
-        if ((atk.talents||[]).includes('t_blackflame_human') && atk.hp < atk.maxHp * 0.4) {
-            atkVal += 30;
-            defVal = Math.max(0, defVal - 15);
-            buf.push({text: `🩸 [狂化血脈] 攻擊提升，無視部分防禦！`, type: 'info'});
-        }
 
-        if ((atk.talents||[]).includes('t6') && atk.hp < atk.maxHp * 0.3) atkVal = Math.floor(atkVal * 1.5);
+        let atkVal = getAttackerAtkBreakdown(atk).final;
+        let defVal = getPanelDef(def);
+        if ((atk.talents || []).includes('t_blackflame_human') && atk.hp < atk.maxHp * 0.4) {
+            defVal = Math.max(0, defVal - 15);
+            buf.push({ text: `🩸 [狂化血脈] 攻擊提升，無視部分防禦！`, type: 'info' });
+        }
 
         let d = Math.max(10, Math.floor(atkVal * mult - defVal));
         
@@ -1524,7 +1144,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             if (specificEnemy && specificEnemy !== 'random') {
                 eChar = specificEnemy;
             } else {
-                let pool = CHARACTERS.filter(c => !isT0Char(c) || unlocks.includes(c.id));
+                let pool = CHARACTERS.filter(c => !isLegendaryChar(c) || unlocks.includes(c.id));
                 pool = [...pool, ...NORMAL_MONSTERS, ...BOSS_MONSTERS];
                 if (unlocks.includes('xiangxiang')) pool.push(HIDDEN_CHARACTER);
                 VARIANTS.forEach(v => { if (unlocks.includes(v.id) && !v.isPlaceholder) pool.push(v); });
@@ -1661,6 +1281,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       }
     }
 
+    let homeFieldLog = null;
+    const adv = CHAPTER_HOME_ADVANTAGES[chapterId];
+    const storyCharId = attackerChar.baseId || attackerChar.id;
+    if (adv && storyCharId === adv.targetId) {
+      adv.apply(pObj);
+      homeFieldLog = adv.log;
+    }
+
     const validE = ALL_TALENTS.filter(t => !t.req && !t.exclusiveTo);
     const eT = getRandomTalents(getBaseTalents(eChar), validE);
     const eMax = eChar.stats.maxHp + (eT.includes('t1') ? 100 : 0);
@@ -1684,6 +1312,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     setSelectedTalentIds(pTalents);
     const initLogs = [{ text: `⚔️ 第 ${battleStage + 1}/3 戰！對手：${eChar.name}`, type: 'info' }];
     if (mealLog) initLogs.push({ text: mealLog, type: 'info' });
+    if (homeFieldLog) initLogs.push({ text: homeFieldLog, type: 'info' });
     setLogs(initLogs);
     setNewlyCaptured(null);
     setBattleItemUses(3); setShowItemPanel(false);
@@ -1763,7 +1392,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (ADVANCED_MONSTERS.some(m => m.id === eChar.id)) return 6;
     if (BOSS_MONSTERS.some(b => b.id === eChar.id)) return 4;
     if (NORMAL_MONSTERS.some(m => m.id === eChar.id)) return 3;
-    if (isT0Char(eChar)) return 8;
+    if (isLegendaryChar(eChar)) return 8;
+    if (isEpicChar(eChar)) return 7;
     if (VARIANTS.some(v => v.id === eChar.id)) return 6;
     return 4;
   };
@@ -1817,7 +1447,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
     if (target === 'player') { playSound('defeat'); saveProgress(updateDailyQuestProgress('battle_any', np)); setGameState('game_over'); setWinner('enemy'); }
     else { playSound('victory');
-        if (!enemy.char.isUncapturable && unlocks.includes('tamer_kert') && !captured.includes(enemy.char.id) && !enemy.char.baseId && !isT0Char(enemy.char)) { 
+        if (!enemy.char.isUncapturable && unlocks.includes('tamer_kert') && !captured.includes(enemy.char.id) && !enemy.char.baseId && !isLegendaryChar(enemy.char) && !isEpicChar(enemy.char)) {
             np.captured = [...captured, enemy.char.id]; setNewlyCaptured(enemy.char); 
         }
         
@@ -1827,7 +1457,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
         if (gameMode.includes('campaign') && campaignStage === maxStage) {
             const bid = player.char.baseId || player.char.id;
-            if (isBasicChar(player.char) || isT0Char(player.char) || bid === 'xiangxiang') { np.mastery = {...np.mastery}; np.mastery[bid] = Math.min(3, (np.mastery[bid] || 0) + 1); }
+            if (isBasicChar(player.char) || isLegendaryChar(player.char) || bid === 'xiangxiang') { np.mastery = {...np.mastery}; np.mastery[bid] = Math.min(3, (np.mastery[bid] || 0) + 1); }
         }
         
         let earned = 0;
@@ -1959,7 +1589,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         let msg = `✨ 合成成功！恭喜獲得新夥伴！\n`;
         if (excess > 0) {
             let ratio = 5; 
-            if (isT0Char({id})) ratio = 50;
+            if (isLegendaryChar({id})) ratio = 50;
             else if (isVariantChar({id})) ratio = 20;
 
             const convertedFrags = excess * ratio;
@@ -2837,7 +2467,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const renderSelectChar = () => {
-    let list = CHARACTERS.filter(c => !isT0Char(c) || unlocks.includes(c.id));
+    let list = CHARACTERS.filter(c => !isLegendaryChar(c) || unlocks.includes(c.id));
     if (unlocks.includes('xiangxiang')) list.push(HIDDEN_CHARACTER);
     VARIANTS.forEach(v => { if (unlocks.includes(v.id) && !v.isPlaceholder) list.push(v); });
     list = [...list, ...NORMAL_MONSTERS.filter(m => captured.includes(m.id)), ...BOSS_MONSTERS.filter(m => captured.includes(m.id))];
@@ -2850,7 +2480,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 {list.map(c => {
                     const isMonster = isMonsterChar(c);
                     const isHidden = c.id === 'xiangxiang';
-                    const isT0 = isT0Char(c);
+                    const tier = getCharTier(c);
+                    const isLegendary = tier === 'legendary';
+                    const isEpic = tier === 'epic';
                     const isVariant = isVariantChar(c);
                     return (
                         <div key={c.id} onClick={()=>{
@@ -2860,7 +2492,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                             {isVariant && <div className="absolute top-0 right-0 bg-stone-600 px-3 py-1 rounded-bl-xl text-[10px] font-bold z-10 shadow-md">✨ 異裝</div>}
                             {isMonster && <div className="absolute top-0 right-0 bg-green-600 px-3 py-1 rounded-bl-xl text-[10px] font-bold z-10 shadow-md">🐾 已馴化</div>}
                             {isHidden && <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl z-10 shadow-md">🌟 終極獎勵</div>}
-                            {isT0 && !isHidden && <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl z-10 shadow-md">🌟 傳說級</div>}
+                            {isLegendary && !isHidden && <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl z-10 shadow-md">🌟 傳說級</div>}
+                            {isEpic && !isHidden && <div className="absolute top-0 right-0 bg-cyan-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl z-10 shadow-md">💎 史詩級</div>}
                             
                             <div className="flex gap-4 items-center mb-4"><SpriteAvatar char={c} size="w-16 h-16" /><div><div className="text-sm opacity-50">{c.title}</div><div className="font-bold text-xl">{c.isEmoji?c.emoji:c.icon} {c.name}</div></div></div>
                             <div className="bg-stone-900 p-4 rounded-xl text-xs space-y-3 shadow-inner">
@@ -2892,7 +2525,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             <div className="bg-stone-800 px-6 py-3 rounded-full font-bold text-lg mb-8 border border-stone-700 shadow-lg">
                 剩餘點數：<span className={pLeft === 0 ? 'text-red-400' : 'text-yellow-400'}>{pLeft}</span> / {max}
                 {specificUpgrade > 0 && <span className="ml-2 text-xs text-blue-400 bg-stone-900 px-2 py-1 rounded-full border border-blue-900/50">突破加成 +{specificUpgrade}</span>}
-                {isT0Char(player.char) && <span className="ml-2 text-xs text-yellow-500 bg-stone-900 px-2 py-1 rounded-full border border-yellow-900/50">出廠滿潛能</span>}
+                {isLegendaryChar(player.char) && <span className="ml-2 text-xs text-yellow-500 bg-stone-900 px-2 py-1 rounded-full border border-yellow-900/50">出廠滿潛能</span>}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full mb-10">
                 {getAvailableTalents().map(t => {
@@ -2920,7 +2553,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   };
 
   const renderSelectBrawlEnemy = () => {
-    let pool = CHARACTERS.filter(c => !isT0Char(c) || unlocks.includes(c.id));
+    let pool = CHARACTERS.filter(c => !isLegendaryChar(c) || unlocks.includes(c.id));
     if (unlocks.includes('xiangxiang')) pool.push(HIDDEN_CHARACTER);
     VARIANTS.forEach(v => { if (unlocks.includes(v.id) && !v.isPlaceholder) pool.push(v); });
     pool = [...pool, ...NORMAL_MONSTERS.filter(m => encountered.includes(m.id)), ...BOSS_MONSTERS.filter(m => encountered.includes(m.id))];
@@ -3077,25 +2710,75 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         const char = isEnemy ? enemy.char : player.char;
         const skill = type === 'skill1' ? player.char.skill1 : player.char.skill2;
         const skillCost = type === 'skill1' ? skill1Cost : skill2Cost;
+        const ent = isEnemy ? enemy : player;
+        const other = isEnemy ? player : enemy;
+        const panelDef = getPanelDef(ent);
+        const atkBreak = getAttackerAtkBreakdown(ent);
+        const defVsBlackflame = other?.char ? getDefValueVsBlackflameAttacker(ent, other) : null;
+        const elemIfEntWins = ent?.char?.element?.id && other?.char?.element?.id
+            ? getElementMultiplier(ent.char.element.id, other.char.element.id) : null;
+        const elemIfOtherWins = ent?.char?.element?.id && other?.char?.element?.id
+            ? getElementMultiplier(other.char.element.id, ent.char.element.id) : null;
 
         return (
-            <div className="fixed inset-0 bg-black/75 z-50 flex items-end justify-center p-4" onClick={() => setBattleInspect(null)}>
-                <div className="bg-stone-900 border-2 border-stone-700 rounded-2xl p-5 max-w-sm w-full shadow-2xl mb-2" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-3 sm:p-4 min-h-0" onClick={() => setBattleInspect(null)}>
+                <div
+                    className="bg-stone-900 border-2 border-stone-700 rounded-2xl max-w-sm w-full max-h-[min(85dvh,720px)] shadow-2xl flex flex-col overflow-hidden min-h-0"
+                    onClick={e => e.stopPropagation()}
+                >
                     {(isEnemy || isPlayer) && (
                         <>
-                            <div className="flex items-center gap-3 mb-4">
+                            <div className="shrink-0 flex items-center gap-3 px-4 pt-4 pb-3 border-b border-stone-800 bg-stone-900">
                                 <SpriteAvatar char={char} size="w-14 h-14" />
-                                <div className="flex-1">
-                                    <div className={`font-bold text-base ${isEnemy ? 'text-red-400' : 'text-green-400'}`}>{char.name}</div>
-                                    <div className="text-[10px] text-stone-400">{char.title || ''}{char.element ? ` · ${char.element.name}` : ''}</div>
+                                <div className="flex-1 min-w-0">
+                                    <div className={`font-bold text-base truncate ${isEnemy ? 'text-red-400' : 'text-green-400'}`}>{char.name}</div>
+                                    <div className="text-[10px] text-stone-400 leading-snug">{char.title || ''}{char.element ? ` · ${char.element.name}` : ''}</div>
                                 </div>
-                                <button className="text-stone-500 hover:text-white text-lg leading-none" onClick={() => setBattleInspect(null)}>✕</button>
+                                <button type="button" className="text-stone-500 hover:text-white text-lg leading-none shrink-0 p-1" onClick={() => setBattleInspect(null)} aria-label="關閉">✕</button>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 text-center text-xs mb-3">
-                                <div className="bg-stone-800 rounded-lg p-2"><div className={`font-bold ${isEnemy ? 'text-red-400' : 'text-green-400'}`}>HP</div><div>{isEnemy ? char.stats?.maxHp : player.maxHp}</div></div>
-                                <div className="bg-stone-800 rounded-lg p-2"><div className="font-bold text-orange-400">ATK</div><div>{isEnemy ? char.stats?.atk : player.atk}</div></div>
-                                <div className="bg-stone-800 rounded-lg p-2"><div className="font-bold text-blue-400">DEF</div><div>{isEnemy ? char.stats?.def : player.def}</div></div>
+                            <div className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain px-4 py-3 touch-pan-y">
+                            <div className="grid grid-cols-3 gap-2 text-center text-xs mb-2">
+                                <div className="bg-stone-800 rounded-lg p-2">
+                                    <div className={`font-bold ${isEnemy ? 'text-red-400' : 'text-green-400'}`}>HP</div>
+                                    <div className="text-stone-100 font-mono tabular-nums">{ent.hp} / {ent.maxHp}</div>
+                                    {(ent.shield || 0) > 0 && <div className="text-cyan-400 text-[10px] mt-0.5">護盾 {ent.shield}</div>}
+                                </div>
+                                <div className="bg-stone-800 rounded-lg p-2">
+                                    <div className="font-bold text-orange-400">ATK</div>
+                                    <div className="text-stone-400 text-[9px] leading-tight">含狀態</div>
+                                    <div className="text-stone-100 font-mono tabular-nums">{atkBreak.panel}</div>
+                                    {atkBreak.lines.length > 0 && (
+                                        <div className="mt-1.5 space-y-1 text-[9px] text-amber-200/95 text-left leading-snug border-t border-stone-600/50 pt-1">
+                                            {atkBreak.lines.map((line, i) => (
+                                                <div key={i}>· {line}</div>
+                                            ))}
+                                            <div className="text-amber-300 font-bold text-center mt-0.5">出拳命中時攻擊值 {atkBreak.final}</div>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="bg-stone-800 rounded-lg p-2">
+                                    <div className="font-bold text-blue-400">DEF</div>
+                                    <div className="text-stone-400 text-[9px] leading-tight">含狀態</div>
+                                    <div className="text-stone-100 font-mono tabular-nums">{panelDef}</div>
+                                    {defVsBlackflame !== null && (
+                                        <div className="mt-1.5 text-[9px] text-amber-200/95 text-left leading-snug border-t border-stone-600/50 pt-1">
+                                            · 對方為黑炎暴走且對方生命低於40%並命中此單位時：本次結算採用防禦 <span className="text-amber-300 font-bold">{defVsBlackflame}</span>（-15）
+                                        </div>
+                                    )}
+                                </div>
                             </div>
+                            <div className="flex justify-between items-center text-[10px] text-stone-400 mb-2 px-0.5">
+                                <span>⚡ 能量 <span className="text-stone-200 font-mono">{ent.energy}</span> / 100</span>
+                            </div>
+                            {elemIfEntWins != null && elemIfOtherWins != null && (
+                                <div className="text-[10px] text-stone-500 mb-3 leading-relaxed border-t border-stone-700 pt-2">
+                                    <div>此單位出拳獲勝時：元素對傷害倍率 <span className="text-stone-300">×{elemIfEntWins}</span></div>
+                                    <div>對方出拳獲勝時：對此單位傷害元素倍率 <span className="text-stone-300">×{elemIfOtherWins}</span></div>
+                                </div>
+                            )}
+                            <p className="text-[9px] text-stone-600 mb-3 leading-relaxed">
+                                猜拳基礎段：max(10, 攻擊值×元素倍率 − 防禦值)。拳種天賦（t9/t10/t11 等）、易傷、真實傷害與技能效果另計，與上列數字分開結算。
+                            </p>
                             {isEnemy && char.prefHand && (
                                 <div className="bg-stone-800 rounded-xl p-3 mb-3">
                                     <div className="text-yellow-400 font-bold text-xs mb-2">出拳偏好</div>
@@ -3169,16 +2852,19 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                     </div>
                                 </div>
                             )}
+                            </div>
                         </>
                     )}
                     {isSkill && (
                         <>
-                            <div className="flex items-center justify-between mb-3">
-                                <div className={`font-bold text-base ${type === 'skill1' ? 'text-blue-300' : 'text-purple-300'}`}>{type === 'skill1' ? '戰技' : '奧義'} · {skill.name}</div>
-                                <button className="text-stone-500 hover:text-white text-lg leading-none" onClick={() => setBattleInspect(null)}>✕</button>
+                            <div className="shrink-0 flex items-center justify-between px-4 pt-4 pb-3 border-b border-stone-800">
+                                <div className={`font-bold text-base min-w-0 pr-2 ${type === 'skill1' ? 'text-blue-300' : 'text-purple-300'}`}>{type === 'skill1' ? '戰技' : '奧義'} · {skill.name}</div>
+                                <button type="button" className="text-stone-500 hover:text-white text-lg leading-none shrink-0 p-1" onClick={() => setBattleInspect(null)} aria-label="關閉">✕</button>
                             </div>
-                            <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 ${type === 'skill1' ? 'bg-blue-700' : 'bg-purple-700'}`}>{skillCost} 能量</div>
-                            <p className="text-stone-200 text-sm leading-relaxed">{skill.desc}</p>
+                            <div className="px-4 py-3 overflow-y-auto overscroll-y-contain max-h-[min(55vh,22rem)] touch-pan-y">
+                                <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 ${type === 'skill1' ? 'bg-blue-700' : 'bg-purple-700'}`}>{skillCost} 能量</div>
+                                <p className="text-stone-200 text-sm leading-relaxed">{skill.desc}</p>
+                            </div>
                         </>
                     )}
                 </div>
@@ -3306,7 +2992,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     const HOST_BLOCKED = ['moying', 'jack'];
     const hostPool = CHARACTERS.filter(c => {
       if (HOST_BLOCKED.includes(c.id)) return false;
-      return !isT0Char(c) || unlocks.includes(c.id);
+      return !isLegendaryChar(c) || unlocks.includes(c.id);
     });
     if (unlocks.includes('xiangxiang')) hostPool.push(HIDDEN_CHARACTER);
 
@@ -3526,10 +3212,16 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
                         {(galleryTab === 'companions' ? [...CHARACTERS, HIDDEN_CHARACTER, ...VARIANTS] : [...NORMAL_MONSTERS, ...BOSS_MONSTERS, ...ADVANCED_MONSTERS, ...ADVANCED_BOSSES]).map((c) => {
                             const isBasic = isBasicChar(c);
-                            const isT0 = isT0Char(c);
-                            const isUnlocked = isBasic || encountered.includes(c.id) || (isT0 && unlocks.includes(c.id)) || (!!c.baseId && unlocks.includes(c.id));
+                            const tier = getCharTier(c);
+                            const isT0 = tier === 'legendary';
+                            const isEpic = tier === 'epic';
+                            const isUnlocked =
+                                isBasic ||
+                                encountered.includes(c.id) ||
+                                ((isT0 || isEpic) && unlocks.includes(c.id)) ||
+                                (!!c.baseId && unlocks.includes(c.id));
                             const isPlaceholderVariant = !!c.baseId && (!unlocks.includes(c.id) || c.isPlaceholder);
-                            const showFragUI = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat', 'kohaku', 'aldous', 'moying', 'jack'].includes(c.id) && !unlocks.includes(c.id);
+                            const showFragUI = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat', 'kohaku', 'aldous', 'moying', 'jack', 'blacksmith', 'bartender', 'miner_char', 'xia_ke', 'manor'].includes(c.id) && !unlocks.includes(c.id);
                             
                             if (!isUnlocked && !showFragUI && !isPlaceholderVariant && c.id !== 'christmas_xiangxiang') return <div key={c.id} className="bg-stone-800 border-2 border-stone-700 opacity-60 rounded-3xl p-6 min-h-[300px] flex items-center justify-center text-4xl">❓</div>;
                             if (!isUnlocked && c.id === 'christmas_xiangxiang') {
@@ -3581,13 +3273,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                                     {isAdvBoss && <div className="absolute top-0 right-0 bg-red-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-widest z-10 shadow-md">高階BOSS</div>}
                                     {!isAdvBoss && BOSS_MONSTERS.some(b=>b.id===c.id) && <div className="absolute top-0 right-0 bg-purple-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-widest z-10 shadow-md">BOSS</div>}
                                     {isT0 && <div className="absolute top-0 right-0 bg-yellow-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-widest z-10 shadow-md">🌟 傳說級</div>}
+                                    {isEpic && <div className="absolute top-0 right-0 bg-cyan-500 text-black text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-widest z-10 shadow-md">💎 史詩級</div>}
                                     {!!c.baseId && !c.isPlaceholder && <div className="absolute top-0 right-0 bg-stone-600 text-white text-[10px] font-bold px-3 py-1 rounded-bl-xl tracking-widest z-10 shadow-md">✨ 異裝型態</div>}
                                     {captured.includes(c.id) && <div className="absolute top-0 left-0 bg-green-600 text-white text-[10px] font-bold px-3 py-1 rounded-br-xl tracking-widest z-10 shadow-md">🐾 已收服</div>}
                                     {c.isUncapturable && <div className="absolute top-0 left-0 bg-stone-700 text-stone-400 text-[10px] font-bold px-3 py-1 rounded-br-xl tracking-widest z-10 shadow-md">不可馴化</div>}
                                     
                                     <div className="flex items-center justify-between mb-4 mt-2">
                                         <div className="flex items-center gap-4"><SpriteAvatar char={c} size="w-16 h-16" /><div><div className={`text-xs mb-0.5 ${isAdvBoss || isAdvMon ? 'text-red-400' : 'text-gray-400'}`}>{c.title}</div><div className="text-xl font-bold flex items-center gap-2">{c.isEmoji ? c.emoji : c.icon} {c.name}</div>{c.element && <div className={`text-[11px] font-bold mt-1 ${c.element.color}`}>{c.element.icon} {c.element.name}屬性</div>}</div></div>
-                                        { (isBasic || isT0 || !!c.baseId) && (
+                                        { (isBasic || isT0 || isEpic || !!c.baseId) && (
                                             <div className="flex text-yellow-500">
                                                 {[...Array(3)].map((_, i) => {
                                                     const currentMastery = mastery[c.baseId || c.id] || 0;
@@ -3721,7 +3414,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 dialogues={shopTab === 'crystal' ? [
                     "歡迎來到星晶商店！只要有足夠的星晶，沒有什麼是我琥珀辦不到的。",
                     "星晶怎麼取得？很簡單——打夜巡戰役，每場至少 3 顆，通關還有 8 顆額外獎勵。",
-                    "自訂對決依對手強度給予不同獎勵：一般魔物 3 晶、魔王/基本角色 4 晶、進階魔物/SR異裝 6 晶、SSR角色 8 晶、進階魔王 12 晶！",
+                    "自訂對決依對手強度給予不同獎勵：一般魔物 3 晶、魔王/基本角色 4 晶、進階魔物/異裝 6 晶、史詩角色 7 晶、傳說角色 8 晶、進階魔王 12 晶！",
                     "成就也能換大量星晶，圖鑑裡查一下自己差哪些條件，說不定快達成了。"
                 ] : shopTab === 'fragment' ? [
                     "集滿 50 個特定角色的碎片，就能在圖鑑解鎖他的異裝型態！",
@@ -4124,7 +3817,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
           <NpcDialogue
             npcName="鍛造師葛魯"
-            npcImage={null}
+            npcImage={avatar_forge.png}
             npcImageFallback="🐂"
             dialogues={[
               "歡迎來到鍛造工坊！我是礦坑老頭葛魯的徒弟，專門幫夜行者製作武裝。",
