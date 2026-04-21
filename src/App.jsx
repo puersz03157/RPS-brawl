@@ -899,7 +899,7 @@ const flushManorParasitePending = (owner, target, buf) => {
             applyStatus(def, 'DEF_DOWN', 3, 20, null, buf, defDeferred);
         } else {
             const isCC = (def.status||[]).some(s => s && !s.isDeferred && ['SILENCE', 'FREEZE'].includes(s.type));
-            let dmg = isCC ? 320 : 80;
+            let dmg = isCC ? 260 : 80;
             let actualDmg = dealDirectDmg(dmg, atk, def, buf, true);
             if (isCC && actualDmg > 0) {
                 const heal = Math.floor(actualDmg * 0.5);
@@ -1380,7 +1380,7 @@ const flushManorParasitePending = (owner, target, buf) => {
         let pSeeds = tIds.includes('t_elf') ? 2 : 0;
         if (tIds.includes('t_harvest_elf')) pSeeds += 2; 
         
-        if (selectedChar.id === 'aldous') initE = Math.min(100, initE + 50);
+        if (selectedChar.id === 'aldous') initE = Math.min(100, initE + 25);
 
         let pObj = {
             char: selectedChar, talents: tIds, hp: pMax, maxHp: pMax,
@@ -1467,7 +1467,7 @@ const flushManorParasitePending = (owner, target, buf) => {
         let eSeeds = eT.includes('t_elf') ? 2 : 0;
         if (eT.includes('t_harvest_elf')) eSeeds += 2;
 
-        if (eChar.id === 'aldous') eInitE = Math.min(100, eInitE + 50);
+        if (eChar.id === 'aldous') eInitE = Math.min(100, eInitE + 25);
 
         let eObj = { 
             char: eChar, talents: eT, hp: eMax, maxHp: eMax, 
@@ -1856,7 +1856,7 @@ const flushManorParasitePending = (owner, target, buf) => {
     
     let eSeeds = eT.includes('t_elf') ? 2 : 0;
     if (eT.includes('t_harvest_elf')) eSeeds += 2;
-    if (ne.id === 'aldous') eInitE = Math.min(100, eInitE + 50);
+    if (ne.id === 'aldous') eInitE = Math.min(100, eInitE + 25);
 
     let eObj = { 
         char: ne, 
