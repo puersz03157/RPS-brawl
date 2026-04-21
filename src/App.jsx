@@ -426,7 +426,7 @@ export default function App() {
   const [memTime, setMemTime] = useState(60);
 
   // 【V2.6】加入 battlesWon, gachaPulls, claimedAchievements
-  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 }, dailyQuestState: null, viewedEncounters: [] });
+  const [progress, setProgress] = useState({ crystals: 0, maxTalents: 3, unlocks: [], encountered: [], captured: [], mastery: {}, ap: 5, affection: {}, snackCount: 0, fragments: 0, charFragments: {}, usedCodes: [], charCostUpgrades: {}, battlesWon: 0, gachaPulls: 0, scout3Clears: 0, claimedAchievements: [], mine: { lv: 1, workers: [], lastCollect: null, pending: 0 }, ingredients: {}, unlockedRecipes: [], pendingMeal: null, tutorialDone: false, completedStoryChapters: [], items: {}, unlockedArmors: [], equippedArmor: null, consumableArmors: {}, pendingConsumableArmor: null, gardenDate: '', gardenPlays: { farm: 0, fishing: 0, hunting: 0, memory: 0 }, dailyQuestState: null, viewedEncounters: [] });
   const [isLoaded, setIsLoaded] = useState(false);
   const [campaignRadarActive, setCampaignRadarActive] = useState(false); // 📡 寶物雷達：本次戰役全程星晶加倍
   const [singleRadarActive, setSingleRadarActive] = useState(false);     // 📡 寶物雷達：單場模式（如自訂對決）星晶加倍
@@ -530,6 +530,7 @@ export default function App() {
                 usedCodes: Array.isArray(p.usedCodes) ? p.usedCodes : [],
                 charCostUpgrades: p.charCostUpgrades || {},
                 battlesWon: p.battlesWon || 0, gachaPulls: p.gachaPulls || 0, claimedAchievements: Array.isArray(p.claimedAchievements) ? p.claimedAchievements : [],
+                scout3Clears: p.scout3Clears || 0,
                 mine: p.mine || { lv: 1, workers: [], lastCollect: null, pending: 0 },
                 ingredients: p.ingredients || {}, unlockedRecipes: Array.isArray(p.unlockedRecipes) ? p.unlockedRecipes : [], pendingMeal: p.pendingMeal || null,
                 tutorialDone: p.tutorialDone || false,
@@ -1696,6 +1697,11 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             np.pendingConsumableArmor = null;
         }
 
+        // 🕵️ 偵查 3 連戰通關次數
+        if (isFinalWin && gameMode === 'scout_campaign3') {
+            np.scout3Clears = (np.scout3Clears || 0) + 1;
+        }
+
         // ⛏️ 礦工天賦：最終勝利額外 +5 通用碎片
         const pBaseId = player.char?.baseId || player.char?.id;
         if (isFinalWin && pBaseId === 'miner_char' && (player.talents || []).includes('t_miner_frag5')) {
@@ -2049,6 +2055,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     }
     const gained = total + catBonus;
     let np = { ...progress, fragments: (progress.fragments || 0) + gained, mine: { ...mine, pending: 0, lastCollect: new Date().toISOString() } };
+
+    // ⛏️ 礦坑滿級加成：領取時額外獲得礦工碎片 ×50
+    if (mine.lv >= 5) {
+      np.charFragments = { ...(np.charFragments || {}) };
+      np.charFragments['miner_char'] = (np.charFragments['miner_char'] || 0) + 50;
+      showToastMsg('🌟 滿級礦坑獎勵：⛏️ 礦工碎片 ×50！');
+    }
+
     np = updateDailyQuestProgress('mine_collect', np);
     saveProgress(np);
     showToastMsg(`⛏️ 領取了 ${gained} 顆星晶碎片！`);
@@ -4407,7 +4421,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                     });
                   }
                   saveProgress(np);
-                  showToast(`✦ 故事結束！獲得 ${ev.reward?.rewardDesc || ''}`);
+                  setSysInfo(`✨ 劇情已完成！\n\n🎁 獲得獎勵：\n${ev.reward?.rewardDesc || '（無）'}`);
                 }
                 setGameState('gacha'); setGachaTab('encounters');
               }} className="bg-slate-700 hover:bg-slate-600 text-white px-8 py-3 rounded-full font-bold shadow-xl flex items-center gap-2 active:scale-95 transition-all">
@@ -4616,19 +4630,43 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {ENCOUNTER_EVENTS.map(ev => {
                           const viewed = (progress.viewedEncounters || []).includes(ev.id);
+                          const unlock = ev.unlock;
+                          let locked = !!ev.locked;
+                          let lockHint = '尚未解鎖';
+                          if (!locked && unlock) {
+                            if (unlock.type === 'gachaPulls') {
+                              locked = (progress.gachaPulls || 0) < unlock.value;
+                              lockHint = `${unlock.desc}（${progress.gachaPulls || 0}/${unlock.value}）`;
+                            } else if (unlock.type === 'scout3Clears') {
+                              locked = (progress.scout3Clears || 0) < unlock.value;
+                              lockHint = `${unlock.desc}（${progress.scout3Clears || 0}/${unlock.value}）`;
+                            }
+                          } else if (unlock && locked) {
+                            lockHint = unlock.desc || lockHint;
+                          }
                           return (
-                          <div key={ev.id} className={`rounded-2xl border p-4 flex flex-col gap-2 transition-all relative ${ev.locked ? 'border-stone-800 bg-stone-900/40 opacity-50' : 'border-slate-700 bg-stone-900/70 hover:border-purple-500 cursor-pointer active:scale-95'}`}
-                            onClick={() => { if (!ev.locked) { setEncounterEventId(ev.id); setEncounterDialogueIdx(0); setGameState('encounter_dialogue'); } }}>
+                          <div key={ev.id} className={`rounded-2xl border p-4 flex flex-col gap-2 transition-all relative ${locked ? 'border-stone-800 bg-stone-900/40 opacity-50' : 'border-slate-700 bg-stone-900/70 hover:border-purple-500 cursor-pointer active:scale-95'}`}
+                            onClick={() => { if (!locked) { setEncounterEventId(ev.id); setEncounterDialogueIdx(0); setGameState('encounter_dialogue'); } }}>
                             {viewed && <span className="absolute top-3 right-3 text-[10px] bg-green-800 text-green-300 border border-green-700 px-2 py-0.5 rounded-full font-bold">✓ 已看過</span>}
                             <div className="flex items-center gap-3">
                               <span className="text-3xl">{ev.icon}</span>
                               <div>
-                                <div className={`font-bold text-sm ${ev.locked ? 'text-stone-600' : 'text-white'}`}>{ev.title}</div>
+                                <div className={`font-bold text-sm ${locked ? 'text-stone-600' : 'text-white'}`}>{ev.title}</div>
                                 {ev.subtitle && <div className="text-xs text-stone-500">{ev.subtitle}</div>}
                               </div>
                             </div>
                             <p className="text-xs text-stone-500 leading-relaxed">{ev.desc}</p>
-                            {!ev.locked && (
+                            {locked && unlock && (
+                              <div className="text-[11px] text-yellow-400 font-bold bg-stone-950/60 border border-stone-800 rounded-xl px-3 py-2">
+                                🔒 解鎖條件：{lockHint}
+                              </div>
+                            )}
+                            {!locked && unlock && (
+                              <div className="text-[11px] text-stone-600 font-bold">
+                                ✅ 解鎖方式：{unlock.desc}
+                              </div>
+                            )}
+                            {!locked && (
                               <div className="flex items-center justify-between mt-1">
                                 <span className="text-xs text-purple-400 font-bold">▶ 點擊閱讀</span>
                                 {ev.reward && <span className={`text-[10px] ${viewed ? 'text-stone-600 line-through' : 'text-yellow-500'}`}>{ev.reward.rewardDesc}</span>}

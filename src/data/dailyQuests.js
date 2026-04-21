@@ -32,6 +32,7 @@ export const ENCOUNTER_EVENTS = [
     themeBorder: 'border-slate-600',
     icon: '🍶',
     desc: '夜深酒靜，一個熟悉的背影出現在迷途酒館的角落……',
+    unlock: { type: 'gachaPulls', value: 5, desc: '酒館招募 5 次' },
     reward: { charFragments: { moying: 50 }, rewardDesc: '🌑 墨影碎片 ×50' },
     dialogue: [
       { speaker: '白澤', charId: 'wolf', image: 'avatar_wolf.png', side: 'left', text: '……（環顧酒館）今晚客人還真多。' },
@@ -63,6 +64,7 @@ export const ENCOUNTER_EVENTS = [
     themeBorder: 'border-amber-700',
     icon: '🍯',
     desc: '一封狂妄的怪盜預告信，一場深夜迷煙奇襲，以及幽暗樹林中，兩道身影的悄然對話……',
+    unlock: { type: 'scout3Clears', value: 1, desc: '通關偵查戰役（3連戰）1 次' },
     reward: { charFragments: { jack: 50 }, rewardDesc: '🃏 傑克碎片 ×50' },
     dialogue: [
       { speaker: '旁白', icon: '📜', image: null, side: 'left', text: '某日，日晝營地的帳篷內赫然出現了一張怪盜預告信，上面狂妄地寫著：「今日深夜零時，我將取走熊吉的特製蜂蜜。」' },
