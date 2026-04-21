@@ -363,6 +363,7 @@ export default function App() {
   const [gameMode, setGameMode] = useState('campaign'); 
   const [campaignRoute, setCampaignRoute] = useState([]); 
   const [campaignStage, setCampaignStage] = useState(0); 
+  const [campaignEnemyTalents, setCampaignEnemyTalents] = useState([]); // 偵查戰役：預先抽好的敵方天賦
   const [availableRewards, setAvailableRewards] = useState([]);
   const [galleryTab, setGalleryTab] = useState('companions');
   const [selectedTalentIds, setSelectedTalentIds] = useState([]);
@@ -574,8 +575,9 @@ export default function App() {
       setGameMode(mode); 
       setCampaignStage(0); 
       setCampaignRoute([]); 
+      setCampaignEnemyTalents([]);
       setSelectedTalentIds([]); 
-      setGameState('select_char'); 
+      setGameState(mode === 'scout_campaign' ? 'scout_preview' : 'select_char'); 
   };
 
   const getAvailableTalents = () => ALL_TALENTS.filter(t => {
@@ -599,6 +601,32 @@ export default function App() {
         if (cost + talent.cost <= max) return [...prev, tid];
         return prev;
     });
+  };
+
+  const buildScoutCampaign = () => {
+    const route = [
+      ...shuffle([...NORMAL_MONSTERS]).slice(0, 2),
+      shuffle([...BOSS_MONSTERS])[0],
+      shuffle([...ADVANCED_MONSTERS])[0],
+      shuffle([...ADVANCED_BOSSES])[0],
+    ].filter(Boolean);
+
+    const rollTalentsForEnemy = (eChar) => {
+      if (!eChar) return [];
+      const validETalents = ALL_TALENTS.filter(t => {
+        if (t.req && !unlocks.includes(t.req)) return false;
+        if (t.exclusiveTo) {
+          const bId = eChar.baseId || eChar.id;
+          if (bId !== t.exclusiveTo && eChar.id !== t.exclusiveTo) return false;
+        }
+        return true;
+      });
+      return getRandomTalents(getBaseTalents(eChar), validETalents);
+    };
+
+    setCampaignRoute(route);
+    setCampaignEnemyTalents(route.map(rollTalentsForEnemy));
+    setCampaignStage(0);
   };
 
   const applyStatus = (ent, type, duration, value = 0, hand = null, logBuffer, isDeferred = false) => {
@@ -1287,6 +1315,13 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 pool = [...pool, ...ADVANCED_MONSTERS.filter(m => encountered.includes(m.id)), ...ADVANCED_BOSSES.filter(m => encountered.includes(m.id))];
                 eChar = pool[Math.floor(Math.random() * pool.length)];
             }
+        } else if (gameMode === 'scout_campaign') {
+            // 偵查戰役：敵人路線與天賦於預覽階段已抽好
+            if (!campaignRoute || campaignRoute.length === 0 || !campaignEnemyTalents || campaignEnemyTalents.length === 0) {
+              buildScoutCampaign();
+              throw new Error("偵查戰役路線尚未建立，已自動生成，請再按一次開始。");
+            }
+            eChar = campaignRoute[campaignStage] || campaignRoute[0];
         } else if (gameMode === 'advanced_campaign') {
             let cRoute = [...shuffle([...ADVANCED_MONSTERS]).slice(0, 3), ...shuffle([...ADVANCED_BOSSES]).slice(0, 2)];
             let cStage = 0;
@@ -1303,15 +1338,20 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         
         if (!eChar) throw new Error("敵方魔物生成失敗！");
 
-        let validETalents = ALL_TALENTS.filter(t => {
-            if (t.req && !unlocks.includes(t.req)) return false;
-            if (t.exclusiveTo) {
-                const bId = eChar.baseId || eChar.id;
-                if (bId !== t.exclusiveTo && eChar.id !== t.exclusiveTo) return false;
-            }
-            return true;
-        });
-        let eT = getRandomTalents(getBaseTalents(eChar), validETalents);
+        let eT = [];
+        if (gameMode === 'scout_campaign') {
+            eT = campaignEnemyTalents[campaignStage] || [];
+        } else {
+            let validETalents = ALL_TALENTS.filter(t => {
+                if (t.req && !unlocks.includes(t.req)) return false;
+                if (t.exclusiveTo) {
+                    const bId = eChar.baseId || eChar.id;
+                    if (bId !== t.exclusiveTo && eChar.id !== t.exclusiveTo) return false;
+                }
+                return true;
+            });
+            eT = getRandomTalents(getBaseTalents(eChar), validETalents);
+        }
         let eMax = eChar.stats.maxHp + (eT.includes('t1') ? 100 : 0);
         let eInitE = eT.includes('t3') ? 25 : 0; if (eT.some(t=>['t9','t10','t11'].includes(t))) eInitE += 20;
         let eSeeds = eT.includes('t_elf') ? 2 : 0;
@@ -1597,8 +1637,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         }
     }
     let np = { ...progress };
-    const isAdvanced = gameMode === 'advanced_campaign';
-    const maxStage = isAdvanced ? 4 : 2;
+    const maxStage = (gameMode === 'advanced_campaign' || gameMode === 'scout_campaign') ? 4 : 2;
 
     if (target === 'player') {
       playSound('defeat');
@@ -1623,8 +1662,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         }
         
         let earned = 0;
+        const isAdvanced = gameMode === 'advanced_campaign';
         if (isAdvanced) { earned = campaignStage < maxStage ? 8 : 20; }
         else if (gameMode === 'campaign') { earned = campaignStage < maxStage ? 3 : 8; }
+        else if (gameMode === 'scout_campaign') { earned = campaignStage < maxStage ? 5 : 15; }
         else { earned = getBrawlReward(enemy.char); }
         
         if (campaignRadarActive && gameMode.includes('campaign')) earned *= 2;
@@ -1677,15 +1718,20 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     setPlayer(np); 
     setCampaignStage(ns); 
     
-    let validETalents = ALL_TALENTS.filter(t => {
-        if (t.req && !unlocks.includes(t.req)) return false;
-        if (t.exclusiveTo) {
-            const bId = ne.baseId || ne.id;
-            if (bId !== t.exclusiveTo && ne.id !== t.exclusiveTo) return false;
-        }
-        return true;
-    });
-    let eT = getRandomTalents(getBaseTalents(ne), validETalents);
+    let eT = [];
+    if (gameMode === 'scout_campaign') {
+        eT = campaignEnemyTalents[ns] || [];
+    } else {
+        let validETalents = ALL_TALENTS.filter(t => {
+            if (t.req && !unlocks.includes(t.req)) return false;
+            if (t.exclusiveTo) {
+                const bId = ne.baseId || ne.id;
+                if (bId !== t.exclusiveTo && ne.id !== t.exclusiveTo) return false;
+            }
+            return true;
+        });
+        eT = getRandomTalents(getBaseTalents(ne), validETalents);
+    }
     let eMax = ne.stats.maxHp + (eT.includes('t1') ? 100 : 0);
     let eInitE = eT.includes('t3') ? 25 : 0; if (eT.some(t=>['t9','t10','t11'].includes(t))) eInitE += 20;
     
@@ -2544,6 +2590,14 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                               💀 征戰夜巡（高階 5 連戰）
                               {!isAdvancedUnlocked && <div className="text-[10px] text-yellow-500 font-bold mt-1">需 1 名 3 星專精角色</div>}
                             </button>
+
+                            <button
+                              onClick={() => { setCampaignPickerOpen(false); selectMode('scout_campaign'); buildScoutCampaign(); }}
+                              className="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform border border-indigo-500"
+                            >
+                              🕵️ 偵查戰役（可預覽敵人與天賦）
+                              <div className="text-[10px] text-indigo-200 font-bold mt-1">一般小怪×2＋一般Boss＋進階魔物＋進階BOSS</div>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -3090,7 +3144,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         <div className="min-h-screen p-4 flex flex-col max-w-3xl mx-auto h-screen bg-stone-950 text-stone-200">
             <div className="flex items-center justify-between mb-2 gap-2">
                 <div className="text-xs text-stone-500 font-bold truncate">
-                    {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : gameMode === 'story' ? `${STORY_CHAPTERS.find(c=>c.id===storyChapterId)?.name || '主線夜巡'} · 第 ${storyBattleStage + 1}/3 戰` : '自訂對決'}
+                    {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : gameMode === 'scout_campaign' ? `偵查戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'story' ? `${STORY_CHAPTERS.find(c=>c.id===storyChapterId)?.name || '主線夜巡'} · 第 ${storyBattleStage + 1}/3 戰` : '自訂對決'}
                 </div>
                 <div className="flex gap-2 shrink-0">
                     <button onClick={() => setShowItemPanel(true)} className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border transition-colors select-none ${battleItemUses > 0 ? 'bg-stone-900 border-stone-700 text-stone-400 hover:bg-stone-700 hover:text-white' : 'bg-stone-900 border-stone-800 text-stone-600 cursor-not-allowed'}`}>
@@ -3673,6 +3727,99 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 )})}
             </div>
         </div>
+    );
+  };
+
+  const renderScoutPreview = () => {
+    const route = campaignRoute || [];
+    const tMap = Object.fromEntries(ALL_TALENTS.map(t => [t.id, t]));
+
+    if (route.length === 0 || (campaignEnemyTalents || []).length !== route.length) {
+      return (
+        <div className="min-h-screen p-8 bg-stone-950 text-stone-200">
+          <button onClick={() => setGameState('intro')} className="mb-8 flex items-center gap-2 text-stone-400 hover:text-white transition-colors"><ArrowLeft/> 返回首頁</button>
+          <div className="max-w-3xl mx-auto">
+            <h2 className="text-3xl font-bold text-yellow-400 mb-3">🕵️ 偵查戰役</h2>
+            <p className="text-stone-400 text-sm mb-6">正在生成敵人路線與天賦…</p>
+            <button onClick={buildScoutCampaign} className="w-full bg-yellow-600 hover:bg-yellow-500 text-stone-900 py-4 rounded-2xl font-bold shadow-lg active:scale-95 transition-all">
+              生成偵查路線
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    const labels = ['一般小怪①', '一般小怪②', '一般 Boss', '進階魔物', '進階 Boss'];
+
+    return (
+      <div className="min-h-screen p-8 bg-stone-950 text-stone-200">
+        <button onClick={() => setGameState('intro')} className="mb-8 flex items-center gap-2 text-stone-400 hover:text-white transition-colors"><ArrowLeft/> 返回首頁</button>
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
+            <div>
+              <h2 className="text-3xl font-bold text-yellow-400">🕵️ 偵查戰役：敵人預覽</h2>
+              <p className="text-stone-400 text-sm mt-1">組成：一般小怪×2＋一般Boss＋進階魔物＋進階BOSS（共 5 戰）</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={buildScoutCampaign} className="bg-stone-800 hover:bg-stone-700 border border-stone-700 px-4 py-2 rounded-xl font-bold text-stone-200 active:scale-95 transition-all">
+                🔄 重抽路線
+              </button>
+              <button onClick={() => setGameState('select_char')} className="bg-yellow-600 hover:bg-yellow-500 text-stone-900 px-5 py-2 rounded-xl font-bold shadow-lg active:scale-95 transition-all">
+                ✅ 開始配置
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {route.map((c, i) => {
+              const tIds = campaignEnemyTalents[i] || [];
+              return (
+                <div key={`${c.id}_${i}`} className="bg-stone-900 border-2 border-stone-700 rounded-3xl p-6 shadow-xl">
+                  <div className="flex items-start justify-between gap-4 flex-wrap">
+                    <div className="flex items-start gap-4 min-w-0">
+                      <div className="text-4xl shrink-0">{c.isEmoji ? c.emoji : c.icon}</div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold text-stone-500 mb-1">{labels[i] || `第 ${i + 1} 戰`}</div>
+                        <div className="text-xl font-bold text-white truncate">{c.name} <span className="text-stone-500 text-sm font-normal">· {c.title}</span></div>
+                        {c.element && <div className={`text-xs font-bold mt-1 ${c.element.color}`}>{c.element.icon} {c.element.name}屬性</div>}
+                        {c.prefHand && <div className="text-xs text-stone-400 mt-1">偏好出拳：<span className="text-yellow-400 font-bold">{RPS_CHOICES[c.prefHand]?.icon} {RPS_CHOICES[c.prefHand]?.name}</span></div>}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-center text-[10px] bg-stone-950 p-3 rounded-2xl border border-stone-800">
+                      <div><div className="text-stone-500 mb-1">HP</div><div className="font-bold text-green-400 text-sm">{c.stats.maxHp}</div></div>
+                      <div><div className="text-stone-500 mb-1">ATK</div><div className="font-bold text-red-400 text-sm">{c.stats.atk}</div></div>
+                      <div><div className="text-stone-500 mb-1">DEF</div><div className="font-bold text-blue-400 text-sm">{c.stats.def}</div></div>
+                    </div>
+                  </div>
+
+                  <div className="mt-5">
+                    <div className="text-xs font-bold text-cyan-300 mb-2">🎲 抽取天賦（{tIds.length}）</div>
+                    {tIds.length === 0 ? (
+                      <div className="text-stone-500 text-sm">（本戰無天賦）</div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {tIds.map(tid => {
+                          const t = tMap[tid];
+                          return (
+                            <div key={tid} className="bg-stone-950 border border-stone-800 rounded-2xl p-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{t?.icon || '✨'}</span>
+                                <span className="font-bold text-stone-100 text-sm">{t?.name || tid}</span>
+                                <span className="ml-auto text-[10px] text-stone-500 font-bold">{tid}</span>
+                              </div>
+                              <div className="text-xs text-stone-400 mt-1 leading-relaxed">{t?.desc || ''}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     );
   };
 
@@ -4546,6 +4693,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                   case 'home': return renderHome();
                   case 'gallery': return renderGallery();
                   case 'shop': return renderShop();
+                  case 'scout_preview': return renderScoutPreview();
                   case 'gacha': return renderGacha();
                   case 'encounter_dialogue': return renderEncounterDialogue();
                   case 'mine': return renderMine();
