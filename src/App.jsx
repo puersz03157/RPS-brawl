@@ -397,6 +397,8 @@ export default function App() {
   const [showItemPanel, setShowItemPanel] = useState(false);
   const [shopTab, setShopTab] = useState('crystal');
   const [gachaPreviewIdx, setGachaPreviewIdx] = useState(0);
+  const gachaPreviewLongPressRef = useRef(null);
+  const [gachaPreviewDetail, setGachaPreviewDetail] = useState(null);
   const [storyChapterId, setStoryChapterId] = useState(null);
   const [storyDialogueIdx, setStoryDialogueIdx] = useState(0);
   const [storyBattleStage, setStoryBattleStage] = useState(0);
@@ -500,6 +502,32 @@ export default function App() {
       return () => clearTimeout(t);
     }
   }, [memFlipped, memCards]);
+
+  // 迷途酒館：切換預覽或離開分頁時關閉長按詳情
+  useEffect(() => {
+    setGachaPreviewDetail(null);
+    if (gachaPreviewLongPressRef.current) {
+      clearTimeout(gachaPreviewLongPressRef.current);
+      gachaPreviewLongPressRef.current = null;
+    }
+  }, [gachaPreviewIdx]);
+
+  useEffect(() => {
+    if (gameState !== 'gacha' || gachaTab !== 'gacha') {
+      setGachaPreviewDetail(null);
+      if (gachaPreviewLongPressRef.current) {
+        clearTimeout(gachaPreviewLongPressRef.current);
+        gachaPreviewLongPressRef.current = null;
+      }
+    }
+  }, [gameState, gachaTab]);
+
+  useEffect(() => {
+    if (!gachaPreviewDetail) return;
+    const onKey = (e) => { if (e.key === 'Escape') setGachaPreviewDetail(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [gachaPreviewDetail]);
 
   // 每日任務：登入初始化
   useEffect(() => {
@@ -4605,6 +4633,8 @@ const flushManorParasitePending = (owner, target, buf) => {
       };
 
       const handlePull = (times) => {
+          setGachaPreviewDetail(null);
+          clearGachaPreviewLongPress();
           const cost = times === 10 ? gachaTenCost : gachaCost;
           if (progress.crystals < cost) {
               setSysError(`星晶不足！需要 ${cost} 顆。`);
@@ -4657,11 +4687,38 @@ const flushManorParasitePending = (owner, target, buf) => {
       const claimedCount = activeQuestIds.filter(id => dqClaimed.includes(id)).length;
       const difficultyLabel = { easy: '🟢 簡單', medium: '🟡 中等', hard: '🔴 困難' };
 
+      const clearGachaPreviewLongPress = () => {
+        if (gachaPreviewLongPressRef.current) {
+          clearTimeout(gachaPreviewLongPressRef.current);
+          gachaPreviewLongPressRef.current = null;
+        }
+      };
+      const startGachaPreviewLongPress = (c) => {
+        clearGachaPreviewLongPress();
+        if (!c) return;
+        const snapshot = c;
+        gachaPreviewLongPressRef.current = setTimeout(() => {
+          gachaPreviewLongPressRef.current = null;
+          setGachaPreviewDetail(snapshot);
+        }, 550);
+      };
+      const getGachaExclusiveTalents = (c) => {
+        if (!c) return [];
+        const keys = new Set([c.id, c.baseId].filter(Boolean));
+        return ALL_TALENTS.filter(t => t.exclusiveTo && keys.has(t.exclusiveTo));
+      };
+      const talentReqHint = (t) => {
+        if (t.req === 'char_talents' && !unlocks.includes('char_talents')) return '（需先於商店解鎖「專屬覺醒指南」）';
+        if (t.req === 'cost5' && !unlocks.includes('cost5')) return '（需先於商店解鎖「終極奧義卷軸 (Cost 5)」）';
+        if (t.req === 'cost4' && !unlocks.includes('cost4')) return '（需先於商店解鎖「進階戰術書 (Cost 4)」）';
+        return '';
+      };
+
       return (
           <div className="min-h-screen p-8 bg-stone-950 text-stone-200 relative overflow-hidden">
               <div className="max-w-4xl mx-auto z-10 relative">
                   <div className="flex justify-between items-center mb-8">
-                      <button onClick={()=>{setGameState('intro'); setGachaResult(null);}} className="flex items-center gap-2 text-stone-400 hover:text-white transition-colors"><ArrowLeft/> 返回首頁</button>
+                      <button onClick={()=>{setGameState('intro'); setGachaResult(null); setGachaPreviewDetail(null); clearGachaPreviewLongPress();}} className="flex items-center gap-2 text-stone-400 hover:text-white transition-colors"><ArrowLeft/> 返回首頁</button>
                       <div className="flex gap-4">
                           <div className="text-blue-300 font-bold bg-stone-800 px-4 py-2 rounded-full border border-stone-700 shadow-lg">💎 星晶：{progress.crystals}</div>
                           <div className="text-cyan-300 font-bold bg-stone-800 px-4 py-2 rounded-full border border-stone-700 shadow-lg">💠 碎片：{progress.fragments || 0}</div>
@@ -4806,24 +4863,36 @@ const flushManorParasitePending = (owner, target, buf) => {
                               <div className="text-6xl mb-6 drop-shadow-xl animate-pulse">🍻</div>
                               
                               {/* 大獎預覽區 */}
-                              <div className="w-full bg-stone-950 p-3 rounded-2xl border border-stone-700 mb-4 flex items-center justify-between relative shadow-inner">
-                                  <button onClick={prevPreview} className="text-stone-500 hover:text-white transition-colors"><ChevronLeft size={24}/></button>
-                                  <div className="flex-1 flex items-center gap-3 px-3">
-                                      <div className="relative shrink-0">
-                                          <SpriteAvatar char={currentPrize.char} size="w-12 h-12" />
-                                          <span className={`absolute -top-1 -right-1 px-1.5 py-0.5 rounded text-[8px] font-bold shadow ${currentPrize.rarity==='SSR'?'bg-yellow-500 text-black':'bg-purple-500 text-white'}`}>{currentPrize.rarity}</span>
+                              <div className="w-full bg-stone-950 p-3 rounded-2xl border border-stone-700 mb-1 flex items-center justify-between relative shadow-inner">
+                                  <button type="button" onClick={() => { clearGachaPreviewLongPress(); prevPreview(); }} className="text-stone-500 hover:text-white transition-colors shrink-0"><ChevronLeft size={24}/></button>
+                                  <div className="flex-1 flex items-center gap-3 px-3 min-w-0">
+                                      <div
+                                        className="relative shrink-0 touch-manipulation select-none rounded-xl border border-transparent hover:border-purple-500/50 transition-colors"
+                                        title="長按頭像查看詳細資料（含專屬天賦）"
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label="長按以開啟角色詳情"
+                                        onContextMenu={(e) => e.preventDefault()}
+                                        onPointerDown={() => startGachaPreviewLongPress(currentPrize?.char)}
+                                        onPointerUp={clearGachaPreviewLongPress}
+                                        onPointerLeave={clearGachaPreviewLongPress}
+                                        onPointerCancel={clearGachaPreviewLongPress}
+                                      >
+                                          {currentPrize?.char && <SpriteAvatar char={currentPrize.char} size="w-12 h-12" />}
+                                          <span className={`absolute -top-1 -right-1 px-1.5 py-0.5 rounded text-[8px] font-bold shadow pointer-events-none ${currentPrize.rarity==='SSR'?'bg-yellow-500 text-black':'bg-purple-500 text-white'}`}>{currentPrize.rarity}</span>
                                       </div>
-                                      <div className="flex-1">
-                                          <div className="flex items-center gap-2">
-                                              <span className={`font-bold ${currentPrize.rarity==='SSR'?'text-yellow-400':'text-purple-400'}`}>{currentPrize.char.name}</span>
-                                              <span className="text-[10px] text-stone-500 truncate">({currentPrize.char.title})</span>
+                                      <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 min-w-0">
+                                              <span className={`font-bold truncate ${currentPrize.rarity==='SSR'?'text-yellow-400':'text-purple-400'}`}>{currentPrize.char?.name}</span>
+                                              <span className="text-[10px] text-stone-500 truncate shrink-0">({currentPrize.char?.title})</span>
                                           </div>
-                                          <div className="text-[10px] text-stone-400 mt-1 line-clamp-1">{currentPrize.char.desc}</div>
+                                          <div className="text-[10px] text-stone-400 mt-1 line-clamp-2">{currentPrize.char?.desc}</div>
                                       </div>
                                   </div>
-                                  <button onClick={nextPreview} className="text-stone-500 hover:text-white transition-colors"><ChevronRight size={24}/></button>
-                                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-stone-800 text-stone-300 text-[10px] px-3 py-0.5 rounded-full border border-stone-600 font-bold tracking-widest">本期情報一覽</div>
+                                  <button type="button" onClick={() => { clearGachaPreviewLongPress(); nextPreview(); }} className="text-stone-500 hover:text-white transition-colors shrink-0"><ChevronRight size={24}/></button>
+                                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-stone-800 text-stone-300 text-[10px] px-3 py-0.5 rounded-full border border-stone-600 font-bold tracking-widest pointer-events-none">本期情報一覽</div>
                               </div>
+                              <p className="text-center text-[10px] text-stone-500 mb-4 w-full">長按頭像可看詳情（含專屬天賦）・Esc 關閉視窗</p>
 
                               {/* 機率公示表 */}
                               <div className="grid grid-cols-2 text-[10px] text-stone-400 bg-stone-950 p-3 rounded-xl border border-stone-800 w-full mb-6 gap-y-2 gap-x-4 shadow-inner">
@@ -4863,6 +4932,88 @@ const flushManorParasitePending = (owner, target, buf) => {
                       </div>
                   ) )}
               </div>
+
+              {gachaPreviewDetail && (() => {
+                const c = gachaPreviewDetail;
+                const tier = getCharTier(c);
+                const exTalents = getGachaExclusiveTalents(c);
+                return (
+                  <div
+                    className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in"
+                    onClick={() => { setGachaPreviewDetail(null); clearGachaPreviewLongPress(); }}
+                  >
+                    <div
+                      className="relative w-full max-w-md max-h-[90vh] overflow-y-auto bg-stone-900 border-2 border-purple-600/60 rounded-3xl shadow-2xl p-6 text-stone-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => { setGachaPreviewDetail(null); clearGachaPreviewLongPress(); }}
+                        className="absolute top-3 right-3 p-2 rounded-full bg-stone-800 border border-stone-600 text-stone-300 hover:text-white hover:border-purple-400 transition-colors"
+                        aria-label="關閉"
+                      >
+                        <X size={20} />
+                      </button>
+                      <div className="flex items-start gap-4 mb-4 pr-10">
+                        <SpriteAvatar char={c} size="w-16 h-16" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[10px] text-stone-500 mb-0.5">{tier === 'legendary' ? '🌟 傳說級' : tier === 'epic' ? '💎 史詩級' : tier === 'rare' ? '✨ 異裝 / 稀有' : '夜行者'}</div>
+                          <div className="text-xl font-bold flex flex-wrap items-center gap-2">
+                            <span>{c.isEmoji ? c.emoji : c.icon}</span>
+                            <span>{c.name}</span>
+                          </div>
+                          <div className="text-xs text-stone-400 mt-0.5">{c.title}</div>
+                          {c.element && <div className={`text-[11px] font-bold mt-1 ${c.element.color}`}>{c.element.icon} {c.element.name}屬性</div>}
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center text-[10px] mb-4 bg-stone-950 p-3 rounded-xl border border-stone-800">
+                        <div><div className="text-stone-500 mb-1">血量</div><div className="font-bold text-green-400 text-sm">{c.stats?.maxHp ?? '—'}</div></div>
+                        <div><div className="text-stone-500 mb-1">攻擊</div><div className="font-bold text-red-400 text-sm">{c.stats?.atk ?? '—'}</div></div>
+                        <div><div className="text-stone-500 mb-1">防禦</div><div className="font-bold text-blue-400 text-sm">{c.stats?.def ?? '—'}</div></div>
+                      </div>
+                      <div className="space-y-3 bg-stone-950 p-4 rounded-xl border border-stone-800 text-xs mb-4">
+                        <div>
+                          <span className="text-blue-400 font-bold text-sm block mb-1">✦ 戰技：{c.skill1?.name} <span className="text-[10px] font-normal text-stone-400 ml-1 bg-stone-900 px-2 py-0.5 rounded-full border border-stone-700">耗能 {c.skill1?.cost}E</span></span>
+                          <p className="text-stone-400 mt-1 leading-relaxed">{c.skill1?.desc}</p>
+                        </div>
+                        <hr className="border-stone-800" />
+                        <div>
+                          <span className="text-purple-400 font-bold text-sm block mb-1">❂ 奧義：{c.skill2?.name} <span className="text-[10px] font-normal text-stone-400 ml-1 bg-stone-900 px-2 py-0.5 rounded-full border border-stone-700">耗能 {c.skill2?.cost}E</span></span>
+                          <p className="text-stone-400 mt-1 leading-relaxed">{c.skill2?.desc}</p>
+                        </div>
+                      </div>
+                      <div className="bg-stone-950 p-4 rounded-xl border border-stone-800 mb-4">
+                        <div className="text-amber-300 font-bold text-sm mb-2">✨ 專屬天賦</div>
+                        {exTalents.length === 0 ? (
+                          <p className="text-stone-500 text-xs leading-relaxed">此角色目前無專屬天賦資料，或尚未實裝。</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {exTalents.map(t => {
+                              const reqHint = talentReqHint(t);
+                              return (
+                              <div key={t.id} className="border border-stone-800 rounded-xl p-3 bg-stone-900/80">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="text-lg">{t.icon}</span>
+                                  <span className="font-bold text-stone-100 text-sm">{t.name}</span>
+                                  <span className="text-[10px] text-stone-500 font-mono">Cost {t.cost}</span>
+                                  {reqHint ? <span className="text-[10px] text-amber-400 font-bold">{reqHint}</span> : null}
+                                </div>
+                                <p className="text-stone-400 text-xs leading-relaxed">{t.desc}</p>
+                              </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        <p className="text-stone-600 text-[10px] mt-3 leading-relaxed">※ 專屬天賦需在「配置天賦」消耗天賦點數裝備；部分條目需先於商店解鎖對應卷軸。</p>
+                      </div>
+                      <div>
+                        <span className="text-stone-500 font-bold text-xs mb-1 block">📖 角色情報</span>
+                        <p className="text-stone-400 text-xs leading-relaxed">{c.lore || '（尚無背景敘述）'}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
           </div>
       );
   };
