@@ -577,7 +577,15 @@ export default function App() {
       setCampaignRoute([]); 
       setCampaignEnemyTalents([]);
       setSelectedTalentIds([]); 
-      setGameState(mode === 'scout_campaign' ? 'scout_preview' : 'select_char'); 
+      if (mode === 'scout_campaign') {
+        setGameState('scout_preview');
+        setTimeout(() => buildScoutCampaign(5), 0);
+      } else if (mode === 'scout_campaign3') {
+        setGameState('scout_preview');
+        setTimeout(() => buildScoutCampaign(3), 0);
+      } else {
+        setGameState('select_char');
+      }
   };
 
   const getAvailableTalents = () => ALL_TALENTS.filter(t => {
@@ -603,13 +611,18 @@ export default function App() {
     });
   };
 
-  const buildScoutCampaign = () => {
-    const route = [
-      ...shuffle([...NORMAL_MONSTERS]).slice(0, 2),
-      shuffle([...BOSS_MONSTERS])[0],
-      shuffle([...ADVANCED_MONSTERS])[0],
-      shuffle([...ADVANCED_BOSSES])[0],
-    ].filter(Boolean);
+  const buildScoutCampaign = (len = 5) => {
+    const route = (len === 3
+      ? [
+          ...shuffle([...NORMAL_MONSTERS]).slice(0, 2),
+          shuffle([...BOSS_MONSTERS])[0],
+        ]
+      : [
+          ...shuffle([...NORMAL_MONSTERS]).slice(0, 2),
+          shuffle([...BOSS_MONSTERS])[0],
+          shuffle([...ADVANCED_MONSTERS])[0],
+          shuffle([...ADVANCED_BOSSES])[0],
+        ]).filter(Boolean);
 
     const rollTalentsForEnemy = (eChar) => {
       if (!eChar) return [];
@@ -1315,10 +1328,10 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                 pool = [...pool, ...ADVANCED_MONSTERS.filter(m => encountered.includes(m.id)), ...ADVANCED_BOSSES.filter(m => encountered.includes(m.id))];
                 eChar = pool[Math.floor(Math.random() * pool.length)];
             }
-        } else if (gameMode === 'scout_campaign') {
+        } else if (gameMode === 'scout_campaign' || gameMode === 'scout_campaign3') {
             // 偵查戰役：敵人路線與天賦於預覽階段已抽好
             if (!campaignRoute || campaignRoute.length === 0 || !campaignEnemyTalents || campaignEnemyTalents.length === 0) {
-              buildScoutCampaign();
+              buildScoutCampaign(gameMode === 'scout_campaign3' ? 3 : 5);
               throw new Error("偵查戰役路線尚未建立，已自動生成，請再按一次開始。");
             }
             eChar = campaignRoute[campaignStage] || campaignRoute[0];
@@ -1339,7 +1352,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         if (!eChar) throw new Error("敵方魔物生成失敗！");
 
         let eT = [];
-        if (gameMode === 'scout_campaign') {
+        if (gameMode === 'scout_campaign' || gameMode === 'scout_campaign3') {
             eT = campaignEnemyTalents[campaignStage] || [];
         } else {
             let validETalents = ALL_TALENTS.filter(t => {
@@ -1666,6 +1679,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         if (isAdvanced) { earned = campaignStage < maxStage ? 8 : 20; }
         else if (gameMode === 'campaign') { earned = campaignStage < maxStage ? 3 : 8; }
         else if (gameMode === 'scout_campaign') { earned = campaignStage < maxStage ? 5 : 15; }
+        else if (gameMode === 'scout_campaign3') { earned = campaignStage < 2 ? 3 : 8; }
         else { earned = getBrawlReward(enemy.char); }
         
         if (campaignRadarActive && gameMode.includes('campaign')) earned *= 2;
@@ -1719,7 +1733,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     setCampaignStage(ns); 
     
     let eT = [];
-    if (gameMode === 'scout_campaign') {
+    if (gameMode === 'scout_campaign' || gameMode === 'scout_campaign3') {
         eT = campaignEnemyTalents[ns] || [];
     } else {
         let validETalents = ALL_TALENTS.filter(t => {
@@ -2569,10 +2583,26 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
                           <div className="space-y-3">
                             <button
+                              onClick={() => { setCampaignPickerOpen(false); selectMode('scout_campaign3'); }}
+                              className="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform border border-indigo-500"
+                            >
+                              🕵️ 偵查 3 連戰
+                              <div className="text-[10px] text-indigo-200 font-bold mt-1">一般小怪×2＋一般Boss</div>
+                            </button>
+
+                            <button
                               onClick={() => { setCampaignPickerOpen(false); selectMode('campaign'); }}
                               className="w-full bg-yellow-600 hover:bg-yellow-500 text-stone-900 font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform"
                             >
-                              🗺️ 普通夜巡（3 連戰）
+                              🗺️ 隨機 3 連戰
+                            </button>
+
+                            <button
+                              onClick={() => { setCampaignPickerOpen(false); selectMode('scout_campaign'); }}
+                              className="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform border border-indigo-500"
+                            >
+                              🕵️ 偵查 5 連戰
+                              <div className="text-[10px] text-indigo-200 font-bold mt-1">一般小怪×2＋一般Boss＋進階魔物＋進階BOSS</div>
                             </button>
 
                             <button
@@ -2587,16 +2617,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                               }`}
                               disabled={!isAdvancedUnlocked}
                             >
-                              💀 征戰夜巡（高階 5 連戰）
+                              💀 隨機 5 連戰
                               {!isAdvancedUnlocked && <div className="text-[10px] text-yellow-500 font-bold mt-1">需 1 名 3 星專精角色</div>}
-                            </button>
-
-                            <button
-                              onClick={() => { setCampaignPickerOpen(false); selectMode('scout_campaign'); buildScoutCampaign(); }}
-                              className="w-full bg-indigo-700 hover:bg-indigo-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-transform border border-indigo-500"
-                            >
-                              🕵️ 偵查戰役（可預覽敵人與天賦）
-                              <div className="text-[10px] text-indigo-200 font-bold mt-1">一般小怪×2＋一般Boss＋進階魔物＋進階BOSS</div>
                             </button>
                           </div>
                         </div>
@@ -3144,7 +3166,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
         <div className="min-h-screen p-4 flex flex-col max-w-3xl mx-auto h-screen bg-stone-950 text-stone-200">
             <div className="flex items-center justify-between mb-2 gap-2">
                 <div className="text-xs text-stone-500 font-bold truncate">
-                    {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : gameMode === 'scout_campaign' ? `偵查戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'story' ? `${STORY_CHAPTERS.find(c=>c.id===storyChapterId)?.name || '主線夜巡'} · 第 ${storyBattleStage + 1}/3 戰` : '自訂對決'}
+                    {gameMode === 'tutorial' ? '📖 新手訓練場' : gameMode === 'campaign' ? `夜巡戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'advanced_campaign' ? `征戰夜巡 - 第 ${campaignStage + 1} 戰 (高階)` : gameMode === 'scout_campaign' ? `偵查戰役 - 第 ${campaignStage + 1} 戰` : gameMode === 'scout_campaign3' ? `偵查 3 連戰 - 第 ${campaignStage + 1} 戰` : gameMode === 'story' ? `${STORY_CHAPTERS.find(c=>c.id===storyChapterId)?.name || '主線夜巡'} · 第 ${storyBattleStage + 1}/3 戰` : '自訂對決'}
                 </div>
                 <div className="flex gap-2 shrink-0">
                     <button onClick={() => setShowItemPanel(true)} className={`flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border transition-colors select-none ${battleItemUses > 0 ? 'bg-stone-900 border-stone-700 text-stone-400 hover:bg-stone-700 hover:text-white' : 'bg-stone-900 border-stone-800 text-stone-600 cursor-not-allowed'}`}>
@@ -3733,6 +3755,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
   const renderScoutPreview = () => {
     const route = campaignRoute || [];
     const tMap = Object.fromEntries(ALL_TALENTS.map(t => [t.id, t]));
+    const isScout3 = route.length === 3;
 
     if (route.length === 0 || (campaignEnemyTalents || []).length !== route.length) {
       return (
@@ -3749,7 +3772,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       );
     }
 
-    const labels = ['一般小怪①', '一般小怪②', '一般 Boss', '進階魔物', '進階 Boss'];
+    const labels = isScout3 ? ['一般小怪①', '一般小怪②', '一般 Boss'] : ['一般小怪①', '一般小怪②', '一般 Boss', '進階魔物', '進階 Boss'];
 
     return (
       <div className="min-h-screen p-8 bg-stone-950 text-stone-200">
@@ -3758,10 +3781,12 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
           <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
             <div>
               <h2 className="text-3xl font-bold text-yellow-400">🕵️ 偵查戰役：敵人預覽</h2>
-              <p className="text-stone-400 text-sm mt-1">組成：一般小怪×2＋一般Boss＋進階魔物＋進階BOSS（共 5 戰）</p>
+              <p className="text-stone-400 text-sm mt-1">
+                {isScout3 ? '組成：一般小怪×2＋一般Boss（共 3 戰）' : '組成：一般小怪×2＋一般Boss＋進階魔物＋進階BOSS（共 5 戰）'}
+              </p>
             </div>
             <div className="flex gap-2">
-              <button onClick={buildScoutCampaign} className="bg-stone-800 hover:bg-stone-700 border border-stone-700 px-4 py-2 rounded-xl font-bold text-stone-200 active:scale-95 transition-all">
+              <button onClick={() => buildScoutCampaign(isScout3 ? 3 : 5)} className="bg-stone-800 hover:bg-stone-700 border border-stone-700 px-4 py-2 rounded-xl font-bold text-stone-200 active:scale-95 transition-all">
                 🔄 重抽路線
               </button>
               <button onClick={() => setGameState('select_char')} className="bg-yellow-600 hover:bg-yellow-500 text-stone-900 px-5 py-2 rounded-xl font-bold shadow-lg active:scale-95 transition-all">
