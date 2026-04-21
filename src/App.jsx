@@ -759,6 +759,16 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     } else if (id === 'elf') {
         if (num === 1) { const diff = Math.abs(atk.energy - def.energy); dealDirectDmg(atk.energy, atk, def, buf, true); dealDirectDmg(def.energy, atk, def, buf, true); atk.hp = Math.min(atk.maxHp, atk.hp + diff); atk.energy = 0; def.energy = 0; }
         else { if(!atk.permaBuffs) atk.permaBuffs={}; atk.permaBuffs.seeds = (atk.permaBuffs.seeds || 0) + 1; dealDirectDmg(atk.permaBuffs.seeds * 20, atk, def, buf); }
+    } else if (id === 'miner_char') {
+        if (num === 1) {
+            atk.shield += 80;
+            applyStatus(atk, 'REGEN', 3, 0, null, buf, atkDeferred);
+            buf.push({ text: `⛏️ [探礦嗅覺] 獲得 80 護盾並進入再生 3 回合。`, type: 'info' });
+        } else {
+            dealDirectDmg(90, atk, def, buf);
+            applyStatus(def, 'POISON', 2, 10, null, buf, defDeferred);
+            buf.push({ text: `⛏️ [鑿穿礦脈] 造成 90 傷害並施加中毒 2 回合！`, type: 'info' });
+        }
     } else if (id === 'xiangxiang') {
         if (num === 1) { atk.shield += 50; applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); }
         else { dealDirectDmg(100, atk, def, buf, true); if (atk.shield > 0) { dealDirectDmg(50, atk, def, buf, true); applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); } }
@@ -3560,6 +3570,8 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       { id: 'excite_potion', name: '道具製作：亢奮藥劑', desc: `戰鬥中使用，獲得亢奮狀態 3 回合。持有：${progress.items?.excite_potion||0} 個`, cost: 2, currency: 'ap', icon: '🧪', canBuy: progress.ap >= 2, bought: false, isInfinite: true, onBuy: craftItem('excite_potion', '亢奮藥劑', '🧪') },
       { id: 'smoke_bomb',    name: '道具製作：煙霧彈',   desc: `戰鬥中使用，獲得迴避效果 1 次。持有：${progress.items?.smoke_bomb||0} 個`,    cost: 3, currency: 'ap', icon: '💨', canBuy: progress.ap >= 3, bought: false, isInfinite: true, onBuy: craftItem('smoke_bomb',    '煙霧彈',   '💨') },
       { id: 'antidote',      name: '道具製作：萬能解藥', desc: `戰鬥中使用，清除自身所有負面狀態。持有：${progress.items?.antidote||0} 個`,      cost: 3, currency: 'ap', icon: '💊', canBuy: progress.ap >= 3, bought: false, isInfinite: true, onBuy: craftItem('antidote',      '萬能解藥', '💊') },
+      { id: 'guard_potion',  name: '道具製作：防護藥水', desc: `戰鬥中使用，獲得 50 點護盾。持有：${progress.items?.guard_potion||0} 個`,        cost: 2, currency: 'ap', icon: '🛡️', canBuy: progress.ap >= 2, bought: false, isInfinite: true, onBuy: craftItem('guard_potion',  '防護藥水', '🛡️') },
+      { id: 'health_food',   name: '道具製作：保健食品', desc: `戰鬥中使用，獲得再生狀態 3 回合。持有：${progress.items?.health_food||0} 個`,     cost: 2, currency: 'ap', icon: '🥗', canBuy: progress.ap >= 2, bought: false, isInfinite: true, onBuy: craftItem('health_food',   '保健食品', '🥗') },
     ];
 
     const crystalItems = [
@@ -4085,7 +4097,9 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
                       {!owned ? (
                         <button onClick={() => forgeCraft(armor, false)} disabled={!craftable}
                           className={`flex-1 py-2 rounded-xl text-sm font-bold transition-all ${craftable ? 'bg-purple-700 hover:bg-purple-600 text-white' : 'bg-stone-700 text-stone-500 cursor-not-allowed'}`}>
-                          {currency === 'charFragment' ? `🐻 ${armor.cost} 專屬碎片 製作` : `🧩 ${armor.cost} 碎片 製作`}
+                          {currency === 'charFragment'
+                            ? `${CHARACTERS.find(c => c.id === armor.fragmentCharId)?.icon || '🧩'} ${armor.cost} 專屬碎片 製作`
+                            : `🧩 ${armor.cost} 碎片 製作`}
                         </button>
                       ) : (
                         <button onClick={() => forgeEquip(armor.id)}
