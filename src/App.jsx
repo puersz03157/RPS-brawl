@@ -887,21 +887,21 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
             }
         }
     } else {
-        if (id === 'm1') { if (num === 1) { dealDirectDmg(10, atk, def, buf); applyStatus(def, 'PARASITE', 2, 10, null, buf, defDeferred); } else atk.hp = Math.min(atk.maxHp, atk.hp + 60); }
-        else if (id === 'm2') { if (num === 1) atk.shield += 50; else { dealDirectDmg(40, atk, def, buf); applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); } }
-        else if (id === 'm3') { if (num === 1) applyStatus(def, 'BURN', 2, 15, null, buf, defDeferred); else dealDirectDmg(80, atk, def, buf); }
-        else if (id === 'm4') { if (num === 1) applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); else atk.hp = Math.min(atk.maxHp, atk.hp + 40); }
-        else if (id === 'm5') { if (num === 1) applyStatus(def, 'SILENCE', 2, 0, null, buf, defDeferred); else dealDirectDmg(70, atk, def, buf); }
-        else if (id === 'm6') { if (num === 1) { applyStatus(def, 'ATK_DOWN', 2, 20, null, buf, defDeferred); applyStatus(def, 'DEF_DOWN', 2, 20, null, buf, defDeferred); } else { const debuffCount = (def.status||[]).filter(s => s && isDebuffStatus(s.type)).length; dealDirectDmg(30 + debuffCount * 20, atk, def, buf); } }
-        else if (id === 'm7') { if (num === 1) { applyStatus(atk, 'EVADE', 1, 0, null, buf, atkDeferred); def.energy = Math.max(0, def.energy - 20); buf.push({text: `💧 海藍水母奪取了 20 點能量！`, type: 'info'}); } else { dealDirectDmg(60, atk, def, buf); applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); def.energy = Math.max(0, def.energy - 30); buf.push({text: `💧 電擊觸手再奪取 30 點能量！`, type: 'info'}); } }
-        else if (id === 'm8') { if (num === 1) { atk.shield += 60; buf.push({text: `🦎 熔甲防禦！獲得 60 點護盾。`, type: 'info'}); } else { const shieldAmt = atk.shield; atk.shield = 0; dealDirectDmg(40 + shieldAmt, atk, def, buf, true); buf.push({text: `🌋 熔岩爆裂！消耗 ${shieldAmt} 點護盾引爆！`, type: 'info'}); } }
-        else if (id === 'm9') { if (num === 1) { applyStatus(atk, 'EXCITE', 3, 0, null, buf, atkDeferred); atk.shield += 30; buf.push({text: `🦢 星光羽翼！獲得亢奮與 30 護盾。`, type: 'info'}); } else { dealDirectDmg(55, atk, def, buf); applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); } }
-        else if (id === 'm10') { if (num === 1) { applyStatus(def, 'FATIGUE', 3, 0, null, buf, defDeferred); atk.hp = Math.min(atk.maxHp, atk.hp + 30); buf.push({text: `🦇 夢魘爪！恢復 30 HP。`, type: 'heal'}); } else { dealDirectDmg(50, atk, def, buf, true); const debuffCount = (def.status||[]).filter(s => s && isDebuffStatus(s.type)).length; const lifeSteal = debuffCount * 20; atk.hp = Math.min(atk.maxHp, atk.hp + lifeSteal); if (lifeSteal > 0) buf.push({text: `🦇 虛空侵蝕吸取了 ${lifeSteal} HP！`, type: 'heal'}); } }
-        else if (id === 'b1') { if (num === 1) { def.energy = Math.max(0, def.energy - 20); applyStatus(def, 'SILENCE', 1, 0, null, buf, defDeferred); } else dealDirectDmg(150, atk, def, buf, true); }
-        else if (id === 'b2') { if (num === 1) { atk.shield += 30; applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); } else dealDirectDmg(130, atk, def, buf); }
-        else if (id === 'b3') { if (num === 1) { atk.atk += 10; applyStatus(def, 'BURN', 2, 25, null, buf, defDeferred); } else dealDirectDmg(180, atk, def, buf); }
-        else if (id === 'b4') { if (num === 1) { dealDirectDmg(30, atk, def, buf); applyStatus(def, 'PARASITE', 3, 20, null, buf, defDeferred); } else atk.hp = Math.min(atk.maxHp, atk.hp + 200); }
-        else if (id === 'b5') { if (num === 1) atk.shield += 80; else { dealDirectDmg(100, atk, def, buf); def.energy = 0; applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); } }
+        if (id === 'm1') { if (num === 1) { dealDirectDmg(25, atk, def, buf); applyStatus(def, 'PARASITE', 2, 25, null, buf, defDeferred); } else atk.hp = Math.min(atk.maxHp, atk.hp + 120); }
+        else if (id === 'm2') { if (num === 1) atk.shield += 100; else { dealDirectDmg(75, atk, def, buf); applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); } }
+        else if (id === 'm3') { if (num === 1) applyStatus(def, 'BURN', 2, 30, null, buf, defDeferred); else dealDirectDmg(140, atk, def, buf); }
+        else if (id === 'm4') { if (num === 1) applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); else atk.hp = Math.min(atk.maxHp, atk.hp + 80); }
+        else if (id === 'm5') { if (num === 1) applyStatus(def, 'SILENCE', 2, 0, null, buf, defDeferred); else dealDirectDmg(140, atk, def, buf); }
+        else if (id === 'm6') { if (num === 1) { applyStatus(def, 'ATK_DOWN', 2, 30, null, buf, defDeferred); applyStatus(def, 'DEF_DOWN', 2, 30, null, buf, defDeferred); } else { const debuffCount = (def.status||[]).filter(s => s && isDebuffStatus(s.type)).length; dealDirectDmg(50 + debuffCount * 30, atk, def, buf); } }
+        else if (id === 'm7') { if (num === 1) { applyStatus(atk, 'EVADE', 1, 0, null, buf, atkDeferred); def.energy = Math.max(0, def.energy - 20); buf.push({text: `💧 海藍水母奪取了 20 點能量！`, type: 'info'}); } else { dealDirectDmg(110, atk, def, buf); applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); def.energy = Math.max(0, def.energy - 30); buf.push({text: `💧 電擊觸手再奪取 30 點能量！`, type: 'info'}); } }
+        else if (id === 'm8') { if (num === 1) { atk.shield += 120; buf.push({text: `🦎 熔甲防禦！獲得 120 點護盾。`, type: 'info'}); } else { const shieldAmt = atk.shield; atk.shield = 0; dealDirectDmg(70 + shieldAmt, atk, def, buf, true); buf.push({text: `🌋 熔岩爆裂！消耗 ${shieldAmt} 點護盾引爆！`, type: 'info'}); } }
+        else if (id === 'm9') { if (num === 1) { applyStatus(atk, 'EXCITE', 3, 0, null, buf, atkDeferred); atk.shield += 60; buf.push({text: `🦢 星光羽翼！獲得亢奮與 60 護盾。`, type: 'info'}); } else { dealDirectDmg(100, atk, def, buf); applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); } }
+        else if (id === 'm10') { if (num === 1) { applyStatus(def, 'FATIGUE', 3, 0, null, buf, defDeferred); atk.hp = Math.min(atk.maxHp, atk.hp + 60); buf.push({text: `🦇 夢魘爪！恢復 60 HP。`, type: 'heal'}); } else { dealDirectDmg(110, atk, def, buf, true); const debuffCount = (def.status||[]).filter(s => s && isDebuffStatus(s.type)).length; const lifeSteal = debuffCount * 35; atk.hp = Math.min(atk.maxHp, atk.hp + lifeSteal); if (lifeSteal > 0) buf.push({text: `🦇 虛空侵蝕吸取了 ${lifeSteal} HP！`, type: 'heal'}); } }
+        else if (id === 'b1') { if (num === 1) { def.energy = Math.max(0, def.energy - 35); applyStatus(def, 'SILENCE', 1, 0, null, buf, defDeferred); } else dealDirectDmg(230, atk, def, buf, true); }
+        else if (id === 'b2') { if (num === 1) { atk.shield += 60; applyStatus(def, 'DAZZLE', 1, 0, getRandomHand(), buf, defDeferred); } else dealDirectDmg(200, atk, def, buf); }
+        else if (id === 'b3') { if (num === 1) { atk.atk += 20; applyStatus(def, 'BURN', 2, 45, null, buf, defDeferred); } else dealDirectDmg(260, atk, def, buf); }
+        else if (id === 'b4') { if (num === 1) { dealDirectDmg(60, atk, def, buf); applyStatus(def, 'PARASITE', 3, 35, null, buf, defDeferred); } else atk.hp = Math.min(atk.maxHp, atk.hp + 350); }
+        else if (id === 'b5') { if (num === 1) atk.shield += 140; else { dealDirectDmg(170, atk, def, buf); def.energy = 0; applyStatus(def, 'FREEZE', 1, 0, getRandomHand(), buf, defDeferred); } }
     }
   };
 
@@ -951,14 +951,19 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
     if (ent.permaBuffs?.armor === 'armor_chaos' && (hasMoyingTalent || Math.random() < 0.3)) {
         const debuffPool = ['BURN', 'PARASITE', 'SILENCE', 'ATK_DOWN', 'DEF_DOWN', 'FATIGUE'];
         const chosen = debuffPool[Math.floor(Math.random() * debuffPool.length)];
-        applyStatus(other, chosen, 1, chosen === 'BURN' ? 20 : 0, null, buf);
+        applyStatus(other, chosen, 1, chosen === 'BURN' ? 35 : 0, null, buf);
         buf.push({text: `🌀 [干擾符文] 對敵觸發隨機負面狀態！`, type: 'info'});
     }
 
     for (let s of (ent.status || [])) {
         if (!s) continue;
         if (s.type === 'BURN') { const baseBDmg = s.value || 20; const bDmg = (other.talents||[]).includes('t_human') ? baseBDmg + 10 : baseBDmg; ent.hp = Math.max(0, ent.hp - bDmg); buf.push({text: `🔥 燃燒造成 ${bDmg} 傷害！`, type: 'damage'}); }
-        if (s.type === 'PARASITE') { ent.hp = Math.max(0, ent.hp - 15); other.hp = Math.min(other.maxHp, other.hp + 15); buf.push({text: `🌿 寄生吸取 15 HP！`, type: 'damage'}); }
+        if (s.type === 'PARASITE') {
+            const v = s.value || 25;
+            ent.hp = Math.max(0, ent.hp - v);
+            other.hp = Math.min(other.maxHp, other.hp + v);
+            buf.push({text: `🌿 寄生吸取 ${v} HP！`, type: 'damage'});
+        }
         if (s.type === 'REGEN') { ent.hp = Math.min(ent.maxHp, ent.hp + 20); buf.push({text: `💖 再生恢復 20 HP！`, type: 'heal'}); }
         
         if (s.isDeferred) {
