@@ -3822,7 +3822,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
           <NpcDialogue
             npcName="鍛造師葛魯"
-            npcImage={avatar_forge.png}
+            npcImage="avatar_forge.png"
             npcImageFallback="🐂"
             dialogues={[
               "歡迎來到鍛造工坊！我是礦坑老頭葛魯的徒弟，專門幫夜行者製作武裝。",
