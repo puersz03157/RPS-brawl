@@ -2522,7 +2522,7 @@ const flushManorParasitePending = (owner, target, buf) => {
 
           <NpcDialogue
             npcName="莊園管理員 · 莉莉"
-            npcImage={null}
+            npcImage="avatar_manor.png"
             npcImageFallback="🌻"
             dialogues={[
               "歡迎來到悠活莊園！在這裡可以種菜、釣魚、狩獵、翻牌，每日各 3 次哦！",
@@ -4391,7 +4391,7 @@ const flushManorParasitePending = (owner, target, buf) => {
 
           <NpcDialogue
             npcName="礦坑監工"
-            npcImage={null}
+            npcImage="avatar_mine_npc.png"
             npcImageFallback="🐆"
             dialogues={[
               "歡迎來到礦坑！把你的夥伴派遣進去，他們會自動幫你挖碎片。",
