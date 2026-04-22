@@ -21,5 +21,6 @@ export const STATUS_DOCS = [
   { name: '封印', effect: '下次出拳無法使用特定的手勢。', icon: '❄️', color: 'text-blue-400' },
   { name: '強制', effect: '下次出拳被強制固定為特定手勢。', icon: '💫', color: 'text-yellow-400' },
   { name: '沉默', effect: '無法使用戰技與奧義。', icon: '🤐', color: 'text-purple-400' },
+  { name: '微醺', effect: '每次自身能量增加時，受到 20 點傷害。', icon: '🍷', color: 'text-rose-400' },
 ];
 

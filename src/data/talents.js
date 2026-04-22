@@ -15,9 +15,11 @@ export const ALL_TALENTS = [
   { id: 't_xiangxiang', name: '柯特的愛心宵夜', cost: 3, desc: 'HP低於50%時每回合回覆 20 HP 並獲 10 盾。(虎吉專屬)', icon: '🍜', req: 'char_talents', exclusiveTo: 'xiangxiang' },
   { id: 't_moying', name: '影術之道', cost: 3, desc: '武裝機率觸發效果必定觸發，腐蝕刃固定施加降防。(墨影專屬)', icon: '🌑', req: 'char_talents', exclusiveTo: 'moying' },
   { id: 't_jack', name: '贓物大師', cost: 3, desc: '己方使用道具時，若己方持有道具反轉，額外造成 30 點真實傷害。(傑克專屬)', icon: '🎭', req: 'char_talents', exclusiveTo: 'jack' },
+  { id: 't_bartender_please', name: '請醉片刻', cost: 3, desc: '每回合雙方獲得 10 點能量；自身能量溢出時轉為護盾。(哈魯專屬)', icon: '🍷', req: 'char_talents', exclusiveTo: 'bartender' },
   { id: 't_kohaku', name: '財富自由', cost: 3, desc: '戰鬥中道具使用上限 +2 次；使用道具時 30% 機率不消耗使用次數與道具數量。(琥珀專屬)', icon: '💰', req: 'char_talents', exclusiveTo: 'kohaku' },
   { id: 't_manor', name: '溢補栽培', cost: 3, desc: '自身獲得治療溢出時，溢出值 100% 轉為護盾(上限200)。若場上有敵方🌿[寄生]：每獲得40點「新護盾」使其寄生吸取值+5(上限+20)。(烏薩專屬)', icon: '🪴', req: 'char_talents', exclusiveTo: 'manor' },
   { id: 't_aldous', name: '睿智之風', cost: 3, desc: '戰鬥開始時額外 +25 能量（上限 100）；每回合結束時恢復 5 能量。(奧爾德斯專屬)', icon: '🌙', req: 'char_talents', exclusiveTo: 'aldous' },
+  { id: 't_newyear_bear', name: '年到福來', cost: 3, desc: '自身受到的 HP 回復量 +50%；治療溢出時對敵造成溢出量 50% 的傷害。(新年熊吉專屬)', icon: '🎊', req: 'char_talents', exclusiveTo: 'newyear_bear' },
   { id: 't9', name: '銳利', cost: 4, desc: '出剪刀獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '✂️', req: 'cost4' },
   { id: 't10', name: '堅硬', cost: 4, desc: '出石頭獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🪨', req: 'cost4' },
   { id: 't11', name: '柔和', cost: 4, desc: '出布獲勝傷害 x1.5，戰敗受傷減半。開場能量 +20。', icon: '🧻', req: 'cost4' },
@@ -28,6 +30,8 @@ export const ALL_TALENTS = [
   { id: 't_valentine_wolf', name: '苦甜回憶', cost: 5, desc: '護盾被破壞時，恢復20點能量並獲得攻擊提升3回合。(情人節白澤專屬)', icon: '💝', req: 'cost5', exclusiveTo: 'valentine_wolf' },
   { id: 't_halloween_cat', name: '幻夜貓蹤', cost: 5, desc: '回合結束對手每個Debuff造成15傷。對手有Debuff時減傷20%。(萬聖布提婭專屬)', icon: '🦇', req: 'cost5', exclusiveTo: 'halloween_cat' },
   { id: 't_christmas_xiangxiang', name: '最棒的禮物', cost: 5, desc: '每 3 回合自動恢復 10% 最大生命值並獲得 20 能量。(聖誕虎吉專屬)', icon: '🎄', req: 'cost5', exclusiveTo: 'christmas_xiangxiang' },
+
+  { id: 't_blacksmith_scarred', name: '歷殤之軀', cost: 3, desc: '猜拳戰敗時反傷對手 30 真實傷害；若對手當下有護盾則改為 60。裝備消耗武裝時 50% 機率不消耗庫存。(卡恩專屬)', icon: '🛡️', req: 'char_talents', exclusiveTo: 'blacksmith' },
 
   // === 礦工（資源角）===
   { id: 't_miner_frag5', name: '碎片採集', cost: 3, desc: '最終勝利結算時，額外獲得 💠 5 通用碎片。(礦工專屬)', icon: '⛏️', req: 'char_talents', exclusiveTo: 'miner_char' },

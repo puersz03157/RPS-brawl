@@ -159,7 +159,7 @@ const getElementMultiplier = (atkElem, defElem) => {
 };
 
 const isBuffStatus = (type) => type && ['ATK_UP', 'DEF_UP', 'REGEN', 'EVADE', 'EXCITE', 'ITEM_REVERSE'].includes(type);
-const isDebuffStatus = (type) => type && ['BURN', 'POISON', 'PARASITE', 'FREEZE', 'DAZZLE', 'SILENCE', 'ATK_DOWN', 'DEF_DOWN', 'VULNERABLE', 'FATIGUE', 'VIP'].includes(type);
+const isDebuffStatus = (type) => type && ['BURN', 'POISON', 'PARASITE', 'FREEZE', 'DAZZLE', 'SILENCE', 'ATK_DOWN', 'DEF_DOWN', 'VULNERABLE', 'FATIGUE', 'VIP', 'TIPSY'].includes(type);
 
 const getStatusValueSum = (ent, type) => {
     if (!ent || !ent.status) return 0;
@@ -277,13 +277,15 @@ const getBaseTalents = (char) => {
 };
 
 const getStatusName = (type) => {
-    const map = { 'BURN': '燃燒', 'POISON': '中毒', 'PARASITE': '寄生', 'FREEZE': '封印', 'DAZZLE': '強制', 'SILENCE': '沉默', 'ATK_UP': '攻擊提升', 'DEF_UP': '防禦提升', 'REGEN': '再生', 'ATK_DOWN': '攻擊下降', 'DEF_DOWN': '防禦下降', 'VULNERABLE': '易傷', 'EVADE': '迴避', 'FATIGUE': '疲憊', 'EXCITE': '亢奮', 'VIP': 'VIP', 'ITEM_REVERSE': '道具反轉' };
+    const map = { 'BURN': '燃燒', 'POISON': '中毒', 'PARASITE': '寄生', 'FREEZE': '封印', 'DAZZLE': '強制', 'SILENCE': '沉默', 'ATK_UP': '攻擊提升', 'DEF_UP': '防禦提升', 'REGEN': '再生', 'ATK_DOWN': '攻擊下降', 'DEF_DOWN': '防禦下降', 'VULNERABLE': '易傷', 'EVADE': '迴避', 'FATIGUE': '疲憊', 'EXCITE': '亢奮', 'VIP': 'VIP', 'ITEM_REVERSE': '道具反轉', 'TIPSY': '微醺' };
     return map[type] || type;
 };
 const getStatusIcon = (type) => {
-    const map = { 'VULNERABLE': '💢', 'EVADE': '💨', 'FATIGUE': '💤', 'EXCITE': '⚡', 'BURN': '🔥', 'POISON': '☠️', 'PARASITE': '🌿', 'FREEZE': '❄️', 'DAZZLE': '💫', 'SILENCE': '🤐', 'ATK_UP': '⚔️', 'DEF_UP': '🛡️', 'REGEN': '💖', 'ATK_DOWN': '📉', 'DEF_DOWN': '📉', 'VIP': '💳' };
+    const map = { 'VULNERABLE': '💢', 'EVADE': '💨', 'FATIGUE': '💤', 'EXCITE': '⚡', 'BURN': '🔥', 'POISON': '☠️', 'PARASITE': '🌿', 'FREEZE': '❄️', 'DAZZLE': '💫', 'SILENCE': '🤐', 'ATK_UP': '⚔️', 'DEF_UP': '🛡️', 'REGEN': '💖', 'ATK_DOWN': '📉', 'DEF_DOWN': '📉', 'VIP': '💳', 'TIPSY': '🍷' };
     return map[type] || '✨';
 };
+
+const hasActiveTipsy = (ent) => (ent?.status || []).some(s => s && !s.isDeferred && s.type === 'TIPSY');
 
 const checkChristmasUnlock = (unlocksArray) => {
     const req = ['newyear_bear', 'harvest_elf', 'blackflame_human', 'valentine_wolf', 'halloween_cat'];
@@ -736,7 +738,7 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
       def.shield = 0;
       
       if ((def.talents || []).includes('t_valentine_wolf')) {
-          def.energy = Math.min(100, def.energy + 20);
+          applyEnergyDelta(def, def.energy + 20, logBuffer, atk);
           applyStatus(def, 'ATK_UP', 3, 20, null, logBuffer, false);
           logBuffer.push({ text: `💝 [苦甜回憶] 護盾破裂！恢復 20 點能量並提升攻擊！`, type: 'info' });
       }
@@ -767,19 +769,40 @@ const dealDirectDmg = (base, atk, def, logBuffer, ignoreShield = false) => {
 
   if ((atk.talents || []).includes('t7') && actualHpDamage > 0) {
     const healAmt = Math.max(1, Math.floor(actualHpDamage * 0.20));
-    applyHeal(atk, healAmt, logBuffer, `[嗜血] ${atk.char?.name || '攻擊方'} 吸收`);
+    applyHeal(atk, healAmt, logBuffer, `[嗜血] ${atk.char?.name || '攻擊方'} 吸收`, def);
   }
 
   return dmg;
 };
 
+/** 戰鬥內能量變化（含上限）：淨增加且持有微醺時，由對手視為攻擊來源結算 20 傷 */
+const applyEnergyDelta = (ent, targetEnergy, buf, opponent) => {
+  const before = Math.max(0, Math.min(100, ent.energy ?? 0));
+  const raw = Math.max(0, targetEnergy);
+  const after = Math.min(100, raw);
+  const overflow = raw - after;
+  const entCharId = ent.char?.baseId || ent.char?.id;
+  if (overflow > 0 && (ent.talents || []).includes('t_bartender_please') && entCharId === 'bartender') {
+    ent.shield = (ent.shield || 0) + overflow;
+    if (buf) buf.push({ text: `🍸 [請醉片刻] 能量溢出 ${overflow} 點轉為護盾！`, type: 'shield' });
+  }
+  const gain = after - before;
+  ent.energy = after;
+  if (gain > 0 && hasActiveTipsy(ent) && opponent) {
+    dealDirectDmg(20, opponent, ent, buf);
+    buf.push({ text: `🍷 [微醺] 能量上升，受到 20 傷害！`, type: 'damage' });
+  }
+};
+
 // 提供戰鬥其他區塊使用：溢補/寄生相關治療統一入口
-const applyHeal = (ent, amt, buf, label = '治療') => {
+const applyHeal = (ent, amt, buf, label = '治療', opponentForNy = null) => {
   if (!ent || !amt || amt <= 0) return { healed: 0, overheal: 0, shieldGained: 0 };
+  const hasNy = (ent.talents || []).includes('t_newyear_bear');
+  const healInput = hasNy ? Math.floor(amt * 1.5) : amt;
   const beforeShield = ent.shield || 0;
   const beforeHp = ent.hp;
   const maxHp = ent.maxHp || 0;
-  const afterHpRaw = beforeHp + amt;
+  const afterHpRaw = beforeHp + healInput;
   const healed = Math.max(0, Math.min(maxHp, afterHpRaw) - beforeHp);
   const overheal = Math.max(0, afterHpRaw - maxHp);
   ent.hp = Math.min(maxHp, afterHpRaw);
@@ -818,6 +841,14 @@ const applyHeal = (ent, amt, buf, label = '治療') => {
     }
   }
 
+  if (hasNy && overheal > 0 && opponentForNy) {
+    const od = Math.floor(overheal * 0.5);
+    if (od > 0) {
+      dealDirectDmg(od, ent, opponentForNy, buf);
+      buf.push({ text: `🎊 [年到福來] 治療溢出 ${overheal}，對敵造成 ${od} 傷害！`, type: 'damage' });
+    }
+  }
+
   if (label && healed > 0) buf.push({ text: `${label} 恢復 ${healed} HP！`, type: 'heal' });
   return { healed, overheal, shieldGained };
 };
@@ -848,7 +879,12 @@ const flushManorParasitePending = (owner, target, buf) => {
         else { const count = (atk.status||[]).filter(s => s && isBuffStatus(s.type)).length; dmgDealt = dealDirectDmg(50 + count * 40, atk, def, buf); applyStatus(def, 'PARASITE', 3, 15, null, buf, defDeferred); atk.status = Array.isArray(atk.status) ? atk.status.filter(s => s && !isBuffStatus(s.type)) : []; }
     } else if (id === 'newyear_bear') {
         if (num === 1) { applyStatus(atk, 'EXCITE', 3, 0, null, buf, atkDeferred); applyStatus(def, 'FATIGUE', 3, 0, null, buf, defDeferred); }
-        else { dmgDealt = dealDirectDmg(80, atk, def, buf); atk.energy = 0; atk.hp = Math.min(atk.maxHp, atk.hp + 100); def.hp = Math.min(def.maxHp, def.hp + 30); atk.shield += 80; applyStatus(atk, 'EVADE', 1, 0, null, buf, atkDeferred); }
+        else {
+          dmgDealt = dealDirectDmg(80, atk, def, buf);
+          applyHeal(atk, 100, buf, `[年年有餘]`, def);
+          atk.shield += 80;
+          applyStatus(atk, 'EVADE', 1, 0, null, buf, atkDeferred);
+        }
     } else if (id === 'wolf') {
         if (num === 1) { atk.shield += 50; if(!atk.buffs) atk.buffs={}; atk.buffs.energyOnLoss = true; }
         else {
@@ -1009,7 +1045,7 @@ const flushManorParasitePending = (owner, target, buf) => {
                 applyStatus(def, 'PARASITE', 3, 18, null, buf, defDeferred);
                 buf.push({ text: `🪴 [嫁接孢囊] 施加 🌿[寄生] 3 回合（吸取18）。`, type: 'info' });
             }
-            applyHeal(atk, 75, buf, `🪴 [嫁接孢囊]`);
+            applyHeal(atk, 75, buf, `🪴 [嫁接孢囊]`, def);
             flushManorParasitePending(atk, def, buf);
         } else {
             dealDirectDmg(65, atk, def, buf);
@@ -1019,11 +1055,11 @@ const flushManorParasitePending = (owner, target, buf) => {
                 // 立即追加一次吸取（不消耗回合）；對敵仍為完整吸取，但轉化自補減半，避免奧義一鍵把血線拉滿
                 def.hp = Math.max(0, def.hp - v);
                 const burstHeal = Math.max(1, Math.floor(v * 0.5));
-                applyHeal(atk, burstHeal, buf, `🌿 [寄生追加吸取]`);
+                applyHeal(atk, burstHeal, buf, `🌿 [寄生追加吸取]`, def);
                 p.duration += 1;
                 buf.push({ text: `🪴 [溢補蔓延] 立即結算一次寄生吸取 ${v}（自補 ${burstHeal}），並延長 1 回合！`, type: 'info' });
             }
-            applyHeal(atk, 95, buf, `🪴 [溢補蔓延]`);
+            applyHeal(atk, 95, buf, `🪴 [溢補蔓延]`, def);
             flushManorParasitePending(atk, def, buf);
 
             if ((atk.shield || 0) >= 140) {
@@ -1067,6 +1103,55 @@ const flushManorParasitePending = (owner, target, buf) => {
             } else {
                 dealDirectDmg(80, atk, def, buf);
                 buf.push({ text: `🃏 [怪盜絕技] 造成 80 傷害。`, type: 'damage' });
+            }
+        }
+    } else if (id === 'bartender') {
+        if (num === 1) {
+            dealDirectDmg(30, atk, def, buf);
+            applyStatus(def, 'TIPSY', 3, 0, null, buf, defDeferred);
+            const bounced = (atk.status || []).filter(s => s && !s.isDeferred && isDebuffStatus(s.type) && s.type !== 'VIP');
+            if (bounced.length > 0) {
+                atk.status = (atk.status || []).filter(s => !s || s.isDeferred || !bounced.includes(s));
+                bounced.forEach((s) => applyStatus(def, s.type, s.duration, s.value ?? 0, s.hand ?? null, buf, defDeferred));
+                buf.push({ text: `🍸 [特調・回杯] 已將 ${bounced.length} 種負面狀態回敬給對手！`, type: 'info' });
+            }
+        } else {
+            const e = def.energy ?? 0;
+            let bonus = 0;
+            if (e >= 55) bonus = Math.floor((e - 55) * 1.0) + 20;
+            dealDirectDmg(70 + bonus, atk, def, buf);
+            const tipsyOn = (def.status || []).some(s => s && !s.isDeferred && s.type === 'TIPSY');
+            if (tipsyOn) {
+                dealDirectDmg(35, atk, def, buf, true);
+                buf.push({ text: `🍸 [烈酒・過載特調] 目標微醺中，追加 35 真實傷害！`, type: 'damage' });
+            }
+            if (bonus > 0) buf.push({ text: `🍸 [烈酒・過載特調] 高能量特攻追加 ${bonus} 傷害！`, type: 'info' });
+        }
+    } else if (id === 'blacksmith') {
+        const hasPermArmor = !!atk.permaBuffs?.armor;
+        const hasConsumable = !!atk.permaBuffs?.consumableArmor;
+        if (num === 1) {
+            applyHeal(atk, 45, buf, `[爐心淬護]`, def);
+            const shieldAmt = 55 + (hasPermArmor ? 35 : 0) + (hasConsumable ? 40 : 0);
+            atk.shield = (atk.shield || 0) + shieldAmt;
+            const burnVal = 18 + (hasPermArmor ? 4 : 0) + (hasConsumable ? 5 : 0);
+            applyStatus(def, 'BURN', 3, burnVal, null, buf, defDeferred);
+            buf.push({ text: `🔨 [爐心淬護] 獲得 ${shieldAmt} 護盾，敵人陷入燃燒（每回 ${burnVal}）！`, type: 'shield' });
+        } else {
+            let baseDmg = 60 + (hasPermArmor ? 15 : 0) + (hasConsumable ? 15 : 0);
+            dealDirectDmg(baseDmg, atk, def, buf);
+            const burnIdx = (def.status || []).findIndex(s => s && !s.isDeferred && s.type === 'BURN');
+            if (burnIdx >= 0) {
+                const b = def.status[burnIdx];
+                const dur = b.duration || 1;
+                const extraTrue = Math.min(85, 22 + dur * 8);
+                dealDirectDmg(extraTrue, atk, def, buf, true);
+                const healAmt = Math.min(120, 20 + dur * 14 + (hasPermArmor ? 40 : 0) + (hasConsumable ? 30 : 0));
+                applyHeal(atk, healAmt, buf, `[熔爐綻放]`, def);
+                buf.push({ text: `🔨 [熔爐綻放] 燃餘迸裂！追加 ${extraTrue} 真傷並自補 ${healAmt}！`, type: 'damage' });
+            } else {
+                applyStatus(def, 'BURN', 2, 16, null, buf, defDeferred);
+                buf.push({ text: `🔨 [熔爐綻放] 目標未燃燒，改施加 🔥[燃燒] 2 回合。`, type: 'info' });
             }
         }
     } else if (id === 'moying') {
@@ -1135,8 +1220,8 @@ const flushManorParasitePending = (owner, target, buf) => {
 
   const processEoR = (ent, other, buf) => {
     let next = [];
-    if ((ent.talents||[]).includes('t_wolf') && ent.shield > 0) { applyHeal(ent, 25, buf, `[極寒護體]`); flushManorParasitePending(ent, other, buf); }
-    if ((ent.talents||[]).includes('t_xiangxiang') && ent.hp < ent.maxHp * 0.5) { applyHeal(ent, 20, buf, `[愛心宵夜]`); ent.shield += 10; flushManorParasitePending(ent, other, buf); buf.push({text: `[愛心宵夜] 獲得 10 護盾！`, type: 'shield'}); }
+    if ((ent.talents||[]).includes('t_wolf') && ent.shield > 0) { applyHeal(ent, 25, buf, `[極寒護體]`, other); flushManorParasitePending(ent, other, buf); }
+    if ((ent.talents||[]).includes('t_xiangxiang') && ent.hp < ent.maxHp * 0.5) { applyHeal(ent, 20, buf, `[愛心宵夜]`, other); ent.shield += 10; flushManorParasitePending(ent, other, buf); buf.push({text: `[愛心宵夜] 獲得 10 護盾！`, type: 'shield'}); }
     if ((ent.talents||[]).includes('t_cat')) {
         const dCount = (other.status || []).filter(s => s && isDebuffStatus(s.type)).length;
         if (dCount > 0) {
@@ -1147,13 +1232,13 @@ const flushManorParasitePending = (owner, target, buf) => {
     }
     
     if ((ent.talents || []).includes('t_aldous')) {
-        ent.energy = Math.min(100, ent.energy + 5);
         buf.push({text: `[睿智之風] 恢復 5 點能量！`, type: 'info'});
+        applyEnergyDelta(ent, ent.energy + 5, buf, other);
     }
 
     if ((ent.talents||[]).includes('t_harvest_elf') && (ent.status||[]).some(s => s?.type === 'REGEN')) {
-        ent.energy = Math.min(100, ent.energy + 5);
         buf.push({text: `🌽 [豐饒之角] 再生觸發，恢復 5 能量！`, type: 'info'});
+        applyEnergyDelta(ent, ent.energy + 5, buf, other);
     }
 
     if ((ent.talents||[]).includes('t_halloween_cat')) {
@@ -1169,10 +1254,10 @@ const flushManorParasitePending = (owner, target, buf) => {
         ent.permaBuffs.turnCount = (ent.permaBuffs.turnCount || 0) + 1;
         if (ent.permaBuffs.turnCount % 3 === 0) {
             const heal = Math.floor(ent.maxHp * 0.1);
-            applyHeal(ent, heal, buf, `🎁 [最棒的禮物]`);
+            applyHeal(ent, heal, buf, `🎁 [最棒的禮物]`, other);
             flushManorParasitePending(ent, other, buf);
-            ent.energy = Math.min(100, ent.energy + 20);
             buf.push({text: `🎁 [最棒的禮物] 恢復 ${heal} 點生命與 20 點能量！`, type: 'heal'});
+            applyEnergyDelta(ent, ent.energy + 20, buf, other);
         }
     }
 
@@ -1195,11 +1280,11 @@ const flushManorParasitePending = (owner, target, buf) => {
         if (s.type === 'PARASITE') {
             const v = s.value || 25;
             ent.hp = Math.max(0, ent.hp - v);
-            applyHeal(other, v, buf, `🌿 寄生吸取`);
+            applyHeal(other, v, buf, `🌿 寄生吸取`, ent);
             flushManorParasitePending(other, ent, buf);
             buf.push({text: `🌿 寄生吸取 ${v} HP！`, type: 'damage'});
         }
-        if (s.type === 'REGEN') { applyHeal(ent, 20, buf, `💖 再生`); flushManorParasitePending(ent, other, buf); }
+        if (s.type === 'REGEN') { applyHeal(ent, 20, buf, `💖 再生`, other); flushManorParasitePending(ent, other, buf); }
         
         if (s.isDeferred) {
             next.push({ ...s, isDeferred: false });
@@ -1268,8 +1353,9 @@ const flushManorParasitePending = (owner, target, buf) => {
     if (choice === aiChoice) {
         playSound('rps_draw');
         const ce = (ent) => { if ((ent.status||[]).some(s => s && s.type === 'FATIGUE')) return 0; let b = (ent.talents||[]).includes('t5') ? 30 : 20; if ((ent.status||[]).some(s => s && s.type === 'EXCITE')) b = Math.floor(b * 1.5); return b; };
-        p.energy = Math.min(100, p.energy + ce(p)); e.energy = Math.min(100, e.energy + ce(e));
-        if ((p.talents||[]).includes('t5')) { applyHeal(p, 15, buf, `[鬥氣]`); flushManorParasitePending(p, e, buf); }
+        applyEnergyDelta(p, p.energy + ce(p), buf, e);
+        applyEnergyDelta(e, e.energy + ce(e), buf, p);
+        if ((p.talents||[]).includes('t5')) { applyHeal(p, 15, buf, `[鬥氣]`, e); flushManorParasitePending(p, e, buf); }
         buf.push({ text: '平手！雙方各退一步。', type: 'info' });
 
         // 🎣 [熊吉的釣竿]（永久武裝）：限定熊吉出戰，平手 50% 隨機獲得增益（不重複）
@@ -1301,7 +1387,7 @@ const flushManorParasitePending = (owner, target, buf) => {
     } else {
         const isPW = RPS_CHOICES[choice].beats === aiChoice;
         playSound(isPW ? 'rps_win' : 'rps_lose'); let atk = isPW ? p : e; let def = isPW ? e : p;
-        if (def.buffs && def.buffs.energyOnLoss) { def.energy = Math.min(100, def.energy + 50); def.buffs.energyOnLoss = false; }
+        if (def.buffs && def.buffs.energyOnLoss) { applyEnergyDelta(def, def.energy + 50, buf, atk); def.buffs.energyOnLoss = false; }
         let mult = getElementMultiplier(atk.char.element.id, def.char.element.id);
 
         let atkVal = getAttackerAtkBreakdown(atk).final;
@@ -1320,7 +1406,15 @@ const flushManorParasitePending = (owner, target, buf) => {
         if ((!isPW ? choice : aiChoice) === 'ROCK' && (def.talents||[]).includes('t10')) d = Math.floor(d * 0.5);
         if ((!isPW ? choice : aiChoice) === 'PAPER' && (def.talents||[]).includes('t11')) d = Math.floor(d * 0.5);
         
+        const winnerHadShield = (atk.shield || 0) > 0;
         dealDirectDmg(d, atk, def, buf);
+
+        const defBase = def.char?.baseId || def.char?.id;
+        if ((def.talents || []).includes('t_blacksmith_scarred') && defBase === 'blacksmith') {
+            const rv = winnerHadShield ? 60 : 30;
+            dealDirectDmg(rv, def, atk, buf, true);
+            buf.push({ text: `🔨 [歷殤之軀] 戰敗反傷 ${rv} 真實傷害！${winnerHadShield ? '（對手帶護盾，傷害加倍）' : ''}`, type: 'damage' });
+        }
 
         // 武裝出拳獲勝效果（玩家勝出時）
         if (isPW) {
@@ -1340,6 +1434,11 @@ const flushManorParasitePending = (owner, target, buf) => {
                 buf.push({ text: `💢 [破甲符] 施加易傷 1 回合！`, type: 'info' });
             }
         }
+    }
+    if ((p.talents || []).includes('t_bartender_please') || (e.talents || []).includes('t_bartender_please')) {
+        buf.push({ text: '🍸 [請醉片刻] 酒氣瀰漫，雙方各獲得 10 點能量！', type: 'info' });
+        applyEnergyDelta(p, p.energy + 10, buf, e);
+        applyEnergyDelta(e, e.energy + 10, buf, p);
     }
     processEoR(p, e, buf); processEoR(e, p, buf);
     setPlayer(p); setEnemy(e); setLogs(prev => [...prev, ...buf]);
@@ -1390,7 +1489,8 @@ const flushManorParasitePending = (owner, target, buf) => {
           } else {
             const charBaseId = selectedChar.baseId || selectedChar.id;
             const hasMinerRadarTalent = charBaseId === 'miner_char' && (tIds || []).includes('t_miner_radar_save');
-            const noConsume = hasMinerRadarTalent && Math.random() < 0.5;
+            const hasBlacksmithScarred = charBaseId === 'blacksmith' && (tIds || []).includes('t_blacksmith_scarred');
+            const noConsume = (hasMinerRadarTalent && Math.random() < 0.5) || (hasBlacksmithScarred && Math.random() < 0.5);
             const npUse = {
               ...progress,
               consumableArmors: { ...progress.consumableArmors, carm_radar: Math.max(0, stock - (noConsume ? 0 : 1)) },
@@ -1638,7 +1738,7 @@ const flushManorParasitePending = (owner, target, buf) => {
     setGameState('battle');
   };
 
-  const NEGATIVE_STATUSES = ['BURN','POISON','PARASITE','FREEZE','DAZZLE','SILENCE','ATK_DOWN','DEF_DOWN','VULNERABLE','FATIGUE'];
+  const NEGATIVE_STATUSES = ['BURN','POISON','PARASITE','FREEZE','DAZZLE','SILENCE','ATK_DOWN','DEF_DOWN','VULNERABLE','FATIGUE','TIPSY'];
   const handleUseItem = (itemId) => {
     const itemUseCap = getBattleItemUseMax(player.talents);
     if (battleItemUses <= 0) { setSysError(`本場戰鬥道具使用次數已達上限（${itemUseCap}次）！`); return; }
@@ -1688,7 +1788,7 @@ const flushManorParasitePending = (owner, target, buf) => {
     } else {
       switch (itemId) {
         case 'stardust':
-          applyHeal(newPlayer, 100, extraLogs, '✨ 使用星晶砂粉！');
+          applyHeal(newPlayer, 100, extraLogs, '✨ 使用星晶砂粉！', newEnemy);
           flushManorParasitePending(newPlayer, newEnemy, extraLogs);
           logText = '✨ 使用星晶砂粉！'; break;
         case 'excite_potion':
@@ -1707,7 +1807,7 @@ const flushManorParasitePending = (owner, target, buf) => {
           newPlayer.status = [...newPlayer.status.filter(s => s.type !== 'REGEN'), { type: 'REGEN', duration: 3, value: 0, isNew: true, isDeferred: false }];
           logText = '🥗 使用保健食品！獲得 💖[再生] 3回合！'; break;
         case 'energy_drink':
-          newPlayer.energy = Math.min(100, (newPlayer.energy || 0) + 30);
+          applyEnergyDelta(newPlayer, (newPlayer.energy || 0) + 30, extraLogs, newEnemy);
           logText = '🥤 使用提神飲料！瞬間獲得 30 能量！'; break;
         default: return;
       }
@@ -1773,7 +1873,13 @@ const flushManorParasitePending = (owner, target, buf) => {
           // 消耗型武裝在最終勝利後消耗（故事章節通關）
           if (np.pendingConsumableArmor) {
             const cId = np.pendingConsumableArmor;
-            np.consumableArmors = { ...np.consumableArmors, [cId]: Math.max(0, (np.consumableArmors[cId] || 1) - 1) };
+            const pBid = player.char?.baseId || player.char?.id;
+            const saveCons = pBid === 'blacksmith' && (player.talents || []).includes('t_blacksmith_scarred') && Math.random() < 0.5;
+            if (!saveCons) {
+              np.consumableArmors = { ...np.consumableArmors, [cId]: Math.max(0, (np.consumableArmors[cId] || 1) - 1) };
+            } else {
+              showToastMsg('🔨 [歷殤之軀] 消耗型武裝未消耗！');
+            }
             np.pendingConsumableArmor = null;
           }
           np.completedStoryChapters = [...new Set([...(np.completedStoryChapters || []), storyChapterId])];
@@ -1839,7 +1945,13 @@ const flushManorParasitePending = (owner, target, buf) => {
         const isFinalWin = gameMode === 'brawl' || (gameMode.includes('campaign') && campaignStage === maxStage);
         if (isFinalWin && np.pendingConsumableArmor) {
             const cId = np.pendingConsumableArmor;
-            np.consumableArmors = { ...np.consumableArmors, [cId]: Math.max(0, (np.consumableArmors[cId] || 1) - 1) };
+            const pBidWin = player.char?.baseId || player.char?.id;
+            const saveConsWin = pBidWin === 'blacksmith' && (player.talents || []).includes('t_blacksmith_scarred') && Math.random() < 0.5;
+            if (!saveConsWin) {
+              np.consumableArmors = { ...np.consumableArmors, [cId]: Math.max(0, (np.consumableArmors[cId] || 1) - 1) };
+            } else {
+              showToastMsg('🔨 [歷殤之軀] 消耗型武裝未消耗！');
+            }
             np.pendingConsumableArmor = null;
         }
 
@@ -3843,6 +3955,8 @@ const flushManorParasitePending = (owner, target, buf) => {
       { id: 'f_halloween', name: '萬聖布提婭碎片 x5', desc: '高階情報，用於圖鑑合成解鎖。', cost: 150, currency: 'fragment', icon: '🎃', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('halloween_cat', 150, 5) },
       { id: 'f_kohaku', name: '琥珀碎片 x5', desc: '傳說情報，商會會長的專屬碎片。', cost: 300, currency: 'fragment', icon: '🦊', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('kohaku', 300, 5) },
       { id: 'f_aldous', name: '奧爾德斯碎片 x5', desc: '傳說情報，大長老的專屬碎片。', cost: 300, currency: 'fragment', icon: '🦉', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('aldous', 300, 5) },
+      { id: 'f_bartender', name: '哈魯碎片 x5', desc: '史詩情報，兔子酒館酒保的專屬碎片。', cost: 220, currency: 'fragment', icon: '🍸', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('bartender', 220, 5) },
+      { id: 'f_blacksmith', name: '卡恩碎片 x5', desc: '史詩情報，熔爐鍛心者的專屬碎片。', cost: 220, currency: 'fragment', icon: '🔨', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('blacksmith', 220, 5) },
       { id: 'f_manor', name: '烏薩碎片 x5', desc: '傳說情報，園藝家的專屬碎片。', cost: 300, currency: 'fragment', icon: '🪴', canBuy: true, bought: false, isInfinite: true, onBuy: () => buyFrag('manor', 300, 5) },
     ];
 
